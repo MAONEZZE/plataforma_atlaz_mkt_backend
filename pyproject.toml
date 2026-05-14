@@ -60,10 +60,11 @@ exclude = ["alembic/", "scripts/"]
 
 [[tool.mypy.overrides]]
 module = ["jose.*", "supabase.*", "slowapi.*", "testcontainers.*", "sentry_sdk.*"]
-ignore_missing_stubs = true
+ignore_missing_imports = true
 
 [tool.importlinter]
 root_packages = ["app"]
+include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "Domain does not import infrastructure"

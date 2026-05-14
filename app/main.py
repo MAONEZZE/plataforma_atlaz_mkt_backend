@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -30,7 +31,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # type: ignore[type-arg]
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     configure_logging()
     if settings.SENTRY_DSN:
         sentry_sdk.init(
@@ -94,9 +95,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     logger.warning("validation_error", path=request.url.path)
     return JSONResponse(
         status_code=400,
@@ -104,9 +103,7 @@ async def validation_handler(
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Dados inválidos.",
-                "details": {
-                    ".".join(map(str, e["loc"])): e["msg"] for e in exc.errors()
-                },
+                "details": {".".join(map(str, e["loc"])): e["msg"] for e in exc.errors()},
             }
         },
     )

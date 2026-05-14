@@ -16,8 +16,7 @@ depends_on = None
 def upgrade() -> None:
     # ── Auth schema mock (no-op on Supabase; needed for local dev/testcontainers) ──
     op.execute("CREATE SCHEMA IF NOT EXISTS auth")
-    op.execute(
-        """
+    op.execute("""
         CREATE TABLE IF NOT EXISTS auth.users (
             id uuid PRIMARY KEY,
             email text,
@@ -25,16 +24,14 @@ def upgrade() -> None:
             raw_user_meta_data jsonb DEFAULT '{}'::jsonb,
             created_at timestamptz DEFAULT now()
         )
-        """
-    )
+        """)
 
     # ── Extensions ───────────────────────────────────────────────────────────────
     op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
     op.execute("CREATE EXTENSION IF NOT EXISTS citext")
 
     # ── usuario ──────────────────────────────────────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE TABLE public.usuario (
             id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
             nome text NOT NULL,
@@ -49,13 +46,11 @@ def upgrade() -> None:
             criado_em timestamp NOT NULL DEFAULT now(),
             atualizado_em timestamp NOT NULL DEFAULT now()
         )
-        """
-    )
+        """)
     op.execute("CREATE INDEX usuario_role_idx ON public.usuario(role)")
 
     # ── Trigger: sync auth.users → public.usuario on insert ──────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
         RETURNS trigger AS $$
         BEGIN
@@ -69,19 +64,15 @@ def upgrade() -> None:
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql SECURITY DEFINER
-        """
-    )
-    op.execute(
-        """
+        """)
+    op.execute("""
         CREATE TRIGGER on_auth_user_created
         AFTER INSERT ON auth.users
         FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user()
-        """
-    )
+        """)
 
     # ── Trigger: sync email change ────────────────────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE OR REPLACE FUNCTION public.handle_auth_user_email_change()
         RETURNS trigger AS $$
         BEGIN
@@ -93,19 +84,15 @@ def upgrade() -> None:
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql SECURITY DEFINER
-        """
-    )
-    op.execute(
-        """
+        """)
+    op.execute("""
         CREATE TRIGGER on_auth_user_email_changed
         AFTER UPDATE ON auth.users
         FOR EACH ROW EXECUTE FUNCTION public.handle_auth_user_email_change()
-        """
-    )
+        """)
 
     # ── trilha ────────────────────────────────────────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE TABLE trilha (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             titulo text NOT NULL,
@@ -114,12 +101,10 @@ def upgrade() -> None:
             ordem int NOT NULL DEFAULT 0,
             criado_em timestamp NOT NULL DEFAULT now()
         )
-        """
-    )
+        """)
 
     # ── modulo ────────────────────────────────────────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE TABLE modulo (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             trilha_id uuid NOT NULL REFERENCES trilha(id) ON DELETE CASCADE,
@@ -127,13 +112,11 @@ def upgrade() -> None:
             descricao text,
             ordem int NOT NULL DEFAULT 0
         )
-        """
-    )
+        """)
     op.execute("CREATE INDEX modulo_trilha_idx ON modulo(trilha_id)")
 
     # ── aula ──────────────────────────────────────────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE TABLE aula (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             modulo_id uuid NOT NULL REFERENCES modulo(id) ON DELETE CASCADE,
@@ -144,25 +127,21 @@ def upgrade() -> None:
             ordem int NOT NULL DEFAULT 0,
             criado_em timestamp NOT NULL DEFAULT now()
         )
-        """
-    )
+        """)
     op.execute("CREATE INDEX aula_modulo_idx ON aula(modulo_id)")
 
     # ── aluno_aula ────────────────────────────────────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE TABLE aluno_aula (
             usuario_id uuid REFERENCES public.usuario(id) ON DELETE CASCADE,
             aula_id uuid REFERENCES aula(id) ON DELETE CASCADE,
             concluida_em timestamp NOT NULL DEFAULT now(),
             PRIMARY KEY (usuario_id, aula_id)
         )
-        """
-    )
+        """)
 
     # ── comentario ────────────────────────────────────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE TABLE comentario (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             aula_id uuid NOT NULL REFERENCES aula(id) ON DELETE CASCADE,
@@ -172,15 +151,11 @@ def upgrade() -> None:
             editado_em timestamp,
             apagado_em timestamp
         )
-        """
-    )
-    op.execute(
-        "CREATE INDEX comentario_aula_idx ON comentario(aula_id, criado_em DESC)"
-    )
+        """)
+    op.execute("CREATE INDEX comentario_aula_idx ON comentario(aula_id, criado_em DESC)")
 
     # ── metrica_semanal ───────────────────────────────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE TABLE metrica_semanal (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             usuario_id uuid NOT NULL REFERENCES public.usuario(id) ON DELETE CASCADE,
@@ -194,8 +169,7 @@ def upgrade() -> None:
             UNIQUE (usuario_id, semana_inicio),
             CHECK (EXTRACT(DOW FROM semana_inicio) = 1)
         )
-        """
-    )
+        """)
     op.execute(
         "CREATE INDEX metrica_usuario_semana_idx ON metrica_semanal(usuario_id, semana_inicio DESC)"
     )

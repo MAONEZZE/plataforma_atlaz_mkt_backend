@@ -6,7 +6,7 @@ from app.core.exceptions import AppException
 
 def decode_supabase_jwt(token: str) -> dict[str, object]:
     try:
-        return jwt.decode(  # type: ignore[no-any-return]
+        return jwt.decode(
             token,
             settings.SUPABASE_JWT_SECRET,
             algorithms=["HS256"],
