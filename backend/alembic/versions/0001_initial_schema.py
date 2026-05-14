@@ -14,17 +14,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # ── Auth schema mock (no-op on Supabase; needed for local dev/testcontainers) ──
-    op.execute("CREATE SCHEMA IF NOT EXISTS auth")
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS auth.users (
-            id uuid PRIMARY KEY,
-            email text,
-            encrypted_password text,
-            raw_user_meta_data jsonb DEFAULT '{}'::jsonb,
-            created_at timestamptz DEFAULT now()
-        )
-        """)
+    # ── Auth schema already exists on Supabase; skip creation ──
+    # On local dev/testcontainers, auth.users is mocked elsewhere or assumed to exist
 
     # ── Extensions ───────────────────────────────────────────────────────────────
     op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
@@ -201,5 +192,3 @@ def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS public.usuario CASCADE")
     op.execute("DROP FUNCTION IF EXISTS public.handle_new_auth_user() CASCADE")
     op.execute("DROP FUNCTION IF EXISTS public.handle_auth_user_email_change() CASCADE")
-    op.execute("DROP TABLE IF EXISTS auth.users CASCADE")
-    op.execute("DROP SCHEMA IF EXISTS auth CASCADE")

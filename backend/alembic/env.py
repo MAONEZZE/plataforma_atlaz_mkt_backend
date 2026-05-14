@@ -1,8 +1,11 @@
-import asyncio
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from logging.config import fileConfig
 
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import create_engine
 
 from alembic import context
 from app.shared.infrastructure.sqlalchemy_base import Base
@@ -19,11 +22,13 @@ if config.config_file_name:
 target_metadata = Base.metadata
 
 DATABASE_URL = os.environ["DATABASE_URL"]
+# Convert async URL to sync for alembic
+SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
 
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=DATABASE_URL,
+        url=SYNC_DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -43,14 +48,14 @@ def do_run_migrations(connection):  # type: ignore[no-untyped-def]
         context.run_migrations()
 
 
-async def run_migrations_online() -> None:
-    connectable = create_async_engine(DATABASE_URL)
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-    await connectable.dispose()
+def run_migrations_online() -> None:
+    connectable = create_engine(SYNC_DATABASE_URL)
+    with connectable.connect() as connection:
+        do_run_migrations(connection)
+    connectable.dispose()
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    asyncio.run(run_migrations_online())
+    run_migrations_online()
