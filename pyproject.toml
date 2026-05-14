@@ -68,20 +68,54 @@ root_packages = ["app"]
 [[tool.importlinter.contracts]]
 name = "Domain does not import infrastructure"
 type = "forbidden"
-source_modules = ["app.contexts.*.domain"]
-forbidden_modules = ["app.contexts.*.infrastructure"]
+source_modules = [
+    "app.contexts.auth.domain",
+    "app.contexts.usuarios.domain",
+    "app.contexts.metricas.domain",
+    "app.contexts.conteudo.domain",
+    "app.contexts.comunidade.domain",
+]
+forbidden_modules = [
+    "app.contexts.auth.infrastructure",
+    "app.contexts.usuarios.infrastructure",
+    "app.contexts.metricas.infrastructure",
+    "app.contexts.conteudo.infrastructure",
+    "app.contexts.comunidade.infrastructure",
+]
 
 [[tool.importlinter.contracts]]
 name = "Domain does not import presentation"
 type = "forbidden"
-source_modules = ["app.contexts.*.domain"]
-forbidden_modules = ["app.contexts.*.presentation"]
+source_modules = [
+    "app.contexts.auth.domain",
+    "app.contexts.usuarios.domain",
+    "app.contexts.metricas.domain",
+    "app.contexts.conteudo.domain",
+    "app.contexts.comunidade.domain",
+]
+forbidden_modules = [
+    "app.contexts.auth.presentation",
+    "app.contexts.usuarios.presentation",
+    "app.contexts.metricas.presentation",
+    "app.contexts.conteudo.presentation",
+    "app.contexts.comunidade.presentation",
+]
 
 [[tool.importlinter.contracts]]
 name = "Domain does not import frameworks"
 type = "forbidden"
-source_modules = ["app.contexts.*.domain"]
-forbidden_modules = ["fastapi", "sqlalchemy", "supabase"]
+source_modules = [
+    "app.contexts.auth.domain",
+    "app.contexts.usuarios.domain",
+    "app.contexts.metricas.domain",
+    "app.contexts.conteudo.domain",
+    "app.contexts.comunidade.domain",
+]
+forbidden_modules = [
+    "fastapi",
+    "sqlalchemy",
+    "supabase",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
