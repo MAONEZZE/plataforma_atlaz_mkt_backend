@@ -268,3 +268,178 @@ async def test_listar_metricas_returns_paged() -> None:
     assert result.total == 3
     assert len(result.items) == 3
     assert all(isinstance(i, MetricaDTO) for i in result.items)
+
+
+# ── ObterResumoDashboard ───────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_resumo_computes_delta() -> None:
+    usuario_id = uuid4()
+
+    async def somar_por_mes(uid: UUID, mes: str) -> dict[str, int]:
+        if mes == "2026-05":
+            return {"ligacoes_agendadas": 120, "ligacoes_realizadas": 95,
+                    "reunioes_agendadas": 28, "indicacoes": 12}
+        # prev month 2026-04
+        return {"ligacoes_agendadas": 100, "ligacoes_realizadas": 0,
+                "reunioes_agendadas": 20, "indicacoes": 0}
+
+    repo = AsyncMock()
+    repo.somar_por_mes.side_effect = somar_por_mes
+    uc = ObterResumoDashboard(repo)
+    result = await uc.execute(usuario_id=usuario_id, mes="2026-05")
+
+    assert result.mes == "2026-05"
+    assert result.ligacoes_agendadas.valor == 120
+    assert result.ligacoes_agendadas.delta_pct == 20.0  # (120-100)/100*100
+    # prev=0 → delta_pct=null
+    assert result.ligacoes_realizadas.delta_pct is None
+    assert result.indicacoes.delta_pct is None
+
+
+@pytest.mark.asyncio
+async def test_resumo_defaults_mes_to_current() -> None:
+    repo = AsyncMock()
+    repo.somar_por_mes.return_value = {
+        "ligacoes_agendadas": 0,
+        "ligacoes_realizadas": 0,
+        "reunioes_agendadas": 0,
+        "indicacoes": 0,
+    }
+    uc = ObterResumoDashboard(repo)
+    result = await uc.execute(usuario_id=uuid4())
+    assert isinstance(result, ResumoDashboardDTO)
+    assert repo.somar_por_mes.call_count == 2  # current + previous month
+
+
+# ── ObterSeriesDashboard ──────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_series_fills_gaps_with_zeros() -> None:
+    usuario_id = uuid4()
+    repo = _mock_repo(por_semanas=[])
+    uc = ObterSeriesDashboard(repo)
+    result = await uc.execute(
+        usuario_id=usuario_id, semanas=4, today=date(2026, 5, 14)
+    )
+    assert isinstance(result, SeriesDashboardDTO)
+    assert len(result.series) == 4
+    for item in result.series:
+        assert item.ligacoes_agendadas == 0
+        assert item.ligacoes_realizadas == 0
+
+
+@pytest.mark.asyncio
+async def test_series_correct_length() -> None:
+    repo = _mock_repo(por_semanas=[])
+    uc = ObterSeriesDashboard(repo)
+    result = await uc.execute(
+        usuario_id=uuid4(), semanas=12, today=date(2026, 5, 14)
+    )
+    assert len(result.series) == 12
+
+
+@pytest.mark.asyncio
+async def test_series_ascending_order() -> None:
+    repo = _mock_repo(por_semanas=[])
+    uc = ObterSeriesDashboard(repo)
+    result = await uc.execute(
+        usuario_id=uuid4(), semanas=4, today=date(2026, 5, 14)
+    )
+    dates = [s.semana for s in result.series]
+    assert dates == sorted(dates)
+
+
+@pytest.mark.asyncio
+async def test_series_includes_data_when_available() -> None:
+    usuario_id = uuid4()
+    now = datetime.now(tz=UTC)
+    # May 11 is in the last 4 weeks of May 14
+    week = date(2026, 5, 11)
+    metrica = MetricaSemanal(
+        id=uuid4(), usuario_id=usuario_id, semana_inicio=week,
+        ligacoes_agendadas=5, ligacoes_realizadas=4,
+        reunioes_agendadas=2, indicacoes=1,
+        criado_em=now, atualizado_em=now,
+    )
+    repo = _mock_repo(por_semanas=[metrica])
+    uc = ObterSeriesDashboard(repo)
+    result = await uc.execute(
+        usuario_id=usuario_id, semanas=4, today=date(2026, 5, 14)
+    )
+    may11_entry = next(s for s in result.series if s.semana == week)
+    assert may11_entry.ligacoes_agendadas == 5
+    assert may11_entry.indicacoes == 1
+
+
+# ── ObterAdminConsolidado ──────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_admin_consolidado_aggregates_correctly() -> None:
+    items = [
+        MetricasUsuarioMes(
+            usuario_id=uuid4(), nome="Alice", foto_url=None,
+            ligacoes_agendadas=100, ligacoes_realizadas=80,
+            reunioes_agendadas=25, indicacoes=5,
+            ultima_metrica_em=date(2026, 5, 4),
+        ),
+        MetricasUsuarioMes(
+            usuario_id=uuid4(), nome="Bob", foto_url=None,
+            ligacoes_agendadas=0, ligacoes_realizadas=0,
+            reunioes_agendadas=0, indicacoes=0,
+            ultima_metrica_em=None,
+        ),
+    ]
+    repo = _mock_repo(listar_clientes_com_metricas_mes=items)
+    uc = ObterAdminConsolidado(repo)
+    result = await uc.execute(mes="2026-05", busca=None, page=1, page_size=20)
+
+    assert isinstance(result, AdminConsolidadoDTO)
+    assert result.agregados.ligacoes_agendadas_total == 100
+    assert result.agregados.mentorados_com_metrica_no_mes == 1
+    assert result.agregados.mentorados_sem_metrica_no_mes == 1
+    assert result.total == 2
+
+
+@pytest.mark.asyncio
+async def test_admin_consolidado_filters_by_busca() -> None:
+    items = [
+        MetricasUsuarioMes(
+            usuario_id=uuid4(), nome="Alice", foto_url=None,
+            ligacoes_agendadas=10, ligacoes_realizadas=8,
+            reunioes_agendadas=2, indicacoes=1,
+            ultima_metrica_em=date(2026, 5, 4),
+        ),
+        MetricasUsuarioMes(
+            usuario_id=uuid4(), nome="Carlos", foto_url=None,
+            ligacoes_agendadas=5, ligacoes_realizadas=4,
+            reunioes_agendadas=1, indicacoes=0,
+            ultima_metrica_em=date(2026, 5, 4),
+        ),
+    ]
+    repo = _mock_repo(listar_clientes_com_metricas_mes=items)
+    uc = ObterAdminConsolidado(repo)
+    result = await uc.execute(mes="2026-05", busca="ali", page=1, page_size=20)
+
+    assert result.total == 1
+    assert result.items[0].nome == "Alice"
+
+
+@pytest.mark.asyncio
+async def test_admin_consolidado_paginates() -> None:
+    items = [
+        MetricasUsuarioMes(
+            usuario_id=uuid4(), nome=f"User{i}", foto_url=None,
+            ligacoes_agendadas=i, ligacoes_realizadas=0,
+            reunioes_agendadas=0, indicacoes=0,
+            ultima_metrica_em=None,
+        )
+        for i in range(25)
+    ]
+    repo = _mock_repo(listar_clientes_com_metricas_mes=items)
+    uc = ObterAdminConsolidado(repo)
+    result = await uc.execute(mes="2026-05", busca=None, page=2, page_size=10)
+
+    assert result.total == 25
+    assert len(result.items) == 10
+    assert result.page == 2
