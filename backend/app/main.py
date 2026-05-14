@@ -12,6 +12,13 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from app.contexts.comunidade.presentation.router import router as comunidade_router
+from app.contexts.conteudo.presentation.router_admin import router as admin_conteudo_router
+from app.contexts.conteudo.presentation.router_comentarios import router as comentarios_router
+from app.contexts.conteudo.presentation.router_conteudo import router as conteudo_router
+from app.contexts.metricas.presentation.router import admin_router as admin_metricas_router
+from app.contexts.metricas.presentation.router import router as metricas_router
+from app.contexts.usuarios.presentation.router import router as usuarios_router
 from app.core.config import settings
 from app.core.exceptions import AppException
 from app.core.logging import configure_logging
@@ -27,6 +34,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+
+class StructlogContextMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        structlog.contextvars.clear_contextvars()
+        response: Response = await call_next(request)
         return response
 
 
@@ -81,6 +95,9 @@ app.add_middleware(
 # ── Security headers ───────────────────────────────────────────────────────────
 app.add_middleware(SecurityHeadersMiddleware)
 
+# ── Structlog context reset per request ───────────────────────────────────────
+app.add_middleware(StructlogContextMiddleware)
+
 
 # ── Exception handlers ─────────────────────────────────────────────────────────
 @app.exception_handler(AppException)
@@ -126,4 +143,10 @@ async def health() -> dict[str, str]:
 
 
 # ── Routers ────────────────────────────────────────────────────────────────────
-# Routers added here as contexts are implemented.
+app.include_router(comunidade_router, prefix="/api/v1")
+app.include_router(usuarios_router, prefix="/api/v1")
+app.include_router(conteudo_router, prefix="/api/v1")
+app.include_router(admin_conteudo_router, prefix="/api/v1")
+app.include_router(comentarios_router, prefix="/api/v1")
+app.include_router(metricas_router, prefix="/api/v1")
+app.include_router(admin_metricas_router, prefix="/api/v1")
