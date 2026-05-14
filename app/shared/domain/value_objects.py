@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+from app.shared.domain.exceptions import DomainError
+
 
 @dataclass(frozen=True)
 class Email:
@@ -8,8 +10,6 @@ class Email:
 
     def __post_init__(self) -> None:
         if "@" not in self.value or len(self.value) < 3:
-            from app.shared.domain.exceptions import DomainError
-
             raise DomainError("Email inválido.")
 
 
@@ -19,8 +19,6 @@ class SemanaInicio:
 
     def __post_init__(self) -> None:
         if self.value.weekday() != 0:
-            from app.shared.domain.exceptions import DomainError
-
             raise DomainError("Semana deve começar na segunda-feira.")
 
     @classmethod
