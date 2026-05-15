@@ -41,15 +41,21 @@ class AtualizarMetrica:
 
         updated = replace(
             metrica,
-            ligacoes_agendadas=ligacoes_agendadas
-            if ligacoes_agendadas is not None
-            else metrica.ligacoes_agendadas,
-            ligacoes_realizadas=ligacoes_realizadas
-            if ligacoes_realizadas is not None
-            else metrica.ligacoes_realizadas,
-            reunioes_agendadas=reunioes_agendadas
-            if reunioes_agendadas is not None
-            else metrica.reunioes_agendadas,
+            ligacoes_agendadas=(
+                ligacoes_agendadas
+                if ligacoes_agendadas is not None
+                else metrica.ligacoes_agendadas
+            ),
+            ligacoes_realizadas=(
+                ligacoes_realizadas
+                if ligacoes_realizadas is not None
+                else metrica.ligacoes_realizadas
+            ),
+            reunioes_agendadas=(
+                reunioes_agendadas
+                if reunioes_agendadas is not None
+                else metrica.reunioes_agendadas
+            ),
             indicacoes=indicacoes if indicacoes is not None else metrica.indicacoes,
             atualizado_em=datetime.now(tz=UTC),
         )

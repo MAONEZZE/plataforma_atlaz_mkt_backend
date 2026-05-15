@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from app.contexts.auth.presentation.router import router as auth_router
 from app.contexts.comunidade.presentation.router import router as comunidade_router
 from app.contexts.conteudo.presentation.router_admin import router as admin_conteudo_router
 from app.contexts.conteudo.presentation.router_comentarios import router as comentarios_router
@@ -143,6 +144,7 @@ async def health() -> dict[str, str]:
 
 
 # ── Routers ────────────────────────────────────────────────────────────────────
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(comunidade_router, prefix="/api/v1")
 app.include_router(usuarios_router, prefix="/api/v1")
 app.include_router(conteudo_router, prefix="/api/v1")

@@ -17,7 +17,8 @@ if config.config_file_name:
     fileConfig(config.config_file_name)
 
 # Import all ORM models here so autogenerate finds them.
-# (Add imports as each context is implemented.)
+import app.contexts.auth.infrastructure.models  # noqa: F401
+import app.contexts.conteudo.infrastructure.models  # noqa: F401
 
 target_metadata = Base.metadata
 

@@ -1,49 +1,36 @@
-from dataclasses import dataclass
-from uuid import UUID
-
+import structlog
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.db import get_session
+from app.contexts.auth.application.use_cases.validar_token import ValidarToken
+from app.contexts.auth.domain.entities import Usuario
+from app.contexts.auth.domain.exceptions import ContaInativa, TokenExpirado, TokenInvalido
+from app.contexts.auth.presentation.deps import get_validar_token_use_case
 from app.core.exceptions import AppException
-from app.core.security import decode_supabase_jwt
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
-
-
-@dataclass
-class AuthUser:
-    id: UUID
-    email: str
-    role: str
-    inativo: bool
+http_bearer = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    token: str | None = Depends(oauth2_scheme),
-    session: AsyncSession = Depends(get_session),
-) -> AuthUser:
+    credentials: HTTPAuthorizationCredentials | None = Depends(http_bearer),
+    use_case: ValidarToken = Depends(get_validar_token_use_case),
+) -> Usuario:
+    token = credentials.credentials if credentials else None
     if not token:
         raise AppException("TOKEN_INVALID", "Token não fornecido.", 401)
-    payload = decode_supabase_jwt(token)
-    user_id = UUID(str(payload["sub"]))
-    result = await session.execute(
-        text("SELECT id, email, role, inativo FROM public.usuario WHERE id = :id"),
-        {"id": user_id},
-    )
-    row = result.fetchone()
-    if not row:
-        raise AppException("TOKEN_INVALID", "Usuário não encontrado.", 401)
-    if row.inativo:
-        raise AppException("AUTH_INACTIVE_ACCOUNT", "Conta inativa.", 403)
-    return AuthUser(id=row.id, email=row.email, role=row.role, inativo=row.inativo)
+    try:
+        user = await use_case.execute(token)
+        structlog.contextvars.bind_contextvars(usuario_id=str(user.id))
+        return user
+    except TokenExpirado as exc:
+        raise AppException("TOKEN_EXPIRED", "Token expirado.", 401) from exc
+    except TokenInvalido as exc:
+        raise AppException("TOKEN_INVALID", "Token inválido.", 401) from exc
+    except ContaInativa as exc:
+        raise AppException("AUTH_INACTIVE_ACCOUNT", "Conta inativa.", 403) from exc
 
 
-async def require_admin(
-    user: AuthUser = Depends(get_current_user),
-) -> AuthUser:
+async def require_admin(user: Usuario = Depends(get_current_user)) -> Usuario:
     if user.role != "admin":
         raise AppException("FORBIDDEN", "Apenas administradores.", 403)
     return user

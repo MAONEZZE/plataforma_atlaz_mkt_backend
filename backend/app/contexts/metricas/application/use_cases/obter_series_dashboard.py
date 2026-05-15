@@ -1,8 +1,8 @@
 import zoneinfo
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
-from app.contexts.metricas.application.dtos import SerieSemanalDTO, SeriesDashboardDTO
+from app.contexts.metricas.application.dtos import SeriesDashboardDTO, SerieSemanalDTO
 from app.contexts.metricas.domain.repositories import MetricaRepository
 from app.contexts.metricas.domain.rules import normalize_to_monday
 

@@ -7,12 +7,12 @@ build/
 .venv/
 venv/
 *.log
-.mypy_cache/
-.ruff_cache/
-.pytest_cache/
 .coverage
 htmlcov/
 .env.*
 .DS_Store
 .idea/
 .vscode/
+specs-mvp/
+config/
+*_cache/

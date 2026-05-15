@@ -85,9 +85,7 @@ class SqlAlchemyMetricaRepository:
             )
 
         count_result = await self._session.execute(
-            select(func.count())
-            .select_from(MetricaSemanalModel)
-            .where(*conditions)
+            select(func.count()).select_from(MetricaSemanalModel).where(*conditions)
         )
         total = count_result.scalar_one()
 
@@ -114,9 +112,7 @@ class SqlAlchemyMetricaRepository:
         )
         return metrica
 
-    async def por_semanas(
-        self, usuario_id: UUID, semanas: list[date]
-    ) -> list[MetricaSemanal]:
+    async def por_semanas(self, usuario_id: UUID, semanas: list[date]) -> list[MetricaSemanal]:
         if not semanas:
             return []
         result = await self._session.execute(
@@ -150,9 +146,7 @@ class SqlAlchemyMetricaRepository:
             "indicacoes": int(row[3]),
         }
 
-    async def listar_clientes_com_metricas_mes(
-        self, mes: str
-    ) -> list[MetricasUsuarioMes]:
+    async def listar_clientes_com_metricas_mes(self, mes: str) -> list[MetricasUsuarioMes]:
         year, month = int(mes[:4]), int(mes[5:7])
         start, end = _month_range(year, month)
         result = await self._session.execute(

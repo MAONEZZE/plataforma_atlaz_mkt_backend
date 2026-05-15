@@ -42,9 +42,7 @@ class ObterAdminConsolidado:
             mentorados_com_metrica_no_mes=sum(
                 1 for i in all_items if i.ultima_metrica_em is not None
             ),
-            mentorados_sem_metrica_no_mes=sum(
-                1 for i in all_items if i.ultima_metrica_em is None
-            ),
+            mentorados_sem_metrica_no_mes=sum(1 for i in all_items if i.ultima_metrica_em is None),
         )
 
         offset = (page - 1) * page_size

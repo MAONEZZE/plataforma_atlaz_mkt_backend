@@ -181,9 +181,7 @@ async def obter_resumo(
         reunioes_agendadas=DeltaOut(
             valor=dto.reunioes_agendadas.valor, delta_pct=dto.reunioes_agendadas.delta_pct
         ),
-        indicacoes=DeltaOut(
-            valor=dto.indicacoes.valor, delta_pct=dto.indicacoes.delta_pct
-        ),
+        indicacoes=DeltaOut(valor=dto.indicacoes.valor, delta_pct=dto.indicacoes.delta_pct),
     )
 
 

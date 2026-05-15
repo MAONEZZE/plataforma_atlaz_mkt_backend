@@ -43,8 +43,6 @@ class ObterResumoDashboard:
             ligacoes_realizadas=_delta(
                 atual["ligacoes_realizadas"], anterior["ligacoes_realizadas"]
             ),
-            reunioes_agendadas=_delta(
-                atual["reunioes_agendadas"], anterior["reunioes_agendadas"]
-            ),
+            reunioes_agendadas=_delta(atual["reunioes_agendadas"], anterior["reunioes_agendadas"]),
             indicacoes=_delta(atual["indicacoes"], anterior["indicacoes"]),
         )
