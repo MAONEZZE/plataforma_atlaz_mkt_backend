@@ -1,9 +1,9 @@
-from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.contexts.conteudo.domain.entities import Trilha
 from app.contexts.conteudo.domain.exceptions import TrilhaNaoEncontrada
 from app.contexts.conteudo.domain.repositories import TrilhaRepository
+from app.shared.utils import now_sp
 
 
 class CriarTrilha:
@@ -23,7 +23,7 @@ class CriarTrilha:
             descricao=descricao,
             capa_url=capa_url,
             ordem=ordem,
-            criado_em=datetime.now(tz=UTC),
+            criado_em=now_sp(),
         )
         return await self._repo.criar(trilha)
 

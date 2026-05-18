@@ -44,6 +44,7 @@ _DOMAIN_USER = Usuario(
     telefone=None,
     linkedin_url=None,
     instagram_username=None,
+    descricao=None,
     foto_url=None,
     role="cliente",
     inativo=False,

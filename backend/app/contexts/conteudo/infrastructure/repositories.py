@@ -1,8 +1,9 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.shared.utils import now_sp
 
 from app.contexts.conteudo.domain.entities import (
     Aula,
@@ -293,7 +294,7 @@ class SqlAlchemyAlunoAulaRepository:
                 AlunoAulaModel(
                     usuario_id=usuario_id,
                     aula_id=aula_id,
-                    concluida_em=datetime.now(tz=UTC),
+                    concluida_em=now_sp(),
                 )
             )
             await self._session.flush()
@@ -388,5 +389,5 @@ class SqlAlchemyComentarioRepository:
         await self._session.execute(
             update(ComentarioModel)
             .where(ComentarioModel.id == comentario_id)
-            .values(apagado_em=datetime.now(tz=UTC))
+            .values(apagado_em=now_sp())
         )

@@ -46,6 +46,7 @@ platformdirs==4.9.6
 pluggy==1.6.0
 postgrest==2.30.0
 propcache==0.5.2
+psycopg2-binary==2.9.12
 pyasn1==0.6.3
 pycparser==3.0
 pydantic==2.13.4
@@ -62,6 +63,7 @@ pytest-cov==7.1.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 python-jose==3.5.0
+python-multipart==0.0.28
 pytokens==0.4.1
 PyYAML==6.0.3
 realtime==2.30.0

@@ -11,6 +11,7 @@ class Usuario:
     telefone: str | None
     linkedin_url: str | None
     instagram_username: str | None
+    descricao: str | None
     foto_url: str | None
     role: str
     inativo: bool

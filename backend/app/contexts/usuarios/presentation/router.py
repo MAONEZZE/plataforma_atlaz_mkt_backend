@@ -55,6 +55,7 @@ async def get_me(
         telefone=usuario.telefone,
         linkedin_url=usuario.linkedin_url,
         instagram_username=usuario.instagram_username,
+        descricao=usuario.descricao,
         foto_url=usuario.foto_url,
         role=usuario.role,
         criado_em=usuario.criado_em,
@@ -72,6 +73,7 @@ async def patch_me(
         telefone=body.telefone,
         linkedin_url=body.linkedin_url,
         instagram_username=body.instagram_username,
+        descricao=body.descricao,
     )
     try:
         usuario = await use_case.execute(current_user.id, inp)
@@ -86,6 +88,7 @@ async def patch_me(
         telefone=usuario.telefone,
         linkedin_url=usuario.linkedin_url,
         instagram_username=usuario.instagram_username,
+        descricao=usuario.descricao,
         foto_url=usuario.foto_url,
         role=usuario.role,
         criado_em=usuario.criado_em,

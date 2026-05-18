@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
 from app.contexts.conteudo.domain.entities import Comentario
@@ -7,6 +6,7 @@ from app.contexts.conteudo.domain.exceptions import (
     ComentarioNaoPertenceAoUsuario,
 )
 from app.contexts.conteudo.domain.repositories import ComentarioRepository
+from app.shared.utils import now_sp
 
 
 class EditarComentario:
@@ -29,7 +29,7 @@ class EditarComentario:
             usuario_id=comentario.usuario_id,
             texto=texto,
             criado_em=comentario.criado_em,
-            editado_em=datetime.now(tz=UTC),
+            editado_em=now_sp(),
             apagado_em=comentario.apagado_em,
         )
         return await self._repo.atualizar(updated)

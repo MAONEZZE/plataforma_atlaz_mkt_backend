@@ -11,6 +11,7 @@ class PatchMeBody(BaseModel):
     telefone: str | None = None
     linkedin_url: str | None = None
     instagram_username: str | None = None
+    descricao: str | None = None
 
 
 class UsuarioResponse(BaseModel):
@@ -22,6 +23,7 @@ class UsuarioResponse(BaseModel):
     telefone: str | None
     linkedin_url: str | None
     instagram_username: str | None
+    descricao: str | None
     foto_url: str | None
     role: str
     criado_em: datetime

@@ -10,7 +10,7 @@ class LinkedinUrl:
     value: str
 
     def __post_init__(self) -> None:
-        if "linkedin.com" not in self.value:
+        if self.value and "linkedin.com" not in self.value:
             raise DomainError("LinkedIn URL inválida. Deve conter 'linkedin.com'.")
 
 
@@ -21,7 +21,7 @@ class InstagramUsername:
     _PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"^[a-zA-Z0-9_.]{1,30}$")
 
     def __post_init__(self) -> None:
-        if not self._PATTERN.match(self.value):
+        if self.value and not self._PATTERN.match(self.value):
             raise DomainError(
                 "Instagram username inválido. Use letras, números, _ ou . (máx. 30)."
             )
@@ -34,5 +34,5 @@ class Telefone:
     _PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"^\+?\d{10,15}$")
 
     def __post_init__(self) -> None:
-        if not self._PATTERN.match(self.value):
+        if self.value and not self._PATTERN.match(self.value):
             raise DomainError("Telefone inválido. Use formato +XXXXXXXXXXX.")

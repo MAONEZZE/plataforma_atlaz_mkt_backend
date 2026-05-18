@@ -1,9 +1,9 @@
-from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.contexts.conteudo.domain.entities import Comentario
 from app.contexts.conteudo.domain.exceptions import AulaNaoEncontrada
 from app.contexts.conteudo.domain.repositories import AulaRepository, ComentarioRepository
+from app.shared.utils import now_sp
 
 
 class CriarComentario:
@@ -21,7 +21,7 @@ class CriarComentario:
             aula_id=aula_id,
             usuario_id=usuario_id,
             texto=texto,
-            criado_em=datetime.now(tz=UTC),
+            criado_em=now_sp(),
             editado_em=None,
             apagado_em=None,
         )

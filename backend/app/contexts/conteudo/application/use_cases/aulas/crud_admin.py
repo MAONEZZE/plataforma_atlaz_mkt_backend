@@ -1,10 +1,10 @@
-from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.contexts.conteudo.domain.entities import Aula
 from app.contexts.conteudo.domain.exceptions import AulaNaoEncontrada
 from app.contexts.conteudo.domain.repositories import AulaRepository
 from app.contexts.conteudo.domain.rules import parse_drive_file_id
+from app.shared.utils import now_sp
 
 
 class CriarAula:
@@ -29,7 +29,7 @@ class CriarAula:
             drive_file_id=drive_file_id,
             duracao_minutos=duracao_minutos,
             ordem=ordem,
-            criado_em=datetime.now(tz=UTC),
+            criado_em=now_sp(),
         )
         return await self._repo.criar(aula)
 

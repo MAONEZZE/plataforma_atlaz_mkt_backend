@@ -25,6 +25,7 @@ def _make_user(user_id: UUID | None = None) -> Usuario:
         telefone=None,
         linkedin_url=None,
         instagram_username=None,
+        descricao=None,
         foto_url=None,
         role="cliente",
         inativo=False,
@@ -130,9 +131,20 @@ async def test_atualizar_me_valid_instagram() -> None:
     assert result.instagram_username == "ana.silva_99"
 
 
+async def test_atualizar_me_updates_descricao() -> None:
+    user = _make_user()
+    uc = AtualizarMe(repo=_repo(user))
+    inp = AtualizarMeInput(
+        nome=None, telefone=None, linkedin_url=None, instagram_username=None,
+        descricao="Sou trader profissional.",
+    )
+    result = await uc.execute(user.id, inp)
+    assert result.descricao == "Sou trader profissional."
+
+
 async def test_atualizar_me_not_found_raises() -> None:
     uc = AtualizarMe(repo=_repo(None))
-    inp = AtualizarMeInput(nome="X", telefone=None, linkedin_url=None, instagram_username=None)
+    inp = AtualizarMeInput(nome="X", telefone=None, linkedin_url=None, instagram_username=None, descricao=None)
     with pytest.raises(UsuarioNaoEncontrado):
         await uc.execute(uuid4(), inp)
 

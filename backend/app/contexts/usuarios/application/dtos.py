@@ -11,6 +11,7 @@ class UsuarioDTO:
     telefone: str | None
     linkedin_url: str | None
     instagram_username: str | None
+    descricao: str | None
     foto_url: str | None
     role: str
     criado_em: datetime
@@ -22,6 +23,7 @@ class AtualizarMeInput:
     telefone: str | None
     linkedin_url: str | None
     instagram_username: str | None
+    descricao: str | None = None
 
 
 @dataclass(frozen=True)

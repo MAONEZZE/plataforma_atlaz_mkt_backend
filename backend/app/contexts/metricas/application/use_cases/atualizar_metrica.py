@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import UTC, date, datetime
+from datetime import date
 from uuid import UUID
 
 from app.contexts.metricas.application.dtos import MetricaDTO
@@ -11,6 +11,7 @@ from app.contexts.metricas.domain.exceptions import (
 )
 from app.contexts.metricas.domain.repositories import MetricaRepository
 from app.contexts.metricas.domain.rules import dentro_janela_edicao
+from app.shared.utils import now_sp, today_sp
 
 
 class AtualizarMetrica:
@@ -28,7 +29,7 @@ class AtualizarMetrica:
         indicacoes: int | None = None,
         today: date | None = None,
     ) -> MetricaDTO:
-        today = today or datetime.now(tz=UTC).date()
+        today = today or today_sp()
         metrica = await self._repo.por_id(metrica_id)
         if metrica is None:
             raise MetricaNaoEncontrada(f"Métrica {metrica_id} não encontrada.")
@@ -57,7 +58,7 @@ class AtualizarMetrica:
                 else metrica.reunioes_agendadas
             ),
             indicacoes=indicacoes if indicacoes is not None else metrica.indicacoes,
-            atualizado_em=datetime.now(tz=UTC),
+            atualizado_em=now_sp(),
         )
         saved = await self._repo.atualizar(updated)
         return _to_dto(saved)

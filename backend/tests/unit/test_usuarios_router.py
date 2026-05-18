@@ -57,6 +57,7 @@ def _domain_user() -> Usuario:
         telefone=None,
         linkedin_url=None,
         instagram_username=None,
+        descricao=None,
         foto_url=None,
         role="cliente",
         inativo=False,
@@ -135,6 +136,32 @@ def test_patch_me_returns_200() -> None:
         resp = client.patch("/api/v1/me", json={"nome": "Beatriz"})
         assert resp.status_code == 200
         assert resp.json()["nome"] == "Beatriz"
+    finally:
+        _clear()
+
+
+def test_patch_me_updates_descricao() -> None:
+    updated = _domain_user()
+    updated.descricao = "Trader profissional."
+    uc = _mock_use_case(AtualizarMe, return_value=updated)
+    client = _client(atualizar=uc)
+    try:
+        resp = client.patch("/api/v1/me", json={"descricao": "Trader profissional."})
+        assert resp.status_code == 200
+        assert resp.json()["descricao"] == "Trader profissional."
+    finally:
+        _clear()
+
+
+def test_get_me_returns_descricao_field() -> None:
+    user = _domain_user()
+    user.descricao = "Bio do usuário."
+    uc = _mock_use_case(ObterMe, return_value=user)
+    client = _client(obter=uc)
+    try:
+        resp = client.get("/api/v1/me")
+        assert resp.status_code == 200
+        assert "descricao" in resp.json()
     finally:
         _clear()
 

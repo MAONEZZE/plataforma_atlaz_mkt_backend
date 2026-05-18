@@ -27,5 +27,7 @@ class AtualizarMe:
         if inp.instagram_username is not None:
             InstagramUsername(inp.instagram_username)
             user.instagram_username = inp.instagram_username
+        if inp.descricao is not None:
+            user.descricao = inp.descricao
 
         return await self._repo.atualizar(user)

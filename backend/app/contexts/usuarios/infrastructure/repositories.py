@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import update
@@ -7,6 +6,7 @@ from sqlalchemy.future import select
 
 from app.contexts.usuarios.domain.entities import Usuario
 from app.contexts.usuarios.infrastructure.models import UsuarioModel
+from app.shared.utils import now_sp
 
 
 class SqlAlchemyUsuarioRepository:
@@ -23,7 +23,7 @@ class SqlAlchemyUsuarioRepository:
         return self._to_entity(model)
 
     async def atualizar(self, usuario: Usuario) -> Usuario:
-        now = datetime.now(UTC)
+        now = now_sp()
         await self._session.execute(
             update(UsuarioModel)
             .where(UsuarioModel.id == usuario.id)
@@ -32,11 +32,11 @@ class SqlAlchemyUsuarioRepository:
                 telefone=usuario.telefone,
                 linkedin_url=usuario.linkedin_url,
                 instagram_username=usuario.instagram_username,
+                descricao=usuario.descricao,
                 foto_url=usuario.foto_url,
                 atualizado_em=now,
             )
         )
-        await self._session.commit()
         usuario.atualizado_em = now
         return usuario
 
@@ -49,6 +49,7 @@ class SqlAlchemyUsuarioRepository:
             telefone=model.telefone,
             linkedin_url=model.linkedin_url,
             instagram_username=model.instagram_username,
+            descricao=model.descricao,
             foto_url=model.foto_url,
             role=model.role,
             inativo=model.inativo,

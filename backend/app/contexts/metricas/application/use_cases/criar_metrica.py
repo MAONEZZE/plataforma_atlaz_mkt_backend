@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import date
 from uuid import UUID, uuid4
 
 from app.contexts.metricas.application.dtos import MetricaDTO
@@ -10,6 +10,7 @@ from app.contexts.metricas.domain.exceptions import (
 )
 from app.contexts.metricas.domain.repositories import MetricaRepository
 from app.contexts.metricas.domain.rules import dentro_janela_edicao, normalize_to_monday
+from app.shared.utils import now_sp, today_sp
 
 
 def _to_dto(m: MetricaSemanal) -> MetricaDTO:
@@ -41,7 +42,7 @@ class CriarMetrica:
         is_admin: bool,
         today: date | None = None,
     ) -> MetricaDTO:
-        today = today or datetime.now(tz=UTC).date()
+        today = today or today_sp()
         semana = normalize_to_monday(semana_inicio)
 
         if semana > today:
@@ -54,7 +55,7 @@ class CriarMetrica:
         if existing is not None:
             raise MetricaDuplicada(f"Já existe métrica para a semana {semana}.")
 
-        now = datetime.now(tz=UTC)
+        now = now_sp()
         metrica = MetricaSemanal(
             id=uuid4(),
             usuario_id=usuario_id,
