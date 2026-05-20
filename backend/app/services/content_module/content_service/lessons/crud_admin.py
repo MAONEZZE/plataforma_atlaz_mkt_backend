@@ -4,7 +4,7 @@ from app.domain.content_module.content_exceptions import LessonNotFound
 from app.domain.content_module.content_model import Lesson
 from app.domain.content_module.content_repo_interface import LessonRepository
 from app.domain.content_module.content_validator import parse_drive_file_id
-from app.shared.utils import now_sp
+from app.domain.shared.utils import now_sp
 
 
 class CreateLesson:

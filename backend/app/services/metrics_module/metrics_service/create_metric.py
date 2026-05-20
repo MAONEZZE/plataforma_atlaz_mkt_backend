@@ -10,7 +10,7 @@ from app.domain.metrics_module.metrics_exceptions import (
 from app.domain.metrics_module.metrics_model import WeeklyMetric
 from app.domain.metrics_module.metrics_repo_interface import MetricRepository
 from app.domain.metrics_module.metrics_validator import normalize_to_monday, within_edit_window
-from app.shared.utils import now_sp, today_sp
+from app.domain.shared.utils import now_sp, today_sp
 
 
 def _to_dto(m: WeeklyMetric) -> MetricDTO:

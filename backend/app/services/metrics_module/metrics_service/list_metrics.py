@@ -2,8 +2,8 @@ from uuid import UUID
 
 from app.api.controllers.metrics_module.metrics_dto.metrics_dto import MetricDTO
 from app.domain.metrics_module.metrics_repo_interface import MetricRepository
+from app.domain.shared.dtos import PagedResponse
 from app.services.metrics_module.metrics_service.create_metric import _to_dto
-from app.shared.application.dtos import PagedResponse
 
 
 class ListMetrics:

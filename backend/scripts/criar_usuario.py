@@ -13,7 +13,7 @@ import re
 import typer
 from supabase import create_client
 
-from app.core.config import settings
+from app.api.config.settings import settings
 
 app = typer.Typer()
 

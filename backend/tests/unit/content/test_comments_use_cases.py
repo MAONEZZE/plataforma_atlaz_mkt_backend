@@ -9,11 +9,11 @@ from app.domain.content_module.content_exceptions import (
     LessonNotFound,
 )
 from app.domain.content_module.content_model import Comment, CommentRead, Lesson
+from app.domain.shared.dtos import PagedResponse  # noqa: TC001
 from app.services.content_module.content_service.comments.create import CreateComment
 from app.services.content_module.content_service.comments.delete import DeleteComment
 from app.services.content_module.content_service.comments.edit import EditComment
 from app.services.content_module.content_service.comments.list import ListComments
-from app.shared.application.dtos import PagedResponse
 
 # ── Fake repos ─────────────────────────────────────────────────────────────────
 

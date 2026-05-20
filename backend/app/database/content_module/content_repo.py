@@ -16,7 +16,7 @@ from app.domain.content_module.content_model import (
     Module,
     Track,
 )
-from app.shared.utils import now_sp
+from app.domain.shared.utils import now_sp
 
 
 class TrackModel(Base):

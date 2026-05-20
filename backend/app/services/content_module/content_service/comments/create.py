@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 from app.domain.content_module.content_exceptions import LessonNotFound
 from app.domain.content_module.content_model import Comment
 from app.domain.content_module.content_repo_interface import CommentRepository, LessonRepository
-from app.shared.utils import now_sp
+from app.domain.shared.utils import now_sp
 
 
 class CreateComment:

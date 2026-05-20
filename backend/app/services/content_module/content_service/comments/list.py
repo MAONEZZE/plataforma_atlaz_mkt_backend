@@ -2,7 +2,7 @@ from uuid import UUID
 
 from app.api.controllers.content_module.content_dto.content_dto import AuthorDTO, CommentDTO
 from app.domain.content_module.content_repo_interface import CommentRepository
-from app.shared.application.dtos import PagedResponse
+from app.domain.shared.dtos import PagedResponse
 
 
 class ListComments:

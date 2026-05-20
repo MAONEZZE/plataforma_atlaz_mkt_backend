@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 from app.domain.content_module.content_exceptions import TrackNotFound
 from app.domain.content_module.content_model import Track
 from app.domain.content_module.content_repo_interface import TrackRepository
-from app.shared.utils import now_sp
+from app.domain.shared.utils import now_sp
 
 
 class CreateTrack:

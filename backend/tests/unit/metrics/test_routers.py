@@ -77,7 +77,7 @@ def client() -> TestClient:
 
 def test_listar_metricas_200(client: TestClient) -> None:
     user = _cliente()
-    from app.shared.application.dtos import PagedResponse
+    from app.domain.shared.dtos import PagedResponse
     paged = PagedResponse(items=[_metrica_dto(user.id)], page=1, page_size=20, total=1)
     uc = _mock_uc(execute_return=paged)
     app.dependency_overrides[get_current_user] = lambda: user

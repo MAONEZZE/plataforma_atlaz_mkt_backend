@@ -46,6 +46,7 @@ from app.domain.content_module.content_exceptions import (
     TrackNotFound,
 )
 from app.domain.shared.base_exceptions import AppException
+from app.domain.shared.dtos import PagedResponse
 from app.services.content_module.content_service.comments.create import CreateComment
 from app.services.content_module.content_service.comments.delete import DeleteComment
 from app.services.content_module.content_service.comments.edit import EditComment
@@ -75,7 +76,6 @@ from app.services.content_module.content_service.tracks.get_with_modules import 
 from app.services.content_module.content_service.tracks.list_with_progress import (
     ListTracksWithProgress,
 )
-from app.shared.application.dtos import PagedResponse
 
 # ── Dependency helpers ─────────────────────────────────────────────────────────
 

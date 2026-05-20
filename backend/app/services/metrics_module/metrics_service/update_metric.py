@@ -10,8 +10,8 @@ from app.domain.metrics_module.metrics_exceptions import (
 )
 from app.domain.metrics_module.metrics_repo_interface import MetricRepository
 from app.domain.metrics_module.metrics_validator import within_edit_window
+from app.domain.shared.utils import now_sp, today_sp
 from app.services.metrics_module.metrics_service.create_metric import _to_dto
-from app.shared.utils import now_sp, today_sp
 
 
 class UpdateMetric:

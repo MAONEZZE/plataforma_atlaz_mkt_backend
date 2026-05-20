@@ -6,7 +6,7 @@ from app.domain.content_module.content_exceptions import (
 )
 from app.domain.content_module.content_model import Comment
 from app.domain.content_module.content_repo_interface import CommentRepository
-from app.shared.utils import now_sp
+from app.domain.shared.utils import now_sp
 
 
 class EditComment:

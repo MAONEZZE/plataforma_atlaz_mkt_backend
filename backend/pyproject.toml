@@ -48,6 +48,9 @@ line-length = 99
 select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
 ignore = ["E501", "B008"]
 
+[tool.ruff.lint.per-file-ignores]
+"app/database/migrations/env.py" = ["E402"]
+
 [tool.black]
 line-length = 99
 target-version = ["py312"]
@@ -56,7 +59,7 @@ target-version = ["py312"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
-exclude = ["alembic/", "scripts/"]
+exclude = ["app/database/migrations/", "scripts/"]
 
 [[tool.mypy.overrides]]
 module = ["jose.*", "supabase.*", "slowapi.*", "testcontainers.*", "sentry_sdk.*"]
@@ -70,47 +73,39 @@ include_external_packages = true
 name = "Domain does not import infrastructure"
 type = "forbidden"
 source_modules = [
-    "app.contexts.auth.domain",
-    "app.contexts.users.domain",
-    "app.contexts.metrics.domain",
-    "app.contexts.content.domain",
-    "app.contexts.community.domain",
+    "app.domain.auth_module",
+    "app.domain.user_module",
+    "app.domain.metrics_module",
+    "app.domain.content_module",
+    "app.domain.community_module",
 ]
 forbidden_modules = [
-    "app.contexts.auth.infrastructure",
-    "app.contexts.users.infrastructure",
-    "app.contexts.metrics.infrastructure",
-    "app.contexts.content.infrastructure",
-    "app.contexts.community.infrastructure",
+    "app.database",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Domain does not import presentation"
 type = "forbidden"
 source_modules = [
-    "app.contexts.auth.domain",
-    "app.contexts.users.domain",
-    "app.contexts.metrics.domain",
-    "app.contexts.content.domain",
-    "app.contexts.community.domain",
+    "app.domain.auth_module",
+    "app.domain.user_module",
+    "app.domain.metrics_module",
+    "app.domain.content_module",
+    "app.domain.community_module",
 ]
 forbidden_modules = [
-    "app.contexts.auth.presentation",
-    "app.contexts.users.presentation",
-    "app.contexts.metrics.presentation",
-    "app.contexts.content.presentation",
-    "app.contexts.community.presentation",
+    "app.api.controllers",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Domain does not import frameworks"
 type = "forbidden"
 source_modules = [
-    "app.contexts.auth.domain",
-    "app.contexts.users.domain",
-    "app.contexts.metrics.domain",
-    "app.contexts.content.domain",
-    "app.contexts.community.domain",
+    "app.domain.auth_module",
+    "app.domain.user_module",
+    "app.domain.metrics_module",
+    "app.domain.content_module",
+    "app.domain.community_module",
 ]
 forbidden_modules = [
     "fastapi",

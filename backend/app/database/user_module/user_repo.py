@@ -9,8 +9,8 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.shared.sqlalchemy_base import Base
+from app.domain.shared.utils import now_sp
 from app.domain.user_module.user_model import User
-from app.shared.utils import now_sp
 
 
 class UserModel(Base):

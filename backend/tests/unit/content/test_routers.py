@@ -46,8 +46,8 @@ from app.domain.content_module.content_exceptions import (
     TrackNotFound,
 )
 from app.domain.content_module.content_model import Lesson, Module, Track
+from app.domain.shared.dtos import PagedResponse
 from app.main import app
-from app.shared.application.dtos import PagedResponse
 
 # ── Auth helpers ───────────────────────────────────────────────────────────────
 

@@ -3,7 +3,6 @@ Step C: Rename Python symbols PT→EN in all .py files.
 Run from backend/ directory.
 """
 import os
-import re
 
 REPLACEMENTS = [
     # Module paths (longest first)
@@ -101,7 +100,7 @@ REPLACEMENTS = [
 
 
 def replace_in_file(filepath, replacements):
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, encoding='utf-8') as f:
         content = f.read()
     original = content
     for old, new in replacements:
