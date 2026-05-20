@@ -14,11 +14,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import Usuario as AuthUsuario
-from app.contexts.usuarios.application.dtos import FotoUrlDTO
-from app.contexts.usuarios.application.use_cases.upload_foto import UploadFoto
-from app.contexts.usuarios.domain.entities import Usuario
-from app.contexts.usuarios.presentation.router import _upload_foto, router
+from app.contexts.auth.domain.entities import User as AuthUser
+from app.contexts.users.application.dtos import PhotoUrlDTO
+from app.contexts.users.application.use_cases.upload_photo import UploadPhoto
+from app.contexts.users.domain.entities import User
+from app.contexts.users.presentation.router import _upload_foto, router
 from app.core.deps import get_current_user
 from app.core.exceptions import AppException
 
@@ -35,7 +35,7 @@ async def _exc(request: Request, exc: AppException) -> JSONResponse:
     return JSONResponse(status_code=exc.status, content=body)
 
 
-_AUTH_USER = AuthUsuario(id=_UID, email="ana@test.com", role="cliente", inativo=False)
+_AUTH_USER = AuthUser(id=_UID, email="ana@test.com", role="cliente", inativo=False)
 
 _DOMAIN_USER = Usuario(
     id=_UID,
@@ -61,7 +61,7 @@ _PHP_BYTES = b"<?php echo 'hello'; ?>" + b"\x00" * 20
 _UNKNOWN_BYTES = b"FAKEFAKEFAKE" + b"\x00" * 20
 
 
-def _make_upload_use_case(foto_url: str = "https://cdn.example.com/foto.jpg") -> UploadFoto:
+def _make_upload_use_case(foto_url: str = "https://cdn.example.com/foto.jpg") -> UploadPhoto:
     """Real UploadFoto with mocked repo + storage."""
     repo = AsyncMock()
     repo.por_id.return_value = _DOMAIN_USER
@@ -70,10 +70,10 @@ def _make_upload_use_case(foto_url: str = "https://cdn.example.com/foto.jpg") ->
     storage = MagicMock()
     storage.upload.return_value = foto_url
 
-    return UploadFoto(repo=repo, storage=storage)
+    return UploadPhoto(repo=repo, storage=storage)
 
 
-def _client(use_case: UploadFoto) -> TestClient:
+def _client(use_case: UploadPhoto) -> TestClient:
     _app.dependency_overrides[get_current_user] = lambda: _AUTH_USER
     _app.dependency_overrides[_upload_foto] = lambda: use_case
     return TestClient(_app, raise_server_exceptions=False)

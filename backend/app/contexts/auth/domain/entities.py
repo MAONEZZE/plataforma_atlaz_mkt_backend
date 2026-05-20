@@ -3,7 +3,7 @@ from uuid import UUID
 
 
 @dataclass
-class Usuario:
+class User:
     id: UUID
     email: str
     role: str

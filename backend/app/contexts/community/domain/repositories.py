@@ -1,9 +1,9 @@
 from typing import Protocol
 
-from app.contexts.comunidade.domain.entities import MembroComunidade
+from app.contexts.community.domain.entities import CommunityMember
 
 
-class ComunidadeRepository(Protocol):
-    async def listar_ativos(
+class CommunityRepository(Protocol):
+    async def list_active(
         self, page: int, page_size: int
-    ) -> tuple[list[MembroComunidade], int]: ...
+    ) -> tuple[list[CommunityMember], int]: ...

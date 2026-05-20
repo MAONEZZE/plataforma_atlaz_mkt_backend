@@ -2,7 +2,7 @@ from supabase import Client
 from supabase_auth.errors import AuthApiError
 
 from app.contexts.auth.application.dtos import TokensDTO
-from app.contexts.auth.domain.exceptions import CredenciaisInvalidas, LogoutFalhou
+from app.contexts.auth.domain.exceptions import InvalidCredentials, LogoutFailed
 
 
 class SupabaseAuthGatewayImpl:
@@ -14,10 +14,10 @@ class SupabaseAuthGatewayImpl:
         try:
             resp = self._anon.auth.sign_in_with_password({"email": email, "password": password})
         except AuthApiError as exc:
-            raise CredenciaisInvalidas("Email ou senha inválidos.") from exc
+            raise InvalidCredentials("Email ou senha inválidos.") from exc
         session = resp.session
         if not session:
-            raise CredenciaisInvalidas("Email ou senha inválidos.")
+            raise InvalidCredentials("Email ou senha inválidos.")
         return TokensDTO(
             access_token=session.access_token,
             refresh_token=session.refresh_token,
@@ -29,4 +29,4 @@ class SupabaseAuthGatewayImpl:
         try:
             self._admin.auth.admin.sign_out(access_token)
         except AuthApiError as exc:
-            raise LogoutFalhou(str(exc)) from exc
+            raise LogoutFailed(str(exc)) from exc

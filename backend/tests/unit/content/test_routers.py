@@ -6,48 +6,48 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import Usuario
-from app.contexts.conteudo.application.dtos import (
-    AulaDetalheDTO,
-    AulaResumoDTO,
+from app.contexts.auth.domain.entities import User
+from app.contexts.content.application.dtos import (
+    LessonDetailDTO,
+    LessonSummaryDTO,
     ComentarioDTO,
     AutorDTO,
-    ModuloComAulasDTO,
-    TrilhaComModulosDTO,
-    TrilhaProgressoDTO,
-    TrilhaResumoDTO,
+    ModuleWithLessonsDTO,
+    TrackWithModulesDTO,
+    TrackProgressDTO,
+    TrackSummaryDTO,
 )
-from app.contexts.conteudo.domain.entities import Aula, Comentario, Modulo, Trilha
-from app.contexts.conteudo.domain.exceptions import (
-    AulaNaoEncontrada,
-    ComentarioNaoEncontrado,
+from app.contexts.content.domain.entities import Aula, Comentario, Modulo, Trilha
+from app.contexts.content.domain.exceptions import (
+    LessonNotFound,
+    CommentNotFound,
     ComentarioNaoPertenceAoUsuario,
-    DriveUrlInvalida,
-    ModuloNaoEncontrado,
-    TrilhaNaoEncontrada,
+    InvalidDriveUrl,
+    ModuleNotFound,
+    TrackNotFound,
 )
-from app.contexts.conteudo.presentation.deps import (
-    get_apagar_comentario,
-    get_atualizar_aula,
-    get_atualizar_modulo,
-    get_atualizar_trilha,
-    get_criar_aula,
-    get_criar_comentario,
-    get_criar_modulo,
-    get_criar_trilha,
-    get_desmarcar_concluida,
-    get_editar_comentario,
-    get_listar_comentarios,
-    get_listar_trilhas,
-    get_marcar_concluida,
-    get_obter_aula,
-    get_obter_trilha,
-    get_remover_aula,
-    get_remover_modulo,
-    get_remover_trilha,
-    get_reordenar_aulas,
-    get_reordenar_modulos,
-    get_reordenar_trilhas,
+from app.contexts.content.presentation.deps import (
+    get_delete_comment,
+    get_update_lesson,
+    get_update_module,
+    get_update_track,
+    get_create_lesson,
+    get_create_comment,
+    get_create_module,
+    get_create_track,
+    get_unmark,
+    get_edit_comment,
+    get_list_comments,
+    get_list_tracks,
+    get_mark_completed,
+    get_lesson,
+    get_track_with_modules,
+    get_delete_lesson,
+    get_delete_module,
+    get_delete_track,
+    get_reorder_lessons,
+    get_reorder_modules,
+    get_reorder_tracks,
 )
 from app.core.deps import get_current_user, require_admin
 from app.main import app
@@ -56,11 +56,11 @@ from app.shared.application.dtos import PagedResponse
 
 # ── Auth helpers ───────────────────────────────────────────────────────────────
 
-def _cliente(user_id: UUID | None = None) -> Usuario:
+def _cliente(user_id: UUID | None = None) -> User:
     return Usuario(id=user_id or uuid4(), email="user@test.com", role="cliente", inativo=False)
 
 
-def _admin(user_id: UUID | None = None) -> Usuario:
+def _admin(user_id: UUID | None = None) -> User:
     return Usuario(id=user_id or uuid4(), email="admin@test.com", role="admin", inativo=False)
 
 
@@ -81,23 +81,23 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def _base_trilha(trilha_id: UUID | None = None) -> Trilha:
-    return Trilha(
+def _base_trilha(trilha_id: UUID | None = None) -> Track:
+    return Track(
         id=trilha_id or uuid4(), titulo="T", descricao=None, capa_url=None,
         ordem=0, criado_em=datetime.now(tz=UTC)
     )
 
 
-def _base_aula(aula_id: UUID | None = None, modulo_id: UUID | None = None) -> Aula:
-    return Aula(
+def _base_aula(aula_id: UUID | None = None, modulo_id: UUID | None = None) -> Lesson:
+    return Lesson(
         id=aula_id or uuid4(), modulo_id=modulo_id or uuid4(), titulo="A",
         descricao=None, drive_file_id="abc", duracao_minutos=None,
         ordem=0, criado_em=datetime.now(tz=UTC)
     )
 
 
-def _base_modulo(modulo_id: UUID | None = None, trilha_id: UUID | None = None) -> Modulo:
-    return Modulo(
+def _base_modulo(modulo_id: UUID | None = None, trilha_id: UUID | None = None) -> Module:
+    return Module(
         id=modulo_id or uuid4(), trilha_id=trilha_id or uuid4(),
         titulo="M", descricao=None, ordem=0
     )
@@ -108,13 +108,13 @@ def _base_modulo(modulo_id: UUID | None = None, trilha_id: UUID | None = None) -
 def test_listar_trilhas_returns_200(client: TestClient) -> None:
     user = _cliente()
     trilha_id = uuid4()
-    dto = TrilhaProgressoDTO(
+    dto = TrackProgressDTO(
         id=trilha_id, titulo="T", descricao=None, capa_url=None,
         total_aulas=5, aulas_concluidas=2, progresso_pct=40.0
     )
     uc = _mock_uc(execute_return=[dto])
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_listar_trilhas] = lambda: uc
+    app.dependency_overrides[get_list_tracks] = lambda: uc
     try:
         r = client.get("/api/v1/trilhas")
         assert r.status_code == 200
@@ -133,16 +133,16 @@ def test_listar_trilhas_requires_auth(client: TestClient) -> None:
 def test_obter_trilha_returns_200(client: TestClient) -> None:
     user = _cliente()
     trilha_id = uuid4()
-    dto = TrilhaComModulosDTO(
+    dto = TrackWithModulesDTO(
         id=trilha_id, titulo="T", descricao=None, capa_url=None,
         progresso_pct=0.0,
         modulos=[
-            ModuloComAulasDTO(id=uuid4(), titulo="M", descricao=None, ordem=0, aulas=[])
+            ModuleWithLessonsDTO(id=uuid4(), titulo="M", descricao=None, ordem=0, aulas=[])
         ],
     )
     uc = _mock_uc(execute_return=dto)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_obter_trilha] = lambda: uc
+    app.dependency_overrides[get_track_with_modules] = lambda: uc
     try:
         r = client.get(f"/api/v1/trilhas/{trilha_id}")
         assert r.status_code == 200
@@ -153,9 +153,9 @@ def test_obter_trilha_returns_200(client: TestClient) -> None:
 
 def test_obter_trilha_404(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=TrilhaNaoEncontrada("not found"))
+    uc = _mock_uc(execute_raises=TrackNotFound("not found"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_obter_trilha] = lambda: uc
+    app.dependency_overrides[get_track_with_modules] = lambda: uc
     try:
         r = client.get(f"/api/v1/trilhas/{uuid4()}")
         assert r.status_code == 404
@@ -168,15 +168,15 @@ def test_obter_trilha_404(client: TestClient) -> None:
 def test_obter_aula_returns_200(client: TestClient) -> None:
     user = _cliente()
     aula_id = uuid4()
-    dto = AulaDetalheDTO(
+    dto = LessonDetailDTO(
         id=aula_id, modulo_id=uuid4(), titulo="A", descricao=None,
         drive_file_id="abc", duracao_minutos=None, concluida=False,
-        trilha=TrilhaResumoDTO(id=uuid4(), titulo="T"),
+        trilha=TrackSummaryDTO(id=uuid4(), titulo="T"),
         proxima_aula=None,
     )
     uc = _mock_uc(execute_return=dto)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_obter_aula] = lambda: uc
+    app.dependency_overrides[get_lesson] = lambda: uc
     try:
         r = client.get(f"/api/v1/aulas/{aula_id}")
         assert r.status_code == 200
@@ -187,9 +187,9 @@ def test_obter_aula_returns_200(client: TestClient) -> None:
 
 def test_obter_aula_404(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=AulaNaoEncontrada("nope"))
+    uc = _mock_uc(execute_raises=LessonNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_obter_aula] = lambda: uc
+    app.dependency_overrides[get_lesson] = lambda: uc
     try:
         r = client.get(f"/api/v1/aulas/{uuid4()}")
         assert r.status_code == 404
@@ -203,7 +203,7 @@ def test_marcar_concluida_204(client: TestClient) -> None:
     user = _cliente()
     uc = _mock_uc(execute_return=None)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_marcar_concluida] = lambda: uc
+    app.dependency_overrides[get_mark_completed] = lambda: uc
     try:
         r = client.post(f"/api/v1/aulas/{uuid4()}/concluir")
         assert r.status_code == 204
@@ -215,7 +215,7 @@ def test_desmarcar_concluida_204(client: TestClient) -> None:
     user = _cliente()
     uc = _mock_uc(execute_return=None)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_desmarcar_concluida] = lambda: uc
+    app.dependency_overrides[get_unmark] = lambda: uc
     try:
         r = client.delete(f"/api/v1/aulas/{uuid4()}/concluir")
         assert r.status_code == 204
@@ -231,7 +231,7 @@ def test_admin_criar_trilha_201(client: TestClient) -> None:
     uc = _mock_uc(execute_return=trilha)
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_criar_trilha] = lambda: uc
+    app.dependency_overrides[get_create_track] = lambda: uc
     try:
         r = client.post("/api/v1/admin/trilhas", json={"titulo": "T"})
         assert r.status_code == 201
@@ -251,10 +251,10 @@ def test_admin_criar_trilha_requires_admin(client: TestClient) -> None:
 
 def test_admin_remover_trilha_404(client: TestClient) -> None:
     user = _admin()
-    uc = _mock_uc(execute_raises=TrilhaNaoEncontrada("nope"))
+    uc = _mock_uc(execute_raises=TrackNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_remover_trilha] = lambda: uc
+    app.dependency_overrides[get_delete_track] = lambda: uc
     try:
         r = client.delete(f"/api/v1/admin/trilhas/{uuid4()}")
         assert r.status_code == 404
@@ -267,7 +267,7 @@ def test_admin_reordenar_trilhas_204(client: TestClient) -> None:
     uc = _mock_uc(execute_return=None)
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_reordenar_trilhas] = lambda: uc
+    app.dependency_overrides[get_reorder_tracks] = lambda: uc
     try:
         r = client.post(
             "/api/v1/admin/trilhas/reordenar",
@@ -286,7 +286,7 @@ def test_admin_criar_modulo_201(client: TestClient) -> None:
     uc = _mock_uc(execute_return=modulo)
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_criar_modulo] = lambda: uc
+    app.dependency_overrides[get_create_module] = lambda: uc
     try:
         r = client.post(
             "/api/v1/admin/modulos",
@@ -299,10 +299,10 @@ def test_admin_criar_modulo_201(client: TestClient) -> None:
 
 def test_admin_remover_modulo_404(client: TestClient) -> None:
     user = _admin()
-    uc = _mock_uc(execute_raises=ModuloNaoEncontrado("nope"))
+    uc = _mock_uc(execute_raises=ModuleNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_remover_modulo] = lambda: uc
+    app.dependency_overrides[get_delete_module] = lambda: uc
     try:
         r = client.delete(f"/api/v1/admin/modulos/{uuid4()}")
         assert r.status_code == 404
@@ -314,10 +314,10 @@ def test_admin_remover_modulo_404(client: TestClient) -> None:
 
 def test_admin_criar_aula_invalid_drive_url_400(client: TestClient) -> None:
     user = _admin()
-    uc = _mock_uc(execute_raises=DriveUrlInvalida("bad-url"))
+    uc = _mock_uc(execute_raises=InvalidDriveUrl("bad-url"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_criar_aula] = lambda: uc
+    app.dependency_overrides[get_create_lesson] = lambda: uc
     try:
         r = client.post(
             "/api/v1/admin/aulas",
@@ -339,7 +339,7 @@ def test_admin_criar_aula_201(client: TestClient) -> None:
     uc = _mock_uc(execute_return=aula)
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_criar_aula] = lambda: uc
+    app.dependency_overrides[get_create_lesson] = lambda: uc
     try:
         r = client.post(
             "/api/v1/admin/aulas",
@@ -359,7 +359,7 @@ def test_admin_reordenar_aulas_204(client: TestClient) -> None:
     uc = _mock_uc(execute_return=None)
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_reordenar_aulas] = lambda: uc
+    app.dependency_overrides[get_reorder_lessons] = lambda: uc
     try:
         r = client.post(
             "/api/v1/admin/aulas/reordenar",
@@ -393,7 +393,7 @@ def test_listar_comentarios_200(client: TestClient) -> None:
     )
     uc = _mock_uc(execute_return=paged)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_listar_comentarios] = lambda: uc
+    app.dependency_overrides[get_list_comments] = lambda: uc
     try:
         r = client.get(f"/api/v1/aulas/{uuid4()}/comentarios")
         assert r.status_code == 200
@@ -419,7 +419,7 @@ def test_editar_comentario_403(client: TestClient) -> None:
     user = _cliente()
     uc = _mock_uc(execute_raises=ComentarioNaoPertenceAoUsuario("sem permissão"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_editar_comentario] = lambda: uc
+    app.dependency_overrides[get_edit_comment] = lambda: uc
     try:
         r = client.patch(f"/api/v1/comentarios/{uuid4()}", json={"texto": "hack"})
         assert r.status_code == 403
@@ -429,9 +429,9 @@ def test_editar_comentario_403(client: TestClient) -> None:
 
 def test_apagar_comentario_404(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=ComentarioNaoEncontrado("nope"))
+    uc = _mock_uc(execute_raises=CommentNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_apagar_comentario] = lambda: uc
+    app.dependency_overrides[get_delete_comment] = lambda: uc
     try:
         r = client.delete(f"/api/v1/comentarios/{uuid4()}")
         assert r.status_code == 404
@@ -443,7 +443,7 @@ def test_apagar_comentario_204(client: TestClient) -> None:
     user = _cliente()
     uc = _mock_uc(execute_return=None)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_apagar_comentario] = lambda: uc
+    app.dependency_overrides[get_delete_comment] = lambda: uc
     try:
         r = client.delete(f"/api/v1/comentarios/{uuid4()}")
         assert r.status_code == 204
@@ -453,10 +453,10 @@ def test_apagar_comentario_204(client: TestClient) -> None:
 
 def test_admin_atualizar_trilha_404(client: TestClient) -> None:
     user = _admin()
-    uc = _mock_uc(execute_raises=TrilhaNaoEncontrada("nope"))
+    uc = _mock_uc(execute_raises=TrackNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_atualizar_trilha] = lambda: uc
+    app.dependency_overrides[get_update_track] = lambda: uc
     try:
         r = client.patch(f"/api/v1/admin/trilhas/{uuid4()}", json={"titulo": "X"})
         assert r.status_code == 404
@@ -466,10 +466,10 @@ def test_admin_atualizar_trilha_404(client: TestClient) -> None:
 
 def test_admin_atualizar_modulo_404(client: TestClient) -> None:
     user = _admin()
-    uc = _mock_uc(execute_raises=ModuloNaoEncontrado("nope"))
+    uc = _mock_uc(execute_raises=ModuleNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_atualizar_modulo] = lambda: uc
+    app.dependency_overrides[get_update_module] = lambda: uc
     try:
         r = client.patch(f"/api/v1/admin/modulos/{uuid4()}", json={"titulo": "X"})
         assert r.status_code == 404
@@ -482,7 +482,7 @@ def test_admin_reordenar_modulos_204(client: TestClient) -> None:
     uc = _mock_uc(execute_return=None)
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[require_admin] = lambda: user
-    app.dependency_overrides[get_reordenar_modulos] = lambda: uc
+    app.dependency_overrides[get_reorder_modules] = lambda: uc
     try:
         r = client.post(
             "/api/v1/admin/modulos/reordenar",

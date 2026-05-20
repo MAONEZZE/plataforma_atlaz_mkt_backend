@@ -1,26 +1,26 @@
 from app.shared.domain.exceptions import DomainError
 
 
-class TrilhaNaoEncontrada(DomainError):
+class TrackNotFound(DomainError):
     pass
 
 
-class ModuloNaoEncontrado(DomainError):
+class ModuleNotFound(DomainError):
     pass
 
 
-class AulaNaoEncontrada(DomainError):
+class LessonNotFound(DomainError):
     pass
 
 
-class ComentarioNaoEncontrado(DomainError):
+class CommentNotFound(DomainError):
     pass
 
 
-class ComentarioNaoPertenceAoUsuario(DomainError):
+class CommentNotOwnedByUser(DomainError):
     pass
 
 
-class DriveUrlInvalida(DomainError):
+class InvalidDriveUrl(DomainError):
     def __init__(self, url: str) -> None:
         super().__init__(f"URL do Google Drive inválida: {url}")

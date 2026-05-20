@@ -4,12 +4,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.usuarios.application.dtos import AtualizarMeInput, UploadFotoInput
-from app.contexts.usuarios.application.use_cases.atualizar_me import AtualizarMe
-from app.contexts.usuarios.application.use_cases.obter_me import ObterMe
-from app.contexts.usuarios.application.use_cases.upload_foto import UploadFoto
-from app.contexts.usuarios.domain.entities import Usuario
-from app.contexts.usuarios.domain.exceptions import FotoInvalida, UsuarioNaoEncontrado
+from app.contexts.users.application.dtos import UpdateMeInput, UploadPhotoInput
+from app.contexts.users.application.use_cases.update_me import UpdateMe
+from app.contexts.users.application.use_cases.get_me import ObterMe
+from app.contexts.users.application.use_cases.upload_photo import UploadPhoto
+from app.contexts.users.domain.entities import User
+from app.contexts.users.domain.exceptions import InvalidPhoto, UserNotFound
 from app.shared.domain.exceptions import DomainError
 
 _NOW = datetime(2024, 1, 1, tzinfo=UTC)
@@ -17,7 +17,7 @@ _NOW = datetime(2024, 1, 1, tzinfo=UTC)
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 
-def _make_user(user_id: UUID | None = None) -> Usuario:
+def _make_user(user_id: UUID | None = None) -> User:
     return Usuario(
         id=user_id or uuid4(),
         nome="Ana",
@@ -34,7 +34,7 @@ def _make_user(user_id: UUID | None = None) -> Usuario:
     )
 
 
-def _repo(user: Usuario | None = None) -> AsyncMock:
+def _repo(user: User | None = None) -> AsyncMock:
     mock = AsyncMock()
     mock.por_id.return_value = user
     mock.atualizar.side_effect = lambda u: u
@@ -53,7 +53,7 @@ async def test_obter_me_returns_user() -> None:
 
 async def test_obter_me_not_found_raises() -> None:
     uc = ObterMe(repo=_repo(None))
-    with pytest.raises(UsuarioNaoEncontrado):
+    with pytest.raises(UserNotFound):
         await uc.execute(uuid4())
 
 
@@ -62,8 +62,8 @@ async def test_obter_me_not_found_raises() -> None:
 
 async def test_atualizar_me_updates_nome() -> None:
     user = _make_user()
-    uc = AtualizarMe(repo=_repo(user))
-    inp = AtualizarMeInput(
+    uc = UpdateMe(repo=_repo(user))
+    inp = UpdateMeInput(
         nome="Beatriz", telefone=None, linkedin_url=None, instagram_username=None
     )
     result = await uc.execute(user.id, inp)
@@ -72,8 +72,8 @@ async def test_atualizar_me_updates_nome() -> None:
 
 async def test_atualizar_me_updates_telefone() -> None:
     user = _make_user()
-    uc = AtualizarMe(repo=_repo(user))
-    inp = AtualizarMeInput(
+    uc = UpdateMe(repo=_repo(user))
+    inp = UpdateMeInput(
         nome=None, telefone="+5511999999999", linkedin_url=None, instagram_username=None
     )
     result = await uc.execute(user.id, inp)
@@ -82,16 +82,16 @@ async def test_atualizar_me_updates_telefone() -> None:
 
 async def test_atualizar_me_invalid_telefone_raises() -> None:
     user = _make_user()
-    uc = AtualizarMe(repo=_repo(user))
-    inp = AtualizarMeInput(nome=None, telefone="abc", linkedin_url=None, instagram_username=None)
+    uc = UpdateMe(repo=_repo(user))
+    inp = UpdateMeInput(nome=None, telefone="abc", linkedin_url=None, instagram_username=None)
     with pytest.raises(DomainError):
         await uc.execute(user.id, inp)
 
 
 async def test_atualizar_me_invalid_linkedin_raises() -> None:
     user = _make_user()
-    uc = AtualizarMe(repo=_repo(user))
-    inp = AtualizarMeInput(
+    uc = UpdateMe(repo=_repo(user))
+    inp = UpdateMeInput(
         nome=None, telefone=None, linkedin_url="https://twitter.com/x", instagram_username=None
     )
     with pytest.raises(DomainError):
@@ -100,8 +100,8 @@ async def test_atualizar_me_invalid_linkedin_raises() -> None:
 
 async def test_atualizar_me_valid_linkedin() -> None:
     user = _make_user()
-    uc = AtualizarMe(repo=_repo(user))
-    inp = AtualizarMeInput(
+    uc = UpdateMe(repo=_repo(user))
+    inp = UpdateMeInput(
         nome=None,
         telefone=None,
         linkedin_url="https://linkedin.com/in/ana",
@@ -113,8 +113,8 @@ async def test_atualizar_me_valid_linkedin() -> None:
 
 async def test_atualizar_me_invalid_instagram_raises() -> None:
     user = _make_user()
-    uc = AtualizarMe(repo=_repo(user))
-    inp = AtualizarMeInput(
+    uc = UpdateMe(repo=_repo(user))
+    inp = UpdateMeInput(
         nome=None, telefone=None, linkedin_url=None, instagram_username="@invalid!"
     )
     with pytest.raises(DomainError):
@@ -123,8 +123,8 @@ async def test_atualizar_me_invalid_instagram_raises() -> None:
 
 async def test_atualizar_me_valid_instagram() -> None:
     user = _make_user()
-    uc = AtualizarMe(repo=_repo(user))
-    inp = AtualizarMeInput(
+    uc = UpdateMe(repo=_repo(user))
+    inp = UpdateMeInput(
         nome=None, telefone=None, linkedin_url=None, instagram_username="ana.silva_99"
     )
     result = await uc.execute(user.id, inp)
@@ -133,8 +133,8 @@ async def test_atualizar_me_valid_instagram() -> None:
 
 async def test_atualizar_me_updates_descricao() -> None:
     user = _make_user()
-    uc = AtualizarMe(repo=_repo(user))
-    inp = AtualizarMeInput(
+    uc = UpdateMe(repo=_repo(user))
+    inp = UpdateMeInput(
         nome=None, telefone=None, linkedin_url=None, instagram_username=None,
         descricao="Sou trader profissional.",
     )
@@ -143,9 +143,9 @@ async def test_atualizar_me_updates_descricao() -> None:
 
 
 async def test_atualizar_me_not_found_raises() -> None:
-    uc = AtualizarMe(repo=_repo(None))
-    inp = AtualizarMeInput(nome="X", telefone=None, linkedin_url=None, instagram_username=None, descricao=None)
-    with pytest.raises(UsuarioNaoEncontrado):
+    uc = UpdateMe(repo=_repo(None))
+    inp = UpdateMeInput(nome="X", telefone=None, linkedin_url=None, instagram_username=None, descricao=None)
+    with pytest.raises(UserNotFound):
         await uc.execute(uuid4(), inp)
 
 
@@ -165,55 +165,55 @@ def _storage(url: str = "https://cdn.example.com/foto.jpg") -> MagicMock:
 
 async def test_upload_foto_jpeg_ok() -> None:
     user = _make_user()
-    uc = UploadFoto(repo=_repo(user), storage=_storage())
-    inp = UploadFotoInput(usuario_id=user.id, content_type="image/jpeg", data=_JPEG_BYTES)
+    uc = UploadPhoto(repo=_repo(user), storage=_storage())
+    inp = UploadPhotoInput(usuario_id=user.id, content_type="image/jpeg", data=_JPEG_BYTES)
     result = await uc.execute(inp)
     assert result.foto_url.startswith("https://")
 
 
 async def test_upload_foto_png_ok() -> None:
     user = _make_user()
-    uc = UploadFoto(repo=_repo(user), storage=_storage("https://cdn.example.com/foto.png"))
-    inp = UploadFotoInput(usuario_id=user.id, content_type="image/png", data=_PNG_BYTES)
+    uc = UploadPhoto(repo=_repo(user), storage=_storage("https://cdn.example.com/foto.png"))
+    inp = UploadPhotoInput(usuario_id=user.id, content_type="image/png", data=_PNG_BYTES)
     result = await uc.execute(inp)
     assert result.foto_url
 
 
 async def test_upload_foto_webp_ok() -> None:
     user = _make_user()
-    uc = UploadFoto(repo=_repo(user), storage=_storage())
-    inp = UploadFotoInput(usuario_id=user.id, content_type="image/webp", data=_WEBP_BYTES)
+    uc = UploadPhoto(repo=_repo(user), storage=_storage())
+    inp = UploadPhotoInput(usuario_id=user.id, content_type="image/webp", data=_WEBP_BYTES)
     result = await uc.execute(inp)
     assert result.foto_url
 
 
 async def test_upload_foto_invalid_content_type_raises() -> None:
     user = _make_user()
-    uc = UploadFoto(repo=_repo(user), storage=_storage())
-    inp = UploadFotoInput(usuario_id=user.id, content_type="application/pdf", data=_JPEG_BYTES)
-    with pytest.raises(FotoInvalida):
+    uc = UploadPhoto(repo=_repo(user), storage=_storage())
+    inp = UploadPhotoInput(usuario_id=user.id, content_type="application/pdf", data=_JPEG_BYTES)
+    with pytest.raises(InvalidPhoto):
         await uc.execute(inp)
 
 
 async def test_upload_foto_too_large_raises() -> None:
     user = _make_user()
-    uc = UploadFoto(repo=_repo(user), storage=_storage())
+    uc = UploadPhoto(repo=_repo(user), storage=_storage())
     big = b"\xff\xd8\xff" + b"\x00" * (5 * 1024 * 1024 + 1)
-    inp = UploadFotoInput(usuario_id=user.id, content_type="image/jpeg", data=big)
-    with pytest.raises(FotoInvalida):
+    inp = UploadPhotoInput(usuario_id=user.id, content_type="image/jpeg", data=big)
+    with pytest.raises(InvalidPhoto):
         await uc.execute(inp)
 
 
 async def test_upload_foto_wrong_magic_bytes_raises() -> None:
     user = _make_user()
-    uc = UploadFoto(repo=_repo(user), storage=_storage())
-    inp = UploadFotoInput(usuario_id=user.id, content_type="image/jpeg", data=_FAKE_BYTES)
-    with pytest.raises(FotoInvalida):
+    uc = UploadPhoto(repo=_repo(user), storage=_storage())
+    inp = UploadPhotoInput(usuario_id=user.id, content_type="image/jpeg", data=_FAKE_BYTES)
+    with pytest.raises(InvalidPhoto):
         await uc.execute(inp)
 
 
 async def test_upload_foto_user_not_found_raises() -> None:
-    uc = UploadFoto(repo=_repo(None), storage=_storage())
-    inp = UploadFotoInput(usuario_id=uuid4(), content_type="image/jpeg", data=_JPEG_BYTES)
-    with pytest.raises(UsuarioNaoEncontrado):
+    uc = UploadPhoto(repo=_repo(None), storage=_storage())
+    inp = UploadPhotoInput(usuario_id=uuid4(), content_type="image/jpeg", data=_JPEG_BYTES)
+    with pytest.raises(UserNotFound):
         await uc.execute(inp)

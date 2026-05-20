@@ -1,17 +1,17 @@
 import zoneinfo
 from datetime import datetime
 
-from app.contexts.metricas.application.dtos import (
-    AdminConsolidadoDTO,
-    AgregadosAdminDTO,
+from app.contexts.metrics.application.dtos import (
+    AdminConsolidatedDTO,
+    AdminAggregatesDTO,
     UsuarioMetricasMesDTO,
 )
-from app.contexts.metricas.domain.repositories import MetricaRepository
+from app.contexts.metrics.domain.repositories import MetricaRepository
 
 _SP = zoneinfo.ZoneInfo("America/Sao_Paulo")
 
 
-class ObterAdminConsolidado:
+class GetAdminConsolidated:
     def __init__(self, repo: MetricaRepository) -> None:
         self._repo = repo
 
@@ -21,7 +21,7 @@ class ObterAdminConsolidado:
         busca: str | None,
         page: int,
         page_size: int,
-    ) -> AdminConsolidadoDTO:
+    ) -> AdminConsolidatedDTO:
         if mes is None:
             today_sp = datetime.now(tz=_SP).date()
             mes = f"{today_sp.year:04d}-{today_sp.month:02d}"
@@ -34,7 +34,7 @@ class ObterAdminConsolidado:
 
         total = len(all_items)
 
-        agregados = AgregadosAdminDTO(
+        agregados = AdminAggregatesDTO(
             ligacoes_agendadas_total=sum(i.ligacoes_agendadas for i in all_items),
             ligacoes_realizadas_total=sum(i.ligacoes_realizadas for i in all_items),
             reunioes_agendadas_total=sum(i.reunioes_agendadas for i in all_items),
@@ -48,7 +48,7 @@ class ObterAdminConsolidado:
         offset = (page - 1) * page_size
         page_items = all_items[offset : offset + page_size]
 
-        return AdminConsolidadoDTO(
+        return AdminConsolidatedDTO(
             agregados=agregados,
             items=[
                 UsuarioMetricasMesDTO(

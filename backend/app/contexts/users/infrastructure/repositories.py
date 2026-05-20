@@ -4,45 +4,45 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.contexts.usuarios.domain.entities import Usuario
-from app.contexts.usuarios.infrastructure.models import UsuarioModel
+from app.contexts.users.domain.entities import User
+from app.contexts.users.infrastructure.models import UserModel
 from app.shared.utils import now_sp
 
 
-class SqlAlchemyUsuarioRepository:
+class SqlAlchemyUserRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def por_id(self, user_id: UUID) -> Usuario | None:
+    async def get_by_id(self, user_id: UUID) -> User | None:
         result = await self._session.execute(
-            select(UsuarioModel).where(UsuarioModel.id == user_id)
+            select(UserModel).where(UserModel.id == user_id)
         )
         model = result.scalar_one_or_none()
         if model is None:
             return None
         return self._to_entity(model)
 
-    async def atualizar(self, usuario: Usuario) -> Usuario:
+    async def update(self, user: User) -> User:
         now = now_sp()
         await self._session.execute(
-            update(UsuarioModel)
-            .where(UsuarioModel.id == usuario.id)
+            update(UserModel)
+            .where(UserModel.id == user.id)
             .values(
-                nome=usuario.nome,
-                telefone=usuario.telefone,
-                linkedin_url=usuario.linkedin_url,
-                instagram_username=usuario.instagram_username,
-                descricao=usuario.descricao,
-                foto_url=usuario.foto_url,
+                nome=user.nome,
+                telefone=user.telefone,
+                linkedin_url=user.linkedin_url,
+                instagram_username=user.instagram_username,
+                descricao=user.descricao,
+                foto_url=user.foto_url,
                 atualizado_em=now,
             )
         )
-        usuario.atualizado_em = now
-        return usuario
+        user.atualizado_em = now
+        return user
 
     @staticmethod
-    def _to_entity(model: UsuarioModel) -> Usuario:
-        return Usuario(
+    def _to_entity(model: UserModel) -> User:
+        return User(
             id=model.id,
             nome=model.nome,
             email=model.email,

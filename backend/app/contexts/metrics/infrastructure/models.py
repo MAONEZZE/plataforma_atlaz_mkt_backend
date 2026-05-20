@@ -9,8 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.shared.infrastructure.sqlalchemy_base import Base
 
 
-class MetricaSemanalModel(Base):
-    __tablename__ = "metrica_semanal"
+class WeeklyMetricModel(Base):
+    __tablename__ = "weekly_metrics"
     __table_args__ = (
         UniqueConstraint("usuario_id", "semana_inicio"),
         {"schema": "public", "extend_existing": True},
@@ -19,7 +19,7 @@ class MetricaSemanalModel(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     usuario_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.usuario.id", ondelete="CASCADE"),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,
     )
     semana_inicio: Mapped[date] = mapped_column(Date, nullable=False)
@@ -31,10 +31,10 @@ class MetricaSemanalModel(Base):
     atualizado_em: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
-class UsuarioMetricaModel(Base):
+class UserMetricModel(Base):
     """Read-only view of public.usuario fields used by the metricas context."""
 
-    __tablename__ = "usuario"
+    __tablename__ = "users"
     __table_args__ = {"schema": "public", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)

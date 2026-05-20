@@ -1,21 +1,21 @@
 from app.shared.domain.exceptions import DomainError
 
 
-class TokenInvalido(DomainError):
+class InvalidToken(DomainError):
     pass
 
 
-class TokenExpirado(DomainError):
+class ExpiredToken(DomainError):
     pass
 
 
-class ContaInativa(DomainError):
+class InactiveAccount(DomainError):
     pass
 
 
-class CredenciaisInvalidas(DomainError):
+class InvalidCredentials(DomainError):
     pass
 
 
-class LogoutFalhou(DomainError):
+class LogoutFailed(DomainError):
     pass

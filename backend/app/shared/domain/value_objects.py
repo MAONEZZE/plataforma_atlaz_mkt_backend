@@ -14,7 +14,7 @@ class Email:
 
 
 @dataclass(frozen=True)
-class SemanaInicio:
+class WeekStart:
     value: date
 
     def __post_init__(self) -> None:
@@ -22,6 +22,6 @@ class SemanaInicio:
             raise DomainError("Semana deve começar na segunda-feira.")
 
     @classmethod
-    def from_date(cls, d: date) -> "SemanaInicio":
+    def from_date(cls, d: date) -> "WeekStart":
         monday = d - timedelta(days=d.weekday())
         return cls(value=monday)

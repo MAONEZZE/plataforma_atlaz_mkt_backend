@@ -1,163 +1,163 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.contexts.conteudo.application.use_cases.aulas.crud_admin import (
-    AtualizarAula,
-    CriarAula,
-    RemoverAula,
-    ReordenarAulas,
+from app.contexts.content.application.use_cases.lessons.crud_admin import (
+    UpdateLesson,
+    CreateLesson,
+    DeleteLesson,
+    ReorderLessons,
 )
-from app.contexts.conteudo.application.use_cases.aulas.desmarcar import DesmarcarConcluida
-from app.contexts.conteudo.application.use_cases.aulas.marcar_concluida import MarcarConcluida
-from app.contexts.conteudo.application.use_cases.aulas.obter import ObterAula
-from app.contexts.conteudo.application.use_cases.comentarios.apagar import ApagarComentario
-from app.contexts.conteudo.application.use_cases.comentarios.criar import CriarComentario
-from app.contexts.conteudo.application.use_cases.comentarios.editar import EditarComentario
-from app.contexts.conteudo.application.use_cases.comentarios.listar import ListarComentarios
-from app.contexts.conteudo.application.use_cases.modulos.crud_admin import (
-    AtualizarModulo,
-    CriarModulo,
-    RemoverModulo,
-    ReordenarModulos,
+from app.contexts.content.application.use_cases.lessons.unmark import Unmark
+from app.contexts.content.application.use_cases.lessons.mark_completed import MarkCompleted
+from app.contexts.content.application.use_cases.lessons.get import GetLesson
+from app.contexts.content.application.use_cases.comments.delete import DeleteComment
+from app.contexts.content.application.use_cases.comments.create import CreateComment
+from app.contexts.content.application.use_cases.comments.edit import EditComment
+from app.contexts.content.application.use_cases.comments.list import ListComments
+from app.contexts.content.application.use_cases.modules.crud_admin import (
+    UpdateModule,
+    CreateModule,
+    DeleteModule,
+    ReorderModules,
 )
-from app.contexts.conteudo.application.use_cases.trilhas.crud_admin import (
-    AtualizarTrilha,
-    CriarTrilha,
-    RemoverTrilha,
-    ReordenarTrilhas,
+from app.contexts.content.application.use_cases.tracks.crud_admin import (
+    UpdateTrack,
+    CreateTrack,
+    DeleteTrack,
+    ReorderTracks,
 )
-from app.contexts.conteudo.application.use_cases.trilhas.listar_com_progresso import (
-    ListarTrilhasComProgresso,
+from app.contexts.content.application.use_cases.tracks.list_with_progress import (
+    ListTracksWithProgress,
 )
-from app.contexts.conteudo.application.use_cases.trilhas.obter_com_modulos import (
-    ObterTrilhaComModulos,
+from app.contexts.content.application.use_cases.tracks.get_with_modules import (
+    GetTrackWithModules,
 )
-from app.contexts.conteudo.infrastructure.repositories import (
-    SqlAlchemyAlunoAulaRepository,
-    SqlAlchemyAulaRepository,
-    SqlAlchemyComentarioRepository,
-    SqlAlchemyModuloRepository,
-    SqlAlchemyTrilhaRepository,
+from app.contexts.content.infrastructure.repositories import (
+    SqlAlchemyStudentLessonRepository,
+    SqlAlchemyLessonRepository,
+    SqlAlchemyCommentRepository,
+    SqlAlchemyModuleRepository,
+    SqlAlchemyTrackRepository,
 )
 from app.core.db import get_session
 
 
 def _repos(session: AsyncSession) -> tuple[
-    SqlAlchemyTrilhaRepository,
-    SqlAlchemyModuloRepository,
-    SqlAlchemyAulaRepository,
-    SqlAlchemyAlunoAulaRepository,
-    SqlAlchemyComentarioRepository,
+    SqlAlchemyTrackRepository,
+    SqlAlchemyModuleRepository,
+    SqlAlchemyLessonRepository,
+    SqlAlchemyStudentLessonRepository,
+    SqlAlchemyCommentRepository,
 ]:
     return (
-        SqlAlchemyTrilhaRepository(session),
-        SqlAlchemyModuloRepository(session),
-        SqlAlchemyAulaRepository(session),
-        SqlAlchemyAlunoAulaRepository(session),
-        SqlAlchemyComentarioRepository(session),
+        SqlAlchemyTrackRepository(session),
+        SqlAlchemyModuleRepository(session),
+        SqlAlchemyLessonRepository(session),
+        SqlAlchemyStudentLessonRepository(session),
+        SqlAlchemyCommentRepository(session),
     )
 
 
-def get_listar_trilhas(session: AsyncSession = Depends(get_session)) -> ListarTrilhasComProgresso:
+def get_list_tracks(session: AsyncSession = Depends(get_session)) -> ListTracksWithProgress:
     t, m, a, aa, _ = _repos(session)
-    return ListarTrilhasComProgresso(t, m, a, aa)
+    return ListTracksWithProgress(t, m, a, aa)
 
 
-def get_obter_trilha(session: AsyncSession = Depends(get_session)) -> ObterTrilhaComModulos:
+def get_track_with_modules(session: AsyncSession = Depends(get_session)) -> GetTrackWithModules:
     t, m, a, aa, _ = _repos(session)
-    return ObterTrilhaComModulos(t, m, a, aa)
+    return GetTrackWithModules(t, m, a, aa)
 
 
-def get_criar_trilha(session: AsyncSession = Depends(get_session)) -> CriarTrilha:
+def get_create_track(session: AsyncSession = Depends(get_session)) -> CreateTrack:
     t, _, _, _, _ = _repos(session)
-    return CriarTrilha(t)
+    return CreateTrack(t)
 
 
-def get_atualizar_trilha(session: AsyncSession = Depends(get_session)) -> AtualizarTrilha:
+def get_update_track(session: AsyncSession = Depends(get_session)) -> UpdateTrack:
     t, _, _, _, _ = _repos(session)
-    return AtualizarTrilha(t)
+    return UpdateTrack(t)
 
 
-def get_remover_trilha(session: AsyncSession = Depends(get_session)) -> RemoverTrilha:
+def get_delete_track(session: AsyncSession = Depends(get_session)) -> DeleteTrack:
     t, _, _, _, _ = _repos(session)
-    return RemoverTrilha(t)
+    return DeleteTrack(t)
 
 
-def get_reordenar_trilhas(session: AsyncSession = Depends(get_session)) -> ReordenarTrilhas:
+def get_reorder_tracks(session: AsyncSession = Depends(get_session)) -> ReorderTracks:
     t, _, _, _, _ = _repos(session)
-    return ReordenarTrilhas(t)
+    return ReorderTracks(t)
 
 
-def get_criar_modulo(session: AsyncSession = Depends(get_session)) -> CriarModulo:
+def get_create_module(session: AsyncSession = Depends(get_session)) -> CreateModule:
     _, m, _, _, _ = _repos(session)
-    return CriarModulo(m)
+    return CreateModule(m)
 
 
-def get_atualizar_modulo(session: AsyncSession = Depends(get_session)) -> AtualizarModulo:
+def get_update_module(session: AsyncSession = Depends(get_session)) -> UpdateModule:
     _, m, _, _, _ = _repos(session)
-    return AtualizarModulo(m)
+    return UpdateModule(m)
 
 
-def get_remover_modulo(session: AsyncSession = Depends(get_session)) -> RemoverModulo:
+def get_delete_module(session: AsyncSession = Depends(get_session)) -> DeleteModule:
     _, m, _, _, _ = _repos(session)
-    return RemoverModulo(m)
+    return DeleteModule(m)
 
 
-def get_reordenar_modulos(session: AsyncSession = Depends(get_session)) -> ReordenarModulos:
+def get_reorder_modules(session: AsyncSession = Depends(get_session)) -> ReorderModules:
     _, m, _, _, _ = _repos(session)
-    return ReordenarModulos(m)
+    return ReorderModules(m)
 
 
-def get_obter_aula(session: AsyncSession = Depends(get_session)) -> ObterAula:
+def get_lesson(session: AsyncSession = Depends(get_session)) -> GetLesson:
     t, m, a, aa, _ = _repos(session)
-    return ObterAula(a, m, t, aa)
+    return GetLesson(a, m, t, aa)
 
 
-def get_criar_aula(session: AsyncSession = Depends(get_session)) -> CriarAula:
+def get_create_lesson(session: AsyncSession = Depends(get_session)) -> CreateLesson:
     _, _, a, _, _ = _repos(session)
-    return CriarAula(a)
+    return CreateLesson(a)
 
 
-def get_atualizar_aula(session: AsyncSession = Depends(get_session)) -> AtualizarAula:
+def get_update_lesson(session: AsyncSession = Depends(get_session)) -> UpdateLesson:
     _, _, a, _, _ = _repos(session)
-    return AtualizarAula(a)
+    return UpdateLesson(a)
 
 
-def get_remover_aula(session: AsyncSession = Depends(get_session)) -> RemoverAula:
+def get_delete_lesson(session: AsyncSession = Depends(get_session)) -> DeleteLesson:
     _, _, a, _, _ = _repos(session)
-    return RemoverAula(a)
+    return DeleteLesson(a)
 
 
-def get_reordenar_aulas(session: AsyncSession = Depends(get_session)) -> ReordenarAulas:
+def get_reorder_lessons(session: AsyncSession = Depends(get_session)) -> ReorderLessons:
     _, _, a, _, _ = _repos(session)
-    return ReordenarAulas(a)
+    return ReorderLessons(a)
 
 
-def get_marcar_concluida(session: AsyncSession = Depends(get_session)) -> MarcarConcluida:
+def get_mark_completed(session: AsyncSession = Depends(get_session)) -> MarkCompleted:
     _, _, a, aa, _ = _repos(session)
-    return MarcarConcluida(a, aa)
+    return MarkCompleted(a, aa)
 
 
-def get_desmarcar_concluida(session: AsyncSession = Depends(get_session)) -> DesmarcarConcluida:
+def get_unmark(session: AsyncSession = Depends(get_session)) -> Unmark:
     _, _, _, aa, _ = _repos(session)
-    return DesmarcarConcluida(aa)
+    return Unmark(aa)
 
 
-def get_listar_comentarios(session: AsyncSession = Depends(get_session)) -> ListarComentarios:
+def get_list_comments(session: AsyncSession = Depends(get_session)) -> ListComments:
     _, _, _, _, c = _repos(session)
-    return ListarComentarios(c)
+    return ListComments(c)
 
 
-def get_criar_comentario(session: AsyncSession = Depends(get_session)) -> CriarComentario:
+def get_create_comment(session: AsyncSession = Depends(get_session)) -> CreateComment:
     _, _, a, _, c = _repos(session)
-    return CriarComentario(a, c)
+    return CreateComment(a, c)
 
 
-def get_editar_comentario(session: AsyncSession = Depends(get_session)) -> EditarComentario:
+def get_edit_comment(session: AsyncSession = Depends(get_session)) -> EditComment:
     _, _, _, _, c = _repos(session)
-    return EditarComentario(c)
+    return EditComment(c)
 
 
-def get_apagar_comentario(session: AsyncSession = Depends(get_session)) -> ApagarComentario:
+def get_delete_comment(session: AsyncSession = Depends(get_session)) -> DeleteComment:
     _, _, _, _, c = _repos(session)
-    return ApagarComentario(c)
+    return DeleteComment(c)

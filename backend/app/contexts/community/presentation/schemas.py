@@ -3,7 +3,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
-class MembroComunidadeSchema(BaseModel):
+class CommunityMemberSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -13,8 +13,8 @@ class MembroComunidadeSchema(BaseModel):
     instagram_username: str | None
 
 
-class ListarComunidadeResponse(BaseModel):
-    items: list[MembroComunidadeSchema]
+class ListCommunityResponse(BaseModel):
+    items: list[CommunityMemberSchema]
     page: int
     page_size: int
     total: int

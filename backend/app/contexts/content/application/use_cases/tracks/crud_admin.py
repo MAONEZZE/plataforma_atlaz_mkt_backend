@@ -1,13 +1,13 @@
 from uuid import UUID, uuid4
 
-from app.contexts.conteudo.domain.entities import Trilha
-from app.contexts.conteudo.domain.exceptions import TrilhaNaoEncontrada
-from app.contexts.conteudo.domain.repositories import TrilhaRepository
+from app.contexts.content.domain.entities import Track
+from app.contexts.content.domain.exceptions import TrackNotFound
+from app.contexts.content.domain.repositories import TrilhaRepository
 from app.shared.utils import now_sp
 
 
-class CriarTrilha:
-    def __init__(self, repo: TrilhaRepository) -> None:
+class CreateTrack:
+    def __init__(self, repo: TrackRepository) -> None:
         self._repo = repo
 
     async def execute(
@@ -16,8 +16,8 @@ class CriarTrilha:
         descricao: str | None,
         capa_url: str | None,
         ordem: int,
-    ) -> Trilha:
-        trilha = Trilha(
+    ) -> Track:
+        trilha = Track(
             id=uuid4(),
             titulo=titulo,
             descricao=descricao,
@@ -25,11 +25,11 @@ class CriarTrilha:
             ordem=ordem,
             criado_em=now_sp(),
         )
-        return await self._repo.criar(trilha)
+        return await self._repo.create(trilha)
 
 
-class AtualizarTrilha:
-    def __init__(self, repo: TrilhaRepository) -> None:
+class UpdateTrack:
+    def __init__(self, repo: TrackRepository) -> None:
         self._repo = repo
 
     async def execute(
@@ -39,11 +39,11 @@ class AtualizarTrilha:
         descricao: str | None,
         capa_url: str | None,
         ordem: int | None,
-    ) -> Trilha:
-        trilha = await self._repo.por_id(trilha_id)
+    ) -> Track:
+        trilha = await self._repo.get_by_id(trilha_id)
         if trilha is None:
-            raise TrilhaNaoEncontrada(f"Trilha {trilha_id} não encontrada.")
-        updated = Trilha(
+            raise TrackNotFound(f"Trilha {trilha_id} não encontrada.")
+        updated = Track(
             id=trilha.id,
             titulo=titulo if titulo is not None else trilha.titulo,
             descricao=descricao if descricao is not None else trilha.descricao,
@@ -51,23 +51,23 @@ class AtualizarTrilha:
             ordem=ordem if ordem is not None else trilha.ordem,
             criado_em=trilha.criado_em,
         )
-        return await self._repo.atualizar(updated)
+        return await self._repo.update(updated)
 
 
-class RemoverTrilha:
-    def __init__(self, repo: TrilhaRepository) -> None:
+class DeleteTrack:
+    def __init__(self, repo: TrackRepository) -> None:
         self._repo = repo
 
     async def execute(self, trilha_id: UUID) -> None:
-        trilha = await self._repo.por_id(trilha_id)
+        trilha = await self._repo.get_by_id(trilha_id)
         if trilha is None:
-            raise TrilhaNaoEncontrada(f"Trilha {trilha_id} não encontrada.")
-        await self._repo.remover(trilha_id)
+            raise TrackNotFound(f"Trilha {trilha_id} não encontrada.")
+        await self._repo.delete(trilha_id)
 
 
-class ReordenarTrilhas:
-    def __init__(self, repo: TrilhaRepository) -> None:
+class ReorderTracks:
+    def __init__(self, repo: TrackRepository) -> None:
         self._repo = repo
 
     async def execute(self, ordens: list[tuple[UUID, int]]) -> None:
-        await self._repo.reordenar(ordens)
+        await self._repo.reorder(ordens)

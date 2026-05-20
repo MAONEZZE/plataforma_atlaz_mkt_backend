@@ -3,7 +3,7 @@ from uuid import UUID
 
 
 @dataclass(frozen=True)
-class UsuarioAutenticadoDTO:
+class AuthenticatedUserDTO:
     id: UUID
     email: str
     role: str

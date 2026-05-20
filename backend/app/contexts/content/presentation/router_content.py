@@ -3,31 +3,31 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from starlette import status
 
-from app.contexts.auth.domain.entities import Usuario
-from app.contexts.conteudo.application.use_cases.aulas.desmarcar import DesmarcarConcluida
-from app.contexts.conteudo.application.use_cases.aulas.marcar_concluida import MarcarConcluida
-from app.contexts.conteudo.application.use_cases.aulas.obter import ObterAula
-from app.contexts.conteudo.application.use_cases.trilhas.listar_com_progresso import (
-    ListarTrilhasComProgresso,
+from app.contexts.auth.domain.entities import User
+from app.contexts.content.application.use_cases.lessons.unmark import Unmark
+from app.contexts.content.application.use_cases.lessons.mark_completed import MarkCompleted
+from app.contexts.content.application.use_cases.lessons.get import GetLesson
+from app.contexts.content.application.use_cases.tracks.list_with_progress import (
+    ListTracksWithProgress,
 )
-from app.contexts.conteudo.application.use_cases.trilhas.obter_com_modulos import (
-    ObterTrilhaComModulos,
+from app.contexts.content.application.use_cases.tracks.get_with_modules import (
+    GetTrackWithModules,
 )
-from app.contexts.conteudo.domain.exceptions import (
-    AulaNaoEncontrada,
-    ModuloNaoEncontrado,
-    TrilhaNaoEncontrada,
+from app.contexts.content.domain.exceptions import (
+    LessonNotFound,
+    ModuleNotFound,
+    TrackNotFound,
 )
-from app.contexts.conteudo.presentation.deps import (
-    get_desmarcar_concluida,
-    get_listar_trilhas,
-    get_marcar_concluida,
-    get_obter_aula,
-    get_obter_trilha,
+from app.contexts.content.presentation.deps import (
+    get_unmark,
+    get_list_tracks,
+    get_mark_completed,
+    get_lesson,
+    get_track_with_modules,
 )
-from app.contexts.conteudo.presentation.schemas import (
-    AulaDetalheOut,
-    AulaResumoOut,
+from app.contexts.content.presentation.schemas import (
+    LessonDetailOut,
+    LessonSummaryOut,
     ModuloComAulasOut,
     TrilhaComModulosOut,
     TrilhaProgressoOut,
@@ -41,8 +41,8 @@ router = APIRouter(tags=["conteudo"])
 
 @router.get("/trilhas", response_model=list[TrilhaProgressoOut])
 async def listar_trilhas(
-    user: Usuario = Depends(get_current_user),
-    use_case: ListarTrilhasComProgresso = Depends(get_listar_trilhas),
+    user: User = Depends(get_current_user),
+    use_case: ListTracksWithProgress = Depends(get_list_tracks),
 ) -> list[TrilhaProgressoOut]:
     dtos = await use_case.execute(user.id)
     return [
@@ -62,12 +62,12 @@ async def listar_trilhas(
 @router.get("/trilhas/{trilha_id}", response_model=TrilhaComModulosOut)
 async def obter_trilha(
     trilha_id: UUID,
-    user: Usuario = Depends(get_current_user),
-    use_case: ObterTrilhaComModulos = Depends(get_obter_trilha),
-) -> TrilhaComModulosOut:
+    user: User = Depends(get_current_user),
+    use_case: GetTrackWithModules = Depends(get_track_with_modules),
+) -> TrackWithModulesOut:
     try:
         dto = await use_case.execute(trilha_id, user.id)
-    except TrilhaNaoEncontrada as exc:
+    except TrackNotFound as exc:
         raise AppException("TRILHA_NOT_FOUND", str(exc), 404) from exc
     return TrilhaComModulosOut(
         id=dto.id,
@@ -82,7 +82,7 @@ async def obter_trilha(
                 descricao=m.descricao,
                 ordem=m.ordem,
                 aulas=[
-                    AulaResumoOut(
+                    LessonSummaryOut(
                         id=a.id,
                         titulo=a.titulo,
                         duracao_minutos=a.duracao_minutos,
@@ -97,19 +97,19 @@ async def obter_trilha(
     )
 
 
-@router.get("/aulas/{aula_id}", response_model=AulaDetalheOut)
+@router.get("/aulas/{aula_id}", response_model=LessonDetailOut)
 async def obter_aula(
     aula_id: UUID,
-    user: Usuario = Depends(get_current_user),
-    use_case: ObterAula = Depends(get_obter_aula),
-) -> AulaDetalheOut:
+    user: User = Depends(get_current_user),
+    use_case: GetLesson = Depends(get_lesson),
+) -> LessonDetalheOut:
     try:
         dto = await use_case.execute(aula_id, user.id)
-    except AulaNaoEncontrada as exc:
+    except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
-    except (ModuloNaoEncontrado, TrilhaNaoEncontrada) as exc:
+    except (ModuleNotFound, TrackNotFound) as exc:
         raise AppException("INTERNAL_ERROR", str(exc), 500) from exc
-    return AulaDetalheOut(
+    return LessonDetailOut(
         id=dto.id,
         modulo_id=dto.modulo_id,
         titulo=dto.titulo,
@@ -119,7 +119,7 @@ async def obter_aula(
         concluida=dto.concluida,
         trilha=TrilhaResumoOut(id=dto.trilha.id, titulo=dto.trilha.titulo),
         proxima_aula=(
-            AulaResumoOut(
+            LessonSummaryOut(
                 id=dto.proxima_aula.id,
                 titulo=dto.proxima_aula.titulo,
                 duracao_minutos=dto.proxima_aula.duracao_minutos,
@@ -136,14 +136,14 @@ async def obter_aula(
     "/aulas/{aula_id}/concluir",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def marcar_concluida(
+async def mark_completed(
     aula_id: UUID,
-    user: Usuario = Depends(get_current_user),
-    use_case: MarcarConcluida = Depends(get_marcar_concluida),
+    user: User = Depends(get_current_user),
+    use_case: MarkCompleted = Depends(get_mark_completed),
 ) -> None:
     try:
         await use_case.execute(aula_id, user.id)
-    except AulaNaoEncontrada as exc:
+    except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
 
 
@@ -153,7 +153,7 @@ async def marcar_concluida(
 )
 async def desmarcar_concluida(
     aula_id: UUID,
-    user: Usuario = Depends(get_current_user),
-    use_case: DesmarcarConcluida = Depends(get_desmarcar_concluida),
+    user: User = Depends(get_current_user),
+    use_case: Unmark = Depends(get_unmark),
 ) -> None:
     await use_case.execute(aula_id, user.id)

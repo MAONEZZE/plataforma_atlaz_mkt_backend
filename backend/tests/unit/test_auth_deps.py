@@ -7,9 +7,9 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.application.use_cases.validar_token import ValidarToken
-from app.contexts.auth.domain.entities import Usuario
-from app.contexts.auth.domain.exceptions import ContaInativa, TokenExpirado, TokenInvalido
+from app.contexts.auth.application.use_cases.validate_token import ValidarToken
+from app.contexts.auth.domain.entities import User
+from app.contexts.auth.domain.exceptions import InactiveAccount, ExpiredToken, InvalidToken
 from app.contexts.auth.presentation.deps import get_validar_token_use_case
 from app.core.deps import get_current_user, require_admin
 from app.core.exceptions import AppException
@@ -28,19 +28,19 @@ async def _exc_handler(request: Request, exc: AppException) -> JSONResponse:
 
 
 @_app.get("/me")
-async def _me(user: Usuario = Depends(get_current_user)) -> dict[str, str]:
+async def _me(user: User = Depends(get_current_user)) -> dict[str, str]:
     return {"id": str(user.id), "role": user.role}
 
 
 @_app.get("/admin-only")
-async def _admin_only(user: Usuario = Depends(require_admin)) -> dict[str, str]:
+async def _admin_only(user: User = Depends(require_admin)) -> dict[str, str]:
     return {"id": str(user.id)}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _mock_use_case(*, user: Usuario | None = None, exc: Exception | None = None) -> ValidarToken:
+def _mock_use_case(*, user: User | None = None, exc: Exception | None = None) -> ValidarToken:
     mock: ValidarToken = AsyncMock(spec=ValidarToken)  # type: ignore[assignment]
     if exc:
         mock.execute.side_effect = exc  # type: ignore[attr-defined]
@@ -64,12 +64,12 @@ def _clear_overrides() -> None:
 
 
 @pytest.fixture
-def cliente_user() -> Usuario:
+def cliente_user() -> User:
     return Usuario(id=uuid4(), email="c@c.com", role="cliente", inativo=False)
 
 
 @pytest.fixture
-def admin_user() -> Usuario:
+def admin_user() -> User:
     return Usuario(id=uuid4(), email="a@a.com", role="admin", inativo=False)
 
 
@@ -77,13 +77,13 @@ def admin_user() -> Usuario:
 
 
 def test_no_token_returns_401() -> None:
-    client = _client(_mock_use_case(exc=TokenInvalido("x")))
+    client = _client(_mock_use_case(exc=InvalidToken("x")))
     resp = client.get("/me")
     assert resp.status_code == 401
     assert resp.json()["error"]["code"] == "TOKEN_INVALID"
 
 
-def test_valid_token_active_user_returns_200(cliente_user: Usuario) -> None:
+def test_valid_token_active_user_returns_200(cliente_user: User) -> None:
     client = _client(_mock_use_case(user=cliente_user))
     resp = client.get("/me", headers={"Authorization": "Bearer valid"})
     assert resp.status_code == 200
@@ -91,34 +91,34 @@ def test_valid_token_active_user_returns_200(cliente_user: Usuario) -> None:
 
 
 def test_expired_token_returns_401_token_expired() -> None:
-    client = _client(_mock_use_case(exc=TokenExpirado("exp")))
+    client = _client(_mock_use_case(exc=ExpiredToken("exp")))
     resp = client.get("/me", headers={"Authorization": "Bearer expired"})
     assert resp.status_code == 401
     assert resp.json()["error"]["code"] == "TOKEN_EXPIRED"
 
 
 def test_invalid_token_returns_401_token_invalid() -> None:
-    client = _client(_mock_use_case(exc=TokenInvalido("bad")))
+    client = _client(_mock_use_case(exc=InvalidToken("bad")))
     resp = client.get("/me", headers={"Authorization": "Bearer bad"})
     assert resp.status_code == 401
     assert resp.json()["error"]["code"] == "TOKEN_INVALID"
 
 
 def test_inactive_user_returns_403() -> None:
-    client = _client(_mock_use_case(exc=ContaInativa()))
+    client = _client(_mock_use_case(exc=InactiveAccount()))
     resp = client.get("/me", headers={"Authorization": "Bearer token"})
     assert resp.status_code == 403
     assert resp.json()["error"]["code"] == "AUTH_INACTIVE_ACCOUNT"
 
 
-def test_require_admin_with_cliente_returns_403(cliente_user: Usuario) -> None:
+def test_require_admin_with_cliente_returns_403(cliente_user: User) -> None:
     client = _client(_mock_use_case(user=cliente_user))
     resp = client.get("/admin-only", headers={"Authorization": "Bearer token"})
     assert resp.status_code == 403
     assert resp.json()["error"]["code"] == "FORBIDDEN"
 
 
-def test_require_admin_with_admin_returns_200(admin_user: Usuario) -> None:
+def test_require_admin_with_admin_returns_200(admin_user: User) -> None:
     client = _client(_mock_use_case(user=admin_user))
     resp = client.get("/admin-only", headers={"Authorization": "Bearer token"})
     assert resp.status_code == 200

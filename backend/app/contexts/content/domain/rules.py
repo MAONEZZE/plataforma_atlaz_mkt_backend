@@ -1,6 +1,6 @@
 import re
 
-from app.contexts.conteudo.domain.exceptions import DriveUrlInvalida
+from app.contexts.content.domain.exceptions import InvalidDriveUrl
 
 DRIVE_PATTERNS = [
     re.compile(r"/file/d/([a-zA-Z0-9_-]+)"),
@@ -13,4 +13,4 @@ def parse_drive_file_id(url: str) -> str:
         m = p.search(url)
         if m:
             return m.group(1)
-    raise DriveUrlInvalida(url)
+    raise InvalidDriveUrl(url)

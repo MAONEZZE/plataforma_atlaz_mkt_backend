@@ -1,22 +1,22 @@
 import json
 from uuid import uuid4
 
-from app.contexts.comunidade.application.dtos import ListarComunidadeResultDTO
-from app.contexts.comunidade.application.use_cases.listar_comunidade import ListarComunidade
-from app.contexts.comunidade.domain.entities import MembroComunidade
-from app.contexts.comunidade.presentation.schemas import (
+from app.contexts.community.application.dtos import ListCommunityResultDTO
+from app.contexts.community.application.use_cases.list_community import ListarComunidade
+from app.contexts.community.domain.entities import CommunityMember
+from app.contexts.community.presentation.schemas import (
     ListarComunidadeResponse,
-    MembroComunidadeSchema,
+    CommunityMemberSchema,
 )
 
 
 class _FakeRepo:
-    def __init__(self, membros: list[MembroComunidade], total: int) -> None:
+    def __init__(self, membros: list[CommunityMember], total: int) -> None:
         self._membros = membros
         self._total = total
         self.called_with: tuple[int, int] | None = None
 
-    async def listar_ativos(self, page: int, page_size: int) -> tuple[list[MembroComunidade], int]:
+    async def list_active(self, page: int, page_size: int) -> tuple[list[CommunityMember], int]:
         self.called_with = (page, page_size)
         return self._membros, self._total
 
@@ -26,8 +26,8 @@ def _make_membro(
     foto_url: str | None = None,
     linkedin_url: str | None = None,
     instagram_username: str | None = None,
-) -> MembroComunidade:
-    return MembroComunidade(
+) -> CommunityMember:
+    return CommunityMember(
         id=uuid4(),
         nome=nome,
         foto_url=foto_url,
@@ -41,7 +41,7 @@ async def test_use_case_returns_correct_shape() -> None:
     repo = _FakeRepo([membro], total=1)
     result = await ListarComunidade(repo).execute(page=1, page_size=24)
 
-    assert isinstance(result, ListarComunidadeResultDTO)
+    assert isinstance(result, ListCommunityResultDTO)
     assert result.page == 1
     assert result.page_size == 24
     assert result.total == 1
@@ -77,7 +77,7 @@ async def test_use_case_empty_result() -> None:
 
 async def test_use_case_maps_all_fields() -> None:
     uid = uuid4()
-    membro = MembroComunidade(
+    membro = CommunityMember(
         id=uid,
         nome="Carlos",
         foto_url="https://foto.com",
@@ -96,7 +96,7 @@ async def test_use_case_maps_all_fields() -> None:
 
 
 def test_response_schema_never_contains_telefone() -> None:
-    schema = MembroComunidadeSchema(
+    schema = CommunityMemberSchema(
         id=uuid4(),
         nome="Test",
         foto_url=None,
@@ -110,7 +110,7 @@ def test_response_schema_never_contains_telefone() -> None:
 def test_list_response_schema_never_contains_telefone() -> None:
     response = ListarComunidadeResponse(
         items=[
-            MembroComunidadeSchema(
+            CommunityMemberSchema(
                 id=uuid4(),
                 nome="Test",
                 foto_url=None,

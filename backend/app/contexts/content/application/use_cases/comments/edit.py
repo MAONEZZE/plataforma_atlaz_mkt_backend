@@ -1,29 +1,29 @@
 from uuid import UUID
 
-from app.contexts.conteudo.domain.entities import Comentario
-from app.contexts.conteudo.domain.exceptions import (
-    ComentarioNaoEncontrado,
+from app.contexts.content.domain.entities import Comment
+from app.contexts.content.domain.exceptions import (
+    CommentNotFound,
     ComentarioNaoPertenceAoUsuario,
 )
-from app.contexts.conteudo.domain.repositories import ComentarioRepository
+from app.contexts.content.domain.repositories import ComentarioRepository
 from app.shared.utils import now_sp
 
 
-class EditarComentario:
-    def __init__(self, repo: ComentarioRepository) -> None:
+class EditComment:
+    def __init__(self, repo: CommentRepository) -> None:
         self._repo = repo
 
     async def execute(
         self, comentario_id: UUID, usuario_id: UUID, is_admin: bool, texto: str
-    ) -> Comentario:
-        comentario = await self._repo.por_id(comentario_id)
+    ) -> Comment:
+        comentario = await self._repo.get_by_id(comentario_id)
         if comentario is None:
-            raise ComentarioNaoEncontrado(f"Comentário {comentario_id} não encontrado.")
+            raise CommentNotFound(f"Comentário {comentario_id} não encontrado.")
 
         if not is_admin and comentario.usuario_id != usuario_id:
             raise ComentarioNaoPertenceAoUsuario("Sem permissão para editar este comentário.")
 
-        updated = Comentario(
+        updated = Comment(
             id=comentario.id,
             aula_id=comentario.aula_id,
             usuario_id=comentario.usuario_id,
@@ -32,4 +32,4 @@ class EditarComentario:
             editado_em=now_sp(),
             apagado_em=comentario.apagado_em,
         )
-        return await self._repo.atualizar(updated)
+        return await self._repo.update(updated)

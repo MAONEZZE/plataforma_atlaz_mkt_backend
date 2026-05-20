@@ -1,14 +1,14 @@
 from uuid import UUID, uuid4
 
-from app.contexts.conteudo.domain.entities import Aula
-from app.contexts.conteudo.domain.exceptions import AulaNaoEncontrada
-from app.contexts.conteudo.domain.repositories import AulaRepository
-from app.contexts.conteudo.domain.rules import parse_drive_file_id
+from app.contexts.content.domain.entities import Lesson
+from app.contexts.content.domain.exceptions import LessonNotFound
+from app.contexts.content.domain.repositories import AulaRepository
+from app.contexts.content.domain.rules import parse_drive_file_id
 from app.shared.utils import now_sp
 
 
-class CriarAula:
-    def __init__(self, repo: AulaRepository) -> None:
+class CreateLesson:
+    def __init__(self, repo: LessonRepository) -> None:
         self._repo = repo
 
     async def execute(
@@ -19,9 +19,9 @@ class CriarAula:
         drive_url: str,
         duracao_minutos: int | None,
         ordem: int,
-    ) -> Aula:
+    ) -> Lesson:
         drive_file_id = parse_drive_file_id(drive_url)
-        aula = Aula(
+        aula = Lesson(
             id=uuid4(),
             modulo_id=modulo_id,
             titulo=titulo,
@@ -31,11 +31,11 @@ class CriarAula:
             ordem=ordem,
             criado_em=now_sp(),
         )
-        return await self._repo.criar(aula)
+        return await self._repo.create(aula)
 
 
-class AtualizarAula:
-    def __init__(self, repo: AulaRepository) -> None:
+class UpdateLesson:
+    def __init__(self, repo: LessonRepository) -> None:
         self._repo = repo
 
     async def execute(
@@ -46,14 +46,14 @@ class AtualizarAula:
         drive_url: str | None,
         duracao_minutos: int | None,
         ordem: int | None,
-    ) -> Aula:
-        aula = await self._repo.por_id(aula_id)
+    ) -> Lesson:
+        aula = await self._repo.get_by_id(aula_id)
         if aula is None:
-            raise AulaNaoEncontrada(f"Aula {aula_id} não encontrada.")
+            raise LessonNotFound(f"Aula {aula_id} não encontrada.")
 
         drive_file_id = parse_drive_file_id(drive_url) if drive_url else aula.drive_file_id
 
-        updated = Aula(
+        updated = Lesson(
             id=aula.id,
             modulo_id=aula.modulo_id,
             titulo=titulo if titulo is not None else aula.titulo,
@@ -65,23 +65,23 @@ class AtualizarAula:
             ordem=ordem if ordem is not None else aula.ordem,
             criado_em=aula.criado_em,
         )
-        return await self._repo.atualizar(updated)
+        return await self._repo.update(updated)
 
 
-class RemoverAula:
-    def __init__(self, repo: AulaRepository) -> None:
+class DeleteLesson:
+    def __init__(self, repo: LessonRepository) -> None:
         self._repo = repo
 
     async def execute(self, aula_id: UUID) -> None:
-        aula = await self._repo.por_id(aula_id)
+        aula = await self._repo.get_by_id(aula_id)
         if aula is None:
-            raise AulaNaoEncontrada(f"Aula {aula_id} não encontrada.")
-        await self._repo.remover(aula_id)
+            raise LessonNotFound(f"Aula {aula_id} não encontrada.")
+        await self._repo.delete(aula_id)
 
 
-class ReordenarAulas:
-    def __init__(self, repo: AulaRepository) -> None:
+class ReorderLessons:
+    def __init__(self, repo: LessonRepository) -> None:
         self._repo = repo
 
     async def execute(self, ordens: list[tuple[UUID, int]]) -> None:
-        await self._repo.reordenar(ordens)
+        await self._repo.reorder(ordens)

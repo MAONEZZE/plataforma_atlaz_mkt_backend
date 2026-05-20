@@ -3,7 +3,7 @@ from uuid import UUID
 
 
 @dataclass(frozen=True)
-class MembroComunidadeDTO:
+class CommunityMemberDTO:
     id: UUID
     nome: str
     foto_url: str | None
@@ -12,8 +12,8 @@ class MembroComunidadeDTO:
 
 
 @dataclass(frozen=True)
-class ListarComunidadeResultDTO:
-    items: list[MembroComunidadeDTO]
+class ListCommunityResultDTO:
+    items: list[CommunityMemberDTO]
     page: int
     page_size: int
     total: int

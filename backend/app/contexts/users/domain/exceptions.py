@@ -1,9 +1,9 @@
 from app.shared.domain.exceptions import DomainError
 
 
-class UsuarioNaoEncontrado(DomainError):
+class UserNotFound(DomainError):
     pass
 
 
-class FotoInvalida(DomainError):
+class InvalidPhoto(DomainError):
     pass

@@ -9,8 +9,8 @@ from fastapi.testclient import TestClient
 from app.contexts.auth.application.dtos import TokensDTO
 from app.contexts.auth.application.use_cases.login import Login
 from app.contexts.auth.application.use_cases.logout import Logout
-from app.contexts.auth.domain.entities import Usuario as AuthUsuario
-from app.contexts.auth.domain.exceptions import CredenciaisInvalidas, LogoutFalhou
+from app.contexts.auth.domain.entities import User as AuthUser
+from app.contexts.auth.domain.exceptions import InvalidCredentials, LogoutFailed
 from app.contexts.auth.presentation.router import _login, _logout
 from app.core.deps import get_current_user
 from app.main import app
@@ -48,8 +48,8 @@ def _mock_logout(*, side_effect: object = None) -> AsyncMock:
     return m
 
 
-def _auth_user() -> AuthUsuario:
-    return AuthUsuario(id=_UID, email="user@test.com", role="cliente", inativo=False)
+def _auth_user() -> AuthUser:
+    return AuthUser(id=_UID, email="user@test.com", role="cliente", inativo=False)
 
 
 # ── POST /auth/login ──────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ def test_login_ok_returns_200_with_tokens(client: TestClient) -> None:
 
 
 def test_login_invalid_credentials_returns_401(client: TestClient) -> None:
-    uc = _mock_login(side_effect=CredenciaisInvalidas("Email ou senha inválidos."))
+    uc = _mock_login(side_effect=InvalidCredentials("Email ou senha inválidos."))
     app.dependency_overrides[_login] = lambda: uc
     try:
         r = client.post(
@@ -121,7 +121,7 @@ def test_logout_without_token_returns_401(client: TestClient) -> None:
 
 
 def test_logout_gateway_failure_returns_500(client: TestClient) -> None:
-    uc = _mock_logout(side_effect=LogoutFalhou("Supabase error"))
+    uc = _mock_logout(side_effect=LogoutFailed("Supabase error"))
     app.dependency_overrides[get_current_user] = lambda: _auth_user()
     app.dependency_overrides[_logout] = lambda: uc
     try:

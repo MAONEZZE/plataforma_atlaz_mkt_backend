@@ -6,25 +6,25 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import Usuario
-from app.contexts.metricas.application.dtos import (
-    AdminConsolidadoDTO,
-    AgregadosAdminDTO,
+from app.contexts.auth.domain.entities import User
+from app.contexts.metrics.application.dtos import (
+    AdminConsolidatedDTO,
+    AdminAggregatesDTO,
     DeltaDTO,
     MetricaDTO,
-    ResumoDashboardDTO,
-    SeriesDashboardDTO,
-    SerieSemanalDTO,
+    DashboardSummaryDTO,
+    DashboardSeriesDTO,
+    WeeklySeriesDTO,
     UsuarioMetricasMesDTO,
 )
-from app.contexts.metricas.domain.exceptions import (
+from app.contexts.metrics.domain.exceptions import (
     MetricaDuplicada,
     MetricaForaDaJanela,
-    MetricaNaoEncontrada,
+    MetricNotFound,
     MetricaNaoPertenceAoUsuario,
-    SemanaFuturaNaoPermitida,
+    FutureWeekNotAllowed,
 )
-from app.contexts.metricas.presentation.deps import (
+from app.contexts.metrics.presentation.deps import (
     get_admin_consolidado,
     get_atualizar_metrica,
     get_criar_metrica,
@@ -36,11 +36,11 @@ from app.core.deps import get_current_user, require_admin
 from app.main import app
 
 
-def _cliente(user_id: UUID | None = None) -> Usuario:
+def _cliente(user_id: UUID | None = None) -> User:
     return Usuario(id=user_id or uuid4(), email="u@test.com", role="cliente", inativo=False)
 
 
-def _admin(user_id: UUID | None = None) -> Usuario:
+def _admin(user_id: UUID | None = None) -> User:
     return Usuario(id=user_id or uuid4(), email="a@test.com", role="admin", inativo=False)
 
 
@@ -165,7 +165,7 @@ def test_criar_metrica_422_fora_da_janela(client: TestClient) -> None:
 
 def test_criar_metrica_422_semana_futura(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=SemanaFuturaNaoPermitida("futura"))
+    uc = _mock_uc(execute_raises=FutureWeekNotAllowed("futura"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_criar_metrica] = lambda: uc
     try:
@@ -221,7 +221,7 @@ def test_atualizar_metrica_200(client: TestClient) -> None:
 
 def test_atualizar_metrica_404(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=MetricaNaoEncontrada("nope"))
+    uc = _mock_uc(execute_raises=MetricNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_atualizar_metrica] = lambda: uc
     try:
@@ -247,7 +247,7 @@ def test_atualizar_metrica_403_wrong_owner(client: TestClient) -> None:
 
 def test_obter_resumo_200(client: TestClient) -> None:
     user = _cliente()
-    dto = ResumoDashboardDTO(
+    dto = DashboardSummaryDTO(
         mes="2026-05",
         ligacoes_agendadas=DeltaDTO(valor=120, delta_pct=20.0),
         ligacoes_realizadas=DeltaDTO(valor=95, delta_pct=None),
@@ -276,9 +276,9 @@ def test_obter_resumo_requires_auth(client: TestClient) -> None:
 
 def test_obter_series_200(client: TestClient) -> None:
     user = _cliente()
-    dto = SeriesDashboardDTO(
+    dto = DashboardSeriesDTO(
         series=[
-            SerieSemanalDTO(
+            WeeklySeriesDTO(
                 semana=date(2026, 5, 11),
                 ligacoes_agendadas=10,
                 ligacoes_realizadas=8,
@@ -302,8 +302,8 @@ def test_obter_series_200(client: TestClient) -> None:
 
 def test_admin_dashboard_200(client: TestClient) -> None:
     admin = _admin()
-    dto = AdminConsolidadoDTO(
-        agregados=AgregadosAdminDTO(
+    dto = AdminConsolidatedDTO(
+        agregados=AdminAggregatesDTO(
             ligacoes_agendadas_total=100,
             ligacoes_realizadas_total=80,
             reunioes_agendadas_total=20,

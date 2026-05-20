@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 from uuid import uuid4
 
 from app.contexts.auth.application.dtos import UsuarioAutenticadoDTO
-from app.contexts.auth.application.use_cases.validar_token import ValidarToken
+from app.contexts.auth.application.use_cases.validate_token import ValidarToken
 from app.contexts.auth.presentation.deps import get_validar_token_use_case
 
 

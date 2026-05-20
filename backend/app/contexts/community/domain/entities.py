@@ -3,7 +3,7 @@ from uuid import UUID
 
 
 @dataclass
-class MembroComunidade:
+class CommunityMember:
     id: UUID
     nome: str
     foto_url: str | None

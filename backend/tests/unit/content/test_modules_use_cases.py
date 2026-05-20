@@ -2,46 +2,46 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.conteudo.application.use_cases.modulos.crud_admin import (
-    AtualizarModulo,
-    CriarModulo,
-    RemoverModulo,
-    ReordenarModulos,
+from app.contexts.content.application.use_cases.modules.crud_admin import (
+    UpdateModule,
+    CreateModule,
+    DeleteModule,
+    ReorderModules,
 )
-from app.contexts.conteudo.domain.entities import Modulo
-from app.contexts.conteudo.domain.exceptions import ModuloNaoEncontrado
+from app.contexts.content.domain.entities import Module
+from app.contexts.content.domain.exceptions import ModuleNotFound
 
 
 class FakeModuloRepo:
-    def __init__(self, modulos: list[Modulo] | None = None) -> None:
-        self._modulos: list[Modulo] = modulos or []
+    def __init__(self, modulos: list[Module] | None = None) -> None:
+        self._modulos: list[Module] = modulos or []
         self.reorder_calls: list[list[tuple[UUID, int]]] = []
 
-    async def por_id(self, modulo_id: UUID) -> Modulo | None:
+    async def get_by_id(self, modulo_id: UUID) -> Module | None:
         return next((m for m in self._modulos if m.id == modulo_id), None)
 
-    async def criar(self, modulo: Modulo) -> Modulo:
+    async def create(self, modulo: Module) -> Module:
         self._modulos.append(modulo)
         return modulo
 
-    async def atualizar(self, modulo: Modulo) -> Modulo:
+    async def update(self, modulo: Module) -> Module:
         self._modulos = [modulo if m.id == modulo.id else m for m in self._modulos]
         return modulo
 
-    async def remover(self, modulo_id: UUID) -> None:
+    async def delete(self, modulo_id: UUID) -> None:
         self._modulos = [m for m in self._modulos if m.id != modulo_id]
 
-    async def reordenar(self, ordens: list[tuple[UUID, int]]) -> None:
+    async def reorder(self, ordens: list[tuple[UUID, int]]) -> None:
         self.reorder_calls.append(ordens)
 
 
-def _make_modulo(titulo: str = "Módulo", ordem: int = 0) -> Modulo:
-    return Modulo(id=uuid4(), trilha_id=uuid4(), titulo=titulo, descricao=None, ordem=ordem)
+def _make_modulo(titulo: str = "Módulo", ordem: int = 0) -> Module:
+    return Module(id=uuid4(), trilha_id=uuid4(), titulo=titulo, descricao=None, ordem=ordem)
 
 
 async def test_criar_modulo_ok() -> None:
     repo = FakeModuloRepo()
-    use_case = CriarModulo(repo)
+    use_case = CreateModule(repo)
     trilha_id = uuid4()
     modulo = await use_case.execute(trilha_id, "Intro", None, 0)
     assert modulo.titulo == "Intro"
@@ -49,15 +49,15 @@ async def test_criar_modulo_ok() -> None:
 
 
 async def test_atualizar_modulo_not_found_raises() -> None:
-    use_case = AtualizarModulo(FakeModuloRepo())
-    with pytest.raises(ModuloNaoEncontrado):
+    use_case = UpdateModule(FakeModuloRepo())
+    with pytest.raises(ModuleNotFound):
         await use_case.execute(uuid4(), "X", None, None)
 
 
 async def test_atualizar_modulo_keeps_unchanged_fields() -> None:
     modulo = _make_modulo("Original", 2)
     repo = FakeModuloRepo([modulo])
-    use_case = AtualizarModulo(repo)
+    use_case = UpdateModule(repo)
     updated = await use_case.execute(modulo.id, None, "Nova desc", None)
     assert updated.titulo == "Original"
     assert updated.descricao == "Nova desc"
@@ -65,22 +65,22 @@ async def test_atualizar_modulo_keeps_unchanged_fields() -> None:
 
 
 async def test_remover_modulo_not_found_raises() -> None:
-    use_case = RemoverModulo(FakeModuloRepo())
-    with pytest.raises(ModuloNaoEncontrado):
+    use_case = DeleteModule(FakeModuloRepo())
+    with pytest.raises(ModuleNotFound):
         await use_case.execute(uuid4())
 
 
 async def test_remover_modulo_ok() -> None:
     modulo = _make_modulo()
     repo = FakeModuloRepo([modulo])
-    use_case = RemoverModulo(repo)
+    use_case = DeleteModule(repo)
     await use_case.execute(modulo.id)
     assert repo._modulos == []
 
 
 async def test_reordenar_modulos_calls_repo() -> None:
     repo = FakeModuloRepo()
-    use_case = ReordenarModulos(repo)
+    use_case = ReorderModules(repo)
     ids = [(uuid4(), i) for i in range(3)]
     await use_case.execute(ids)
     assert repo.reorder_calls == [ids]

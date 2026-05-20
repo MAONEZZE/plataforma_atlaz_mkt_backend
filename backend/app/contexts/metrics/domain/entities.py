@@ -4,7 +4,7 @@ from uuid import UUID
 
 
 @dataclass
-class MetricaSemanal:
+class WeeklyMetric:
     id: UUID
     usuario_id: UUID
     semana_inicio: date
@@ -17,7 +17,7 @@ class MetricaSemanal:
 
 
 @dataclass
-class MetricasUsuarioMes:
+class UserMonthlyMetrics:
     """Aggregated metrics for one user in one month — used by admin dashboard."""
 
     usuario_id: UUID

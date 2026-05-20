@@ -3,23 +3,23 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from starlette import status
 
-from app.contexts.auth.domain.entities import Usuario
-from app.contexts.metricas.application.use_cases.atualizar_metrica import AtualizarMetrica
-from app.contexts.metricas.application.use_cases.criar_metrica import CriarMetrica
-from app.contexts.metricas.application.use_cases.listar_metricas import ListarMetricas
-from app.contexts.metricas.application.use_cases.obter_admin_consolidado import (
+from app.contexts.auth.domain.entities import User
+from app.contexts.metrics.application.use_cases.update_metric import AtualizarMetrica
+from app.contexts.metrics.application.use_cases.create_metric import CriarMetrica
+from app.contexts.metrics.application.use_cases.list_metrics import ListarMetricas
+from app.contexts.metrics.application.use_cases.get_admin_consolidated import (
     ObterAdminConsolidado,
 )
-from app.contexts.metricas.application.use_cases.obter_resumo_dashboard import ObterResumoDashboard
-from app.contexts.metricas.application.use_cases.obter_series_dashboard import ObterSeriesDashboard
-from app.contexts.metricas.domain.exceptions import (
+from app.contexts.metrics.application.use_cases.get_dashboard_summary import ObterResumoDashboard
+from app.contexts.metrics.application.use_cases.get_dashboard_series import ObterSeriesDashboard
+from app.contexts.metrics.domain.exceptions import (
     MetricaDuplicada,
     MetricaForaDaJanela,
-    MetricaNaoEncontrada,
+    MetricNotFound,
     MetricaNaoPertenceAoUsuario,
-    SemanaFuturaNaoPermitida,
+    FutureWeekNotAllowed,
 )
-from app.contexts.metricas.presentation.deps import (
+from app.contexts.metrics.presentation.deps import (
     get_admin_consolidado,
     get_atualizar_metrica,
     get_criar_metrica,
@@ -27,17 +27,17 @@ from app.contexts.metricas.presentation.deps import (
     get_resumo_dashboard,
     get_series_dashboard,
 )
-from app.contexts.metricas.presentation.schemas import (
-    AdminConsolidadoOut,
-    AgregadosAdminOut,
+from app.contexts.metrics.presentation.schemas import (
+    AdminConsolidatedOut,
+    AdminAggregatesOut,
     DeltaOut,
     MetricaIn,
     MetricaListOut,
     MetricaOut,
     MetricaPatchIn,
-    ResumoDashboardOut,
-    SeriesDashboardOut,
-    SerieSemanalOut,
+    DashboardSummaryOut,
+    DashboardSeriesOut,
+    WeeklySeriesOut,
     UsuarioMetricasMesOut,
 )
 from app.core.deps import get_current_user, require_admin
@@ -49,7 +49,7 @@ admin_router = APIRouter(tags=["admin-metricas"])
 
 @router.get("/metricas", response_model=MetricaListOut)
 async def listar_metricas(
-    user: Usuario = Depends(get_current_user),
+    user: User = Depends(get_current_user),
     use_case: ListarMetricas = Depends(get_listar_metricas),
     usuario_id: UUID | None = Query(default=None),
     mes: str | None = Query(default=None),
@@ -82,7 +82,7 @@ async def listar_metricas(
 @router.post("/metricas", response_model=MetricaOut, status_code=status.HTTP_201_CREATED)
 async def criar_metrica(
     body: MetricaIn,
-    user: Usuario = Depends(get_current_user),
+    user: User = Depends(get_current_user),
     use_case: CriarMetrica = Depends(get_criar_metrica),
 ) -> MetricaOut:
     is_admin = user.role == "admin"
@@ -104,7 +104,7 @@ async def criar_metrica(
             indicacoes=body.indicacoes,
             is_admin=is_admin,
         )
-    except SemanaFuturaNaoPermitida as exc:
+    except FutureWeekNotAllowed as exc:
         raise AppException("SEMANA_FUTURA", str(exc), 422) from exc
     except MetricaForaDaJanela as exc:
         raise AppException("FORA_DA_JANELA", str(exc), 422) from exc
@@ -128,8 +128,8 @@ async def criar_metrica(
 async def atualizar_metrica(
     metrica_id: UUID,
     body: MetricaPatchIn,
-    user: Usuario = Depends(get_current_user),
-    use_case: AtualizarMetrica = Depends(get_atualizar_metrica),
+    user: User = Depends(get_current_user),
+    use_case: UpdateMetrica = Depends(get_atualizar_metrica),
 ) -> MetricaOut:
     try:
         dto = await use_case.execute(
@@ -141,7 +141,7 @@ async def atualizar_metrica(
             reunioes_agendadas=body.reunioes_agendadas,
             indicacoes=body.indicacoes,
         )
-    except MetricaNaoEncontrada as exc:
+    except MetricNotFound as exc:
         raise AppException("METRICA_NOT_FOUND", str(exc), 404) from exc
     except MetricaNaoPertenceAoUsuario as exc:
         raise AppException("FORBIDDEN", str(exc), 403) from exc
@@ -161,16 +161,16 @@ async def atualizar_metrica(
     )
 
 
-@router.get("/dashboard/resumo", response_model=ResumoDashboardOut)
+@router.get("/dashboard/resumo", response_model=DashboardSummaryOut)
 async def obter_resumo(
-    user: Usuario = Depends(get_current_user),
+    user: User = Depends(get_current_user),
     use_case: ObterResumoDashboard = Depends(get_resumo_dashboard),
     usuario_id: UUID | None = Query(default=None),
     mes: str | None = Query(default=None),
-) -> ResumoDashboardOut:
+) -> DashboardSummaryOut:
     target_id = usuario_id if user.role == "admin" and usuario_id else user.id
     dto = await use_case.execute(usuario_id=target_id, mes=mes)
-    return ResumoDashboardOut(
+    return DashboardSummaryOut(
         mes=dto.mes,
         ligacoes_agendadas=DeltaOut(
             valor=dto.ligacoes_agendadas.valor, delta_pct=dto.ligacoes_agendadas.delta_pct
@@ -185,18 +185,18 @@ async def obter_resumo(
     )
 
 
-@router.get("/dashboard/series", response_model=SeriesDashboardOut)
+@router.get("/dashboard/series", response_model=DashboardSeriesOut)
 async def obter_series(
-    user: Usuario = Depends(get_current_user),
+    user: User = Depends(get_current_user),
     use_case: ObterSeriesDashboard = Depends(get_series_dashboard),
     usuario_id: UUID | None = Query(default=None),
     semanas: int = Query(default=12, ge=1, le=52),
-) -> SeriesDashboardOut:
+) -> DashboardSeriesOut:
     target_id = usuario_id if user.role == "admin" and usuario_id else user.id
     dto = await use_case.execute(usuario_id=target_id, semanas=semanas)
-    return SeriesDashboardOut(
+    return DashboardSeriesOut(
         series=[
-            SerieSemanalOut(
+            WeeklySeriesOut(
                 semana=s.semana,
                 ligacoes_agendadas=s.ligacoes_agendadas,
                 ligacoes_realizadas=s.ligacoes_realizadas,
@@ -208,18 +208,18 @@ async def obter_series(
     )
 
 
-@admin_router.get("/admin/dashboard", response_model=AdminConsolidadoOut)
+@admin_router.get("/admin/dashboard", response_model=AdminConsolidatedOut)
 async def admin_dashboard(
-    _admin: Usuario = Depends(require_admin),
+    _admin: User = Depends(require_admin),
     use_case: ObterAdminConsolidado = Depends(get_admin_consolidado),
     mes: str | None = Query(default=None),
     busca: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-) -> AdminConsolidadoOut:
+) -> AdminConsolidatedOut:
     dto = await use_case.execute(mes=mes, busca=busca, page=page, page_size=page_size)
-    return AdminConsolidadoOut(
-        agregados=AgregadosAdminOut(
+    return AdminConsolidatedOut(
+        agregados=AdminAggregatesOut(
             ligacoes_agendadas_total=dto.agregados.ligacoes_agendadas_total,
             ligacoes_realizadas_total=dto.agregados.ligacoes_realizadas_total,
             reunioes_agendadas_total=dto.agregados.reunioes_agendadas_total,

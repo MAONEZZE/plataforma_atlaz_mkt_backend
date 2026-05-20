@@ -15,10 +15,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import Usuario as AuthUsuario
-from app.contexts.comunidade.domain.entities import MembroComunidade
-from app.contexts.comunidade.infrastructure.repositories import SqlAlchemyComunidadeRepository
-from app.contexts.comunidade.presentation.router import _get_listar_comunidade, router
+from app.contexts.auth.domain.entities import User as AuthUser
+from app.contexts.community.domain.entities import CommunityMember
+from app.contexts.community.infrastructure.repositories import SqlAlchemyCommunityRepository
+from app.contexts.community.presentation.router import _get_listar_comunidade, router
 from app.core.deps import get_current_user
 from app.core.exceptions import AppException
 
@@ -32,19 +32,19 @@ async def _exc(request: Request, exc: AppException) -> JSONResponse:
     return JSONResponse(status_code=exc.status, content=body)
 
 
-_AUTH_USER = AuthUsuario(id=uuid4(), email="user@test.com", role="cliente", inativo=False)
+_AUTH_USER = AuthUser(id=uuid4(), email="user@test.com", role="cliente", inativo=False)
 
 
 class _FakeRepo:
     """Simulates repository that already filters: only clientes, not inativo."""
 
-    def __init__(self, membros: list[MembroComunidade], total: int) -> None:
+    def __init__(self, membros: list[CommunityMember], total: int) -> None:
         self._membros = membros
         self._total = total
         self.last_page: int | None = None
         self.last_page_size: int | None = None
 
-    async def listar_ativos(self, page: int, page_size: int) -> tuple[list[MembroComunidade], int]:
+    async def list_active(self, page: int, page_size: int) -> tuple[list[CommunityMember], int]:
         self.last_page = page
         self.last_page_size = page_size
         offset = (page - 1) * page_size
@@ -58,8 +58,8 @@ def _make_membro(
     linkedin_url: str | None = None,
     instagram_username: str | None = None,
     uid: UUID | None = None,
-) -> MembroComunidade:
-    return MembroComunidade(
+) -> CommunityMember:
+    return CommunityMember(
         id=uid or uuid4(),
         nome=nome,
         foto_url=foto_url,
@@ -69,7 +69,7 @@ def _make_membro(
 
 
 def _client(repo: _FakeRepo) -> TestClient:
-    from app.contexts.comunidade.application.use_cases.listar_comunidade import ListarComunidade
+    from app.contexts.community.application.use_cases.list_community import ListarComunidade
 
     _app.dependency_overrides[get_current_user] = lambda: _AUTH_USER
     _app.dependency_overrides[_get_listar_comunidade] = lambda: ListarComunidade(repo=repo)
@@ -151,12 +151,12 @@ def test_repo_sql_filter_excludes_admins() -> None:
     """Verify the SQL query in the repository filters role='cliente' and inativo=false."""
     import inspect
 
-    source = inspect.getsource(SqlAlchemyComunidadeRepository.listar_ativos)
+    source = inspect.getsource(SqlAlchemyCommunityRepository.listar_ativos)
     assert "role = 'cliente'" in source
     assert "inativo = false" in source
 
 
-def test_only_clientes_returned_by_listar_ativos() -> None:
+def test_only_clientes_returned_by_list_active() -> None:
     """Fake repo contract: listar_ativos must only return clientes (not admins)."""
     # listar_ativos is supposed to return pre-filtered clientes only.
     # We test that whatever listar_ativos returns ends up in the response without mutation.

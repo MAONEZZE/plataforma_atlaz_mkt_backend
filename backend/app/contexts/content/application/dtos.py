@@ -4,7 +4,7 @@ from uuid import UUID
 
 
 @dataclass
-class TrilhaProgressoDTO:
+class TrackProgressDTO:
     id: UUID
     titulo: str
     descricao: str | None
@@ -15,7 +15,7 @@ class TrilhaProgressoDTO:
 
 
 @dataclass
-class AulaResumoDTO:
+class LessonSummaryDTO:
     id: UUID
     titulo: str
     duracao_minutos: int | None
@@ -24,32 +24,32 @@ class AulaResumoDTO:
 
 
 @dataclass
-class ModuloComAulasDTO:
+class ModuleWithLessonsDTO:
     id: UUID
     titulo: str
     descricao: str | None
     ordem: int
-    aulas: list[AulaResumoDTO]
+    aulas: list[LessonSummaryDTO]
 
 
 @dataclass
-class TrilhaComModulosDTO:
+class TrackWithModulesDTO:
     id: UUID
     titulo: str
     descricao: str | None
     capa_url: str | None
     progresso_pct: float
-    modulos: list[ModuloComAulasDTO]
+    modulos: list[ModuleWithLessonsDTO]
 
 
 @dataclass
-class TrilhaResumoDTO:
+class TrackSummaryDTO:
     id: UUID
     titulo: str
 
 
 @dataclass
-class AulaDetalheDTO:
+class LessonDetailDTO:
     id: UUID
     modulo_id: UUID
     titulo: str
@@ -57,8 +57,8 @@ class AulaDetalheDTO:
     drive_file_id: str
     duracao_minutos: int | None
     concluida: bool
-    trilha: TrilhaResumoDTO
-    proxima_aula: AulaResumoDTO | None
+    trilha: TrackSummaryDTO
+    proxima_aula: LessonSummaryDTO | None
 
 
 @dataclass
@@ -69,7 +69,7 @@ class AutorDTO:
 
 
 @dataclass
-class ComentarioDTO:
+class CommentDTO:
     id: UUID
     autor: AutorDTO
     texto: str | None

@@ -1,14 +1,14 @@
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
-from app.contexts.auth.domain.entities import Usuario
+from app.contexts.auth.domain.entities import User
 
 if TYPE_CHECKING:
     from app.contexts.auth.application.dtos import TokensDTO
 
 
-class UsuarioAuthRepository(Protocol):
-    async def por_id(self, user_id: UUID) -> Usuario | None: ...
+class UserAuthRepository(Protocol):
+    async def get_by_id(self, user_id: UUID) -> User | None: ...
 
 
 class SupabaseAuthGateway(Protocol):

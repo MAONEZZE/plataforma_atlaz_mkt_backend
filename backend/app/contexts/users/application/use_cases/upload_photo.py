@@ -1,8 +1,8 @@
-from app.contexts.usuarios.application.dtos import FotoUrlDTO, UploadFotoInput
-from app.contexts.usuarios.application.storage_gateway import FotoStorageGateway
-from app.contexts.usuarios.domain.exceptions import FotoInvalida, UsuarioNaoEncontrado
-from app.contexts.usuarios.domain.repositories import UsuarioRepository
-from app.contexts.usuarios.infrastructure.image_validation import detect_image_mime
+from app.contexts.users.application.dtos import PhotoUrlDTO, UploadPhotoInput
+from app.contexts.users.application.storage_gateway import PhotoStorageGateway
+from app.contexts.users.domain.exceptions import InvalidPhoto, UserNotFound
+from app.contexts.users.domain.repositories import UserRepository
+from app.contexts.users.infrastructure.image_validation import detect_image_mime
 
 _EXTENSION_MAP: dict[str, str] = {
     "image/jpeg": "jpg",
@@ -13,25 +13,25 @@ _EXTENSION_MAP: dict[str, str] = {
 _MAX_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
-class UploadFoto:
-    def __init__(self, repo: UsuarioRepository, storage: FotoStorageGateway) -> None:
+class UploadPhoto:
+    def __init__(self, repo: UserRepository, storage: PhotoStorageGateway) -> None:
         self._repo = repo
         self._storage = storage
 
-    async def execute(self, inp: UploadFotoInput) -> FotoUrlDTO:
+    async def execute(self, inp: UploadPhotoInput) -> PhotoUrlDTO:
         if inp.content_type not in _EXTENSION_MAP:
-            raise FotoInvalida("Tipo de imagem não suportado. Use JPEG, PNG ou WebP.")
+            raise InvalidPhoto("Tipo de imagem não suportado. Use JPEG, PNG ou WebP.")
 
         if len(inp.data) > _MAX_SIZE:
-            raise FotoInvalida("Imagem deve ter no máximo 5 MB.")
+            raise InvalidPhoto("Imagem deve ter no máximo 5 MB.")
 
         detected = detect_image_mime(inp.data)
         if detected != inp.content_type:
-            raise FotoInvalida("Conteúdo do arquivo não corresponde ao tipo declarado.")
+            raise InvalidPhoto("Conteúdo do arquivo não corresponde ao tipo declarado.")
 
-        user = await self._repo.por_id(inp.usuario_id)
+        user = await self._repo.get_by_id(inp.usuario_id)
         if user is None:
-            raise UsuarioNaoEncontrado("Usuário não encontrado.")
+            raise UserNotFound("Usuário não encontrado.")
 
         ext = _EXTENSION_MAP[inp.content_type]
         foto_url = self._storage.upload(
@@ -42,6 +42,6 @@ class UploadFoto:
         )
 
         user.foto_url = foto_url
-        await self._repo.atualizar(user)
+        await self._repo.update(user)
 
-        return FotoUrlDTO(foto_url=foto_url)
+        return PhotoUrlDTO(foto_url=foto_url)

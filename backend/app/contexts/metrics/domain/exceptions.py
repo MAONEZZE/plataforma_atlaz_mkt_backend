@@ -1,18 +1,18 @@
-class MetricaNaoEncontrada(Exception):
+class MetricNotFound(Exception):
     pass
 
 
-class MetricaDuplicada(Exception):
+class DuplicateMetric(Exception):
     pass
 
 
-class MetricaForaDaJanela(Exception):
+class MetricOutOfWindow(Exception):
     pass
 
 
-class SemanaFuturaNaoPermitida(Exception):
+class FutureWeekNotAllowed(Exception):
     pass
 
 
-class MetricaNaoPertenceAoUsuario(Exception):
+class MetricNotOwnedByUser(Exception):
     pass

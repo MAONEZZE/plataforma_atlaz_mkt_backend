@@ -2,8 +2,8 @@ import zoneinfo
 from datetime import datetime
 from uuid import UUID
 
-from app.contexts.metricas.application.dtos import DeltaDTO, ResumoDashboardDTO
-from app.contexts.metricas.domain.repositories import MetricaRepository
+from app.contexts.metrics.application.dtos import DeltaDTO, DashboardSummaryDTO
+from app.contexts.metrics.domain.repositories import MetricaRepository
 
 _SP = zoneinfo.ZoneInfo("America/Sao_Paulo")
 
@@ -21,7 +21,7 @@ def _delta(valor: int, anterior: int) -> DeltaDTO:
     return DeltaDTO(valor=valor, delta_pct=round((valor - anterior) / anterior * 100, 1))
 
 
-class ObterResumoDashboard:
+class GetDashboardSummary:
     def __init__(self, repo: MetricaRepository) -> None:
         self._repo = repo
 
@@ -29,7 +29,7 @@ class ObterResumoDashboard:
         self,
         usuario_id: UUID,
         mes: str | None = None,
-    ) -> ResumoDashboardDTO:
+    ) -> DashboardSummaryDTO:
         if mes is None:
             today_sp = datetime.now(tz=_SP).date()
             mes = f"{today_sp.year:04d}-{today_sp.month:02d}"
@@ -37,7 +37,7 @@ class ObterResumoDashboard:
         atual = await self._repo.somar_por_mes(usuario_id, mes)
         anterior = await self._repo.somar_por_mes(usuario_id, _prev_mes(mes))
 
-        return ResumoDashboardDTO(
+        return DashboardSummaryDTO(
             mes=mes,
             ligacoes_agendadas=_delta(atual["ligacoes_agendadas"], anterior["ligacoes_agendadas"]),
             ligacoes_realizadas=_delta(

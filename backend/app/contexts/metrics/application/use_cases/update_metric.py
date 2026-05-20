@@ -2,19 +2,19 @@ from dataclasses import replace
 from datetime import date
 from uuid import UUID
 
-from app.contexts.metricas.application.dtos import MetricaDTO
-from app.contexts.metricas.application.use_cases.criar_metrica import _to_dto
-from app.contexts.metricas.domain.exceptions import (
+from app.contexts.metrics.application.dtos import MetricaDTO
+from app.contexts.metrics.application.use_cases.create_metric import _to_dto
+from app.contexts.metrics.domain.exceptions import (
     MetricaForaDaJanela,
-    MetricaNaoEncontrada,
+    MetricNotFound,
     MetricaNaoPertenceAoUsuario,
 )
-from app.contexts.metricas.domain.repositories import MetricaRepository
-from app.contexts.metricas.domain.rules import dentro_janela_edicao
+from app.contexts.metrics.domain.repositories import MetricaRepository
+from app.contexts.metrics.domain.rules import dentro_janela_edicao
 from app.shared.utils import now_sp, today_sp
 
 
-class AtualizarMetrica:
+class UpdateMetric:
     def __init__(self, repo: MetricaRepository) -> None:
         self._repo = repo
 
@@ -30,9 +30,9 @@ class AtualizarMetrica:
         today: date | None = None,
     ) -> MetricaDTO:
         today = today or today_sp()
-        metrica = await self._repo.por_id(metrica_id)
+        metrica = await self._repo.get_by_id(metrica_id)
         if metrica is None:
-            raise MetricaNaoEncontrada(f"Métrica {metrica_id} não encontrada.")
+            raise MetricNotFound(f"Métrica {metrica_id} não encontrada.")
 
         if not is_admin and metrica.usuario_id != requesting_user_id:
             raise MetricaNaoPertenceAoUsuario("Métrica não pertence ao usuário.")
@@ -60,5 +60,5 @@ class AtualizarMetrica:
             indicacoes=indicacoes if indicacoes is not None else metrica.indicacoes,
             atualizado_em=now_sp(),
         )
-        saved = await self._repo.atualizar(updated)
+        saved = await self._repo.update(updated)
         return _to_dto(saved)

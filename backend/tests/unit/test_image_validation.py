@@ -1,4 +1,4 @@
-from app.contexts.usuarios.infrastructure.image_validation import detect_image_mime
+from app.contexts.users.infrastructure.image_validation import detect_image_mime
 
 _JPEG = b"\xff\xd8\xff" + b"\x00" * 10
 _PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 10

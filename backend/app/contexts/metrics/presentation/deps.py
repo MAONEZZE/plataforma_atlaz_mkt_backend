@@ -1,27 +1,27 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.contexts.metricas.application.use_cases.atualizar_metrica import AtualizarMetrica
-from app.contexts.metricas.application.use_cases.criar_metrica import CriarMetrica
-from app.contexts.metricas.application.use_cases.listar_metricas import ListarMetricas
-from app.contexts.metricas.application.use_cases.obter_admin_consolidado import (
+from app.contexts.metrics.application.use_cases.update_metric import AtualizarMetrica
+from app.contexts.metrics.application.use_cases.create_metric import CriarMetrica
+from app.contexts.metrics.application.use_cases.list_metrics import ListarMetricas
+from app.contexts.metrics.application.use_cases.get_admin_consolidated import (
     ObterAdminConsolidado,
 )
-from app.contexts.metricas.application.use_cases.obter_resumo_dashboard import ObterResumoDashboard
-from app.contexts.metricas.application.use_cases.obter_series_dashboard import ObterSeriesDashboard
-from app.contexts.metricas.infrastructure.repositories import SqlAlchemyMetricaRepository
+from app.contexts.metrics.application.use_cases.get_dashboard_summary import ObterResumoDashboard
+from app.contexts.metrics.application.use_cases.get_dashboard_series import ObterSeriesDashboard
+from app.contexts.metrics.infrastructure.repositories import SqlAlchemyMetricRepository
 from app.core.db import get_session
 
 
-def _repo(session: AsyncSession) -> SqlAlchemyMetricaRepository:
-    return SqlAlchemyMetricaRepository(session)
+def _repo(session: AsyncSession) -> SqlAlchemyMetricRepository:
+    return SqlAlchemyMetricRepository(session)
 
 
 def get_criar_metrica(session: AsyncSession = Depends(get_session)) -> CriarMetrica:
     return CriarMetrica(_repo(session))
 
 
-def get_atualizar_metrica(session: AsyncSession = Depends(get_session)) -> AtualizarMetrica:
+def get_atualizar_metrica(session: AsyncSession = Depends(get_session)) -> UpdateMetrica:
     return AtualizarMetrica(_repo(session))
 
 

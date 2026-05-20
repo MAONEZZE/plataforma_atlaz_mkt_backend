@@ -1,12 +1,12 @@
 from uuid import UUID
 
-from app.contexts.metricas.application.dtos import MetricaDTO
-from app.contexts.metricas.application.use_cases.criar_metrica import _to_dto
-from app.contexts.metricas.domain.repositories import MetricaRepository
+from app.contexts.metrics.application.dtos import MetricaDTO
+from app.contexts.metrics.application.use_cases.create_metric import _to_dto
+from app.contexts.metrics.domain.repositories import MetricaRepository
 from app.shared.application.dtos import PagedResponse
 
 
-class ListarMetricas:
+class ListMetrics:
     def __init__(self, repo: MetricaRepository) -> None:
         self._repo = repo
 

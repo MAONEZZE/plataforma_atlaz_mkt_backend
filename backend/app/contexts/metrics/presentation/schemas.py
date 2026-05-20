@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
-class MetricaIn(BaseModel):
+class MetricIn(BaseModel):
     usuario_id: UUID | None = None
     semana_inicio: date
     ligacoes_agendadas: int = Field(ge=0)
@@ -13,14 +13,14 @@ class MetricaIn(BaseModel):
     indicacoes: int = Field(ge=0)
 
 
-class MetricaPatchIn(BaseModel):
+class MetricPatchIn(BaseModel):
     ligacoes_agendadas: int | None = Field(default=None, ge=0)
     ligacoes_realizadas: int | None = Field(default=None, ge=0)
     reunioes_agendadas: int | None = Field(default=None, ge=0)
     indicacoes: int | None = Field(default=None, ge=0)
 
 
-class MetricaOut(BaseModel):
+class MetricOut(BaseModel):
     id: UUID
     usuario_id: UUID
     semana_inicio: date
@@ -32,7 +32,7 @@ class MetricaOut(BaseModel):
     atualizado_em: datetime
 
 
-class MetricaListOut(BaseModel):
+class MetricListOut(BaseModel):
     items: list[MetricaOut]
     page: int
     page_size: int
@@ -44,7 +44,7 @@ class DeltaOut(BaseModel):
     delta_pct: float | None
 
 
-class ResumoDashboardOut(BaseModel):
+class DashboardSummaryOut(BaseModel):
     mes: str
     ligacoes_agendadas: DeltaOut
     ligacoes_realizadas: DeltaOut
@@ -52,7 +52,7 @@ class ResumoDashboardOut(BaseModel):
     indicacoes: DeltaOut
 
 
-class SerieSemanalOut(BaseModel):
+class WeeklySeriesOut(BaseModel):
     semana: date
     ligacoes_agendadas: int
     ligacoes_realizadas: int
@@ -60,11 +60,11 @@ class SerieSemanalOut(BaseModel):
     indicacoes: int
 
 
-class SeriesDashboardOut(BaseModel):
-    series: list[SerieSemanalOut]
+class DashboardSeriesOut(BaseModel):
+    series: list[WeeklySeriesOut]
 
 
-class UsuarioMetricasMesOut(BaseModel):
+class UserMonthlyMetricsOut(BaseModel):
     usuario_id: UUID
     nome: str
     foto_url: str | None
@@ -75,7 +75,7 @@ class UsuarioMetricasMesOut(BaseModel):
     ultima_metrica_em: date | None
 
 
-class AgregadosAdminOut(BaseModel):
+class AdminAggregatesOut(BaseModel):
     ligacoes_agendadas_total: int
     ligacoes_realizadas_total: int
     reunioes_agendadas_total: int
@@ -84,8 +84,8 @@ class AgregadosAdminOut(BaseModel):
     mentorados_sem_metrica_no_mes: int
 
 
-class AdminConsolidadoOut(BaseModel):
-    agregados: AgregadosAdminOut
+class AdminConsolidatedOut(BaseModel):
+    agregados: AdminAggregatesOut
     items: list[UsuarioMetricasMesOut]
     page: int
     page_size: int

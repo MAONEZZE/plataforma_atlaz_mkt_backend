@@ -9,8 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.shared.infrastructure.sqlalchemy_base import Base
 
 
-class TrilhaModel(Base):
-    __tablename__ = "trilha"
+class TrackModel(Base):
+    __tablename__ = "tracks"
     __table_args__ = {"schema": "public", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
@@ -21,14 +21,14 @@ class TrilhaModel(Base):
     criado_em: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
-class ModuloModel(Base):
-    __tablename__ = "modulo"
+class ModuleModel(Base):
+    __tablename__ = "modules"
     __table_args__ = {"schema": "public", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     trilha_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.trilha.id", ondelete="CASCADE"),
+        ForeignKey("public.tracks.id", ondelete="CASCADE"),
         nullable=False,
     )
     titulo: Mapped[str] = mapped_column(Text, nullable=False)
@@ -36,14 +36,14 @@ class ModuloModel(Base):
     ordem: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
-class AulaModel(Base):
-    __tablename__ = "aula"
+class LessonModel(Base):
+    __tablename__ = "lessons"
     __table_args__ = {"schema": "public", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     modulo_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.modulo.id", ondelete="CASCADE"),
+        ForeignKey("public.modules.id", ondelete="CASCADE"),
         nullable=False,
     )
     titulo: Mapped[str] = mapped_column(Text, nullable=False)
@@ -54,8 +54,8 @@ class AulaModel(Base):
     criado_em: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
-class AlunoAulaModel(Base):
-    __tablename__ = "aluno_aula"
+class StudentLessonModel(Base):
+    __tablename__ = "student_lessons"
     __table_args__ = (
         UniqueConstraint("usuario_id", "aula_id"),
         {"schema": "public", "extend_existing": True},
@@ -63,30 +63,30 @@ class AlunoAulaModel(Base):
 
     usuario_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.usuario.id", ondelete="CASCADE"),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
         primary_key=True,
     )
     aula_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.aula.id", ondelete="CASCADE"),
+        ForeignKey("public.lessons.id", ondelete="CASCADE"),
         primary_key=True,
     )
     concluida_em: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
-class ComentarioModel(Base):
-    __tablename__ = "comentario"
+class CommentModel(Base):
+    __tablename__ = "comments"
     __table_args__ = {"schema": "public", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     aula_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.aula.id", ondelete="CASCADE"),
+        ForeignKey("public.lessons.id", ondelete="CASCADE"),
         nullable=False,
     )
     usuario_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.usuario.id", ondelete="CASCADE"),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,
     )
     texto: Mapped[str] = mapped_column(Text, nullable=False)
@@ -95,10 +95,10 @@ class ComentarioModel(Base):
     apagado_em: Mapped[datetime | None] = mapped_column(TIMESTAMP, nullable=True)
 
 
-class UsuarioConteudoModel(Base):
+class UserContentModel(Base):
     """Read-only view of public.usuario fields needed by the conteudo context."""
 
-    __tablename__ = "usuario"
+    __tablename__ = "users"
     __table_args__ = {"schema": "public", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)

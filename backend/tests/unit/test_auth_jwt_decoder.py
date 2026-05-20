@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from jose import jwt
 
-from app.contexts.auth.domain.exceptions import TokenExpirado, TokenInvalido
+from app.contexts.auth.domain.exceptions import ExpiredToken, InvalidToken
 
 TEST_SECRET = "test-jwt-secret"
 
@@ -43,7 +43,7 @@ def test_expired_token_raises_token_expirado(monkeypatch: pytest.MonkeyPatch) ->
     from app.contexts.auth.infrastructure import jwt_decoder
 
     token = _make_token(exp_delta=timedelta(seconds=-1))
-    with pytest.raises(TokenExpirado):
+    with pytest.raises(ExpiredToken):
         jwt_decoder.decode_supabase_jwt(token)
 
 
@@ -54,5 +54,5 @@ def test_wrong_secret_raises_token_invalido(monkeypatch: pytest.MonkeyPatch) -> 
     from app.contexts.auth.infrastructure import jwt_decoder
 
     token = _make_token(secret="wrong-secret")
-    with pytest.raises(TokenInvalido):
+    with pytest.raises(InvalidToken):
         jwt_decoder.decode_supabase_jwt(token)

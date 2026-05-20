@@ -2,7 +2,7 @@ import httpx
 from jose import JWTError, jwk, jwt
 from jose.exceptions import ExpiredSignatureError
 
-from app.contexts.auth.domain.exceptions import TokenExpirado, TokenInvalido
+from app.contexts.auth.domain.exceptions import ExpiredToken, InvalidToken
 from app.core.config import settings
 
 _public_keys: dict[str, object] = {}
@@ -27,7 +27,7 @@ def decode_supabase_jwt(token: str) -> dict[str, object]:
                 _load_jwks()
             key = _public_keys.get(kid)
             if key is None:
-                raise TokenInvalido("Chave pública não encontrada para kid.")
+                raise InvalidToken("Chave pública não encontrada para kid.")
             return jwt.decode(token, key, algorithms=["ES256"], audience="authenticated")
 
         return jwt.decode(
@@ -36,9 +36,9 @@ def decode_supabase_jwt(token: str) -> dict[str, object]:
             algorithms=["HS256"],
             audience="authenticated",
         )
-    except TokenInvalido:
+    except InvalidToken:
         raise
     except ExpiredSignatureError as exc:
-        raise TokenExpirado(str(exc)) from exc
+        raise ExpiredToken(str(exc)) from exc
     except JWTError as exc:
-        raise TokenInvalido(str(exc)) from exc
+        raise InvalidToken(str(exc)) from exc

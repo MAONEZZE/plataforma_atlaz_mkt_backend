@@ -1,22 +1,22 @@
 from uuid import UUID, uuid4
 
-from app.contexts.conteudo.domain.entities import Comentario
-from app.contexts.conteudo.domain.exceptions import AulaNaoEncontrada
-from app.contexts.conteudo.domain.repositories import AulaRepository, ComentarioRepository
+from app.contexts.content.domain.entities import Comment
+from app.contexts.content.domain.exceptions import LessonNotFound
+from app.contexts.content.domain.repositories import AulaRepository, ComentarioRepository
 from app.shared.utils import now_sp
 
 
-class CriarComentario:
-    def __init__(self, aula_repo: AulaRepository, comentario_repo: ComentarioRepository) -> None:
+class CreateComment:
+    def __init__(self, aula_repo: LessonRepository, comentario_repo: CommentRepository) -> None:
         self._aula_repo = aula_repo
         self._comentario_repo = comentario_repo
 
-    async def execute(self, aula_id: UUID, usuario_id: UUID, texto: str) -> Comentario:
-        aula = await self._aula_repo.por_id(aula_id)
+    async def execute(self, aula_id: UUID, usuario_id: UUID, texto: str) -> Comment:
+        aula = await self._aula_repo.get_by_id(aula_id)
         if aula is None:
-            raise AulaNaoEncontrada(f"Aula {aula_id} não encontrada.")
+            raise LessonNotFound(f"Aula {aula_id} não encontrada.")
 
-        comentario = Comentario(
+        comentario = Comment(
             id=uuid4(),
             aula_id=aula_id,
             usuario_id=usuario_id,

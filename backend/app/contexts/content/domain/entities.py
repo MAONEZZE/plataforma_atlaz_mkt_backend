@@ -4,7 +4,7 @@ from uuid import UUID
 
 
 @dataclass
-class Trilha:
+class Track:
     id: UUID
     titulo: str
     descricao: str | None
@@ -14,7 +14,7 @@ class Trilha:
 
 
 @dataclass
-class Modulo:
+class Module:
     id: UUID
     trilha_id: UUID
     titulo: str
@@ -23,7 +23,7 @@ class Modulo:
 
 
 @dataclass
-class Aula:
+class Lesson:
     id: UUID
     modulo_id: UUID
     titulo: str
@@ -35,14 +35,14 @@ class Aula:
 
 
 @dataclass
-class AlunoAula:
+class StudentLesson:
     usuario_id: UUID
     aula_id: UUID
     concluida_em: datetime
 
 
 @dataclass
-class Comentario:
+class Comment:
     id: UUID
     aula_id: UUID
     usuario_id: UUID
@@ -53,7 +53,7 @@ class Comentario:
 
 
 @dataclass
-class ComentarioLeitura:
+class CommentRead:
     """Comentario com dados denormalizados do autor para listagem."""
 
     id: UUID

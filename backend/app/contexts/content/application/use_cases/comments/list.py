@@ -1,18 +1,18 @@
 from uuid import UUID
 
-from app.contexts.conteudo.application.dtos import AutorDTO, ComentarioDTO
-from app.contexts.conteudo.domain.repositories import ComentarioRepository
+from app.contexts.content.application.dtos import AutorDTO, ComentarioDTO
+from app.contexts.content.domain.repositories import ComentarioRepository
 from app.shared.application.dtos import PagedResponse
 
 
-class ListarComentarios:
-    def __init__(self, repo: ComentarioRepository) -> None:
+class ListComments:
+    def __init__(self, repo: CommentRepository) -> None:
         self._repo = repo
 
     async def execute(
         self, aula_id: UUID, page: int, page_size: int, current_user_id: UUID
     ) -> PagedResponse[ComentarioDTO]:
-        items, total = await self._repo.listar_por_aula(aula_id, page, page_size)
+        items, total = await self._repo.list_by_lesson(aula_id, page, page_size)
         dtos = [
             ComentarioDTO(
                 id=c.id,

@@ -5,25 +5,25 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.metricas.application.dtos import (
-    AdminConsolidadoDTO,
+from app.contexts.metrics.application.dtos import (
+    AdminConsolidatedDTO,
     MetricaDTO,
-    ResumoDashboardDTO,
-    SeriesDashboardDTO,
+    DashboardSummaryDTO,
+    DashboardSeriesDTO,
 )
-from app.contexts.metricas.application.use_cases.criar_metrica import CriarMetrica
-from app.contexts.metricas.application.use_cases.atualizar_metrica import AtualizarMetrica
-from app.contexts.metricas.application.use_cases.listar_metricas import ListarMetricas
-from app.contexts.metricas.application.use_cases.obter_resumo_dashboard import ObterResumoDashboard
-from app.contexts.metricas.application.use_cases.obter_series_dashboard import ObterSeriesDashboard
-from app.contexts.metricas.application.use_cases.obter_admin_consolidado import ObterAdminConsolidado
-from app.contexts.metricas.domain.entities import MetricaSemanal, MetricasUsuarioMes
-from app.contexts.metricas.domain.exceptions import (
+from app.contexts.metrics.application.use_cases.create_metric import CriarMetrica
+from app.contexts.metrics.application.use_cases.update_metric import AtualizarMetrica
+from app.contexts.metrics.application.use_cases.list_metrics import ListarMetricas
+from app.contexts.metrics.application.use_cases.get_dashboard_summary import ObterResumoDashboard
+from app.contexts.metrics.application.use_cases.get_dashboard_series import ObterSeriesDashboard
+from app.contexts.metrics.application.use_cases.get_admin_consolidated import ObterAdminConsolidado
+from app.contexts.metrics.domain.entities import WeeklyMetric, UserMonthlyMetrics
+from app.contexts.metrics.domain.exceptions import (
     MetricaDuplicada,
     MetricaForaDaJanela,
-    MetricaNaoEncontrada,
+    MetricNotFound,
     MetricaNaoPertenceAoUsuario,
-    SemanaFuturaNaoPermitida,
+    FutureWeekNotAllowed,
 )
 
 
@@ -34,9 +34,9 @@ MONDAY = date(2026, 5, 11)  # Monday of current week
 def _make_metrica(
     usuario_id: UUID | None = None,
     semana_inicio: date = MONDAY,
-) -> MetricaSemanal:
+) -> WeeklyMetric:
     now = datetime.now(tz=UTC)
-    return MetricaSemanal(
+    return WeeklyMetric(
         id=uuid4(),
         usuario_id=usuario_id or uuid4(),
         semana_inicio=semana_inicio,
@@ -106,7 +106,7 @@ async def test_criar_metrica_future_semana_raises() -> None:
     future = date(2026, 5, 18)  # next Monday
     repo = _mock_repo(por_usuario_e_semana=None)
     uc = CriarMetrica(repo)
-    with pytest.raises(SemanaFuturaNaoPermitida):
+    with pytest.raises(FutureWeekNotAllowed):
         await uc.execute(
             usuario_id=uuid4(),
             semana_inicio=future,
@@ -197,7 +197,7 @@ async def test_atualizar_metrica_happy_path() -> None:
 async def test_atualizar_metrica_not_found_raises() -> None:
     repo = _mock_repo(por_id=None)
     uc = AtualizarMetrica(repo)
-    with pytest.raises(MetricaNaoEncontrada):
+    with pytest.raises(MetricNotFound):
         await uc.execute(
             metrica_id=uuid4(),
             requesting_user_id=uuid4(),
@@ -308,7 +308,7 @@ async def test_resumo_defaults_mes_to_current() -> None:
     }
     uc = ObterResumoDashboard(repo)
     result = await uc.execute(usuario_id=uuid4())
-    assert isinstance(result, ResumoDashboardDTO)
+    assert isinstance(result, DashboardSummaryDTO)
     assert repo.somar_por_mes.call_count == 2  # current + previous month
 
 
@@ -322,7 +322,7 @@ async def test_series_fills_gaps_with_zeros() -> None:
     result = await uc.execute(
         usuario_id=usuario_id, semanas=4, today=date(2026, 5, 14)
     )
-    assert isinstance(result, SeriesDashboardDTO)
+    assert isinstance(result, DashboardSeriesDTO)
     assert len(result.series) == 4
     for item in result.series:
         assert item.ligacoes_agendadas == 0
@@ -356,7 +356,7 @@ async def test_series_includes_data_when_available() -> None:
     now = datetime.now(tz=UTC)
     # May 11 is in the last 4 weeks of May 14
     week = date(2026, 5, 11)
-    metrica = MetricaSemanal(
+    metrica = WeeklyMetric(
         id=uuid4(), usuario_id=usuario_id, semana_inicio=week,
         ligacoes_agendadas=5, ligacoes_realizadas=4,
         reunioes_agendadas=2, indicacoes=1,
@@ -377,13 +377,13 @@ async def test_series_includes_data_when_available() -> None:
 @pytest.mark.asyncio
 async def test_admin_consolidado_aggregates_correctly() -> None:
     items = [
-        MetricasUsuarioMes(
+        UserMonthlyMetrics(
             usuario_id=uuid4(), nome="Alice", foto_url=None,
             ligacoes_agendadas=100, ligacoes_realizadas=80,
             reunioes_agendadas=25, indicacoes=5,
             ultima_metrica_em=date(2026, 5, 4),
         ),
-        MetricasUsuarioMes(
+        UserMonthlyMetrics(
             usuario_id=uuid4(), nome="Bob", foto_url=None,
             ligacoes_agendadas=0, ligacoes_realizadas=0,
             reunioes_agendadas=0, indicacoes=0,
@@ -394,7 +394,7 @@ async def test_admin_consolidado_aggregates_correctly() -> None:
     uc = ObterAdminConsolidado(repo)
     result = await uc.execute(mes="2026-05", busca=None, page=1, page_size=20)
 
-    assert isinstance(result, AdminConsolidadoDTO)
+    assert isinstance(result, AdminConsolidatedDTO)
     assert result.agregados.ligacoes_agendadas_total == 100
     assert result.agregados.mentorados_com_metrica_no_mes == 1
     assert result.agregados.mentorados_sem_metrica_no_mes == 1
@@ -404,13 +404,13 @@ async def test_admin_consolidado_aggregates_correctly() -> None:
 @pytest.mark.asyncio
 async def test_admin_consolidado_filters_by_busca() -> None:
     items = [
-        MetricasUsuarioMes(
+        UserMonthlyMetrics(
             usuario_id=uuid4(), nome="Alice", foto_url=None,
             ligacoes_agendadas=10, ligacoes_realizadas=8,
             reunioes_agendadas=2, indicacoes=1,
             ultima_metrica_em=date(2026, 5, 4),
         ),
-        MetricasUsuarioMes(
+        UserMonthlyMetrics(
             usuario_id=uuid4(), nome="Carlos", foto_url=None,
             ligacoes_agendadas=5, ligacoes_realizadas=4,
             reunioes_agendadas=1, indicacoes=0,
@@ -428,7 +428,7 @@ async def test_admin_consolidado_filters_by_busca() -> None:
 @pytest.mark.asyncio
 async def test_admin_consolidado_paginates() -> None:
     items = [
-        MetricasUsuarioMes(
+        UserMonthlyMetrics(
             usuario_id=uuid4(), nome=f"User{i}", foto_url=None,
             ligacoes_agendadas=i, ligacoes_realizadas=0,
             reunioes_agendadas=0, indicacoes=0,

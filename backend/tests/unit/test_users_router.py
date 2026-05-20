@@ -10,14 +10,14 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import Usuario as AuthUsuario
-from app.contexts.usuarios.application.dtos import FotoUrlDTO
-from app.contexts.usuarios.application.use_cases.atualizar_me import AtualizarMe
-from app.contexts.usuarios.application.use_cases.obter_me import ObterMe
-from app.contexts.usuarios.application.use_cases.upload_foto import UploadFoto
-from app.contexts.usuarios.domain.entities import Usuario
-from app.contexts.usuarios.domain.exceptions import FotoInvalida, UsuarioNaoEncontrado
-from app.contexts.usuarios.presentation.router import (
+from app.contexts.auth.domain.entities import User as AuthUser
+from app.contexts.users.application.dtos import PhotoUrlDTO
+from app.contexts.users.application.use_cases.update_me import UpdateMe
+from app.contexts.users.application.use_cases.get_me import ObterMe
+from app.contexts.users.application.use_cases.upload_photo import UploadPhoto
+from app.contexts.users.domain.entities import User
+from app.contexts.users.domain.exceptions import InvalidPhoto, UserNotFound
+from app.contexts.users.presentation.router import (
     _atualizar_me,
     _obter_me,
     _upload_foto,
@@ -45,11 +45,11 @@ async def _exc(request: Request, exc: AppException) -> JSONResponse:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _auth_user(role: str = "cliente") -> AuthUsuario:
-    return AuthUsuario(id=_UID, email="ana@test.com", role=role, inativo=False)
+def _auth_user(role: str = "cliente") -> AuthUser:
+    return AuthUser(id=_UID, email="ana@test.com", role=role, inativo=False)
 
 
-def _domain_user() -> Usuario:
+def _domain_user() -> User:
     return Usuario(
         id=_UID,
         nome="Ana",
@@ -114,7 +114,7 @@ def test_get_me_returns_200() -> None:
 
 
 def test_get_me_not_found_returns_404() -> None:
-    uc = _mock_use_case(ObterMe, side_effect=UsuarioNaoEncontrado("x"))
+    uc = _mock_use_case(ObterMe, side_effect=UserNotFound("x"))
     client = _client(obter=uc)
     try:
         resp = client.get("/api/v1/me")
@@ -188,7 +188,7 @@ def test_patch_me_domain_error_returns_400() -> None:
 
 
 def test_patch_me_not_found_returns_404() -> None:
-    uc = _mock_use_case(AtualizarMe, side_effect=UsuarioNaoEncontrado("x"))
+    uc = _mock_use_case(AtualizarMe, side_effect=UserNotFound("x"))
     client = _client(atualizar=uc)
     try:
         resp = client.patch("/api/v1/me", json={"nome": "X"})
@@ -203,7 +203,7 @@ _JPEG_BYTES = b"\xff\xd8\xff" + b"\x00" * 10
 
 
 def test_post_foto_returns_200() -> None:
-    uc = _mock_use_case(UploadFoto, return_value=FotoUrlDTO(foto_url="https://cdn.x/foto.jpg"))
+    uc = _mock_use_case(UploadFoto, return_value=PhotoUrlDTO(foto_url="https://cdn.x/foto.jpg"))
     client = _client(upload=uc)
     try:
         resp = client.post(
@@ -217,7 +217,7 @@ def test_post_foto_returns_200() -> None:
 
 
 def test_post_foto_invalid_returns_400() -> None:
-    uc = _mock_use_case(UploadFoto, side_effect=FotoInvalida("Tipo não suportado."))
+    uc = _mock_use_case(UploadFoto, side_effect=InvalidPhoto("Tipo não suportado."))
     client = _client(upload=uc)
     try:
         resp = client.post(
@@ -231,7 +231,7 @@ def test_post_foto_invalid_returns_400() -> None:
 
 
 def test_post_foto_user_not_found_returns_404() -> None:
-    uc = _mock_use_case(UploadFoto, side_effect=UsuarioNaoEncontrado("x"))
+    uc = _mock_use_case(UploadFoto, side_effect=UserNotFound("x"))
     client = _client(upload=uc)
     try:
         resp = client.post(

@@ -1,6 +1,6 @@
 from datetime import date
 import pytest
-from app.contexts.metricas.domain.rules import normalize_to_monday, dentro_janela_edicao
+from app.contexts.metrics.domain.rules import normalize_to_monday, dentro_janela_edicao
 
 
 def test_normalize_monday_stays_monday() -> None:

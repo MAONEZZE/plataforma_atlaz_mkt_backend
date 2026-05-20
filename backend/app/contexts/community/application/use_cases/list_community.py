@@ -1,16 +1,16 @@
-from app.contexts.comunidade.application.dtos import ListarComunidadeResultDTO, MembroComunidadeDTO
-from app.contexts.comunidade.domain.repositories import ComunidadeRepository
+from app.contexts.community.application.dtos import ListCommunityResultDTO, CommunityMemberDTO
+from app.contexts.community.domain.repositories import CommunityRepository
 
 
-class ListarComunidade:
-    def __init__(self, repo: ComunidadeRepository) -> None:
+class ListCommunity:
+    def __init__(self, repo: CommunityRepository) -> None:
         self._repo = repo
 
-    async def execute(self, page: int, page_size: int) -> ListarComunidadeResultDTO:
-        membros, total = await self._repo.listar_ativos(page=page, page_size=page_size)
-        return ListarComunidadeResultDTO(
+    async def execute(self, page: int, page_size: int) -> ListCommunityResultDTO:
+        membros, total = await self._repo.list_active(page=page, page_size=page_size)
+        return ListCommunityResultDTO(
             items=[
-                MembroComunidadeDTO(
+                CommunityMemberDTO(
                     id=m.id,
                     nome=m.nome,
                     foto_url=m.foto_url,

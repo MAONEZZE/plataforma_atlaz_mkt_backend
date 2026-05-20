@@ -14,7 +14,7 @@ class PatchMeBody(BaseModel):
     descricao: str | None = None
 
 
-class UsuarioResponse(BaseModel):
+class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -29,5 +29,5 @@ class UsuarioResponse(BaseModel):
     criado_em: datetime
 
 
-class FotoUrlResponse(BaseModel):
+class PhotoUrlResponse(BaseModel):
     foto_url: str

@@ -1,9 +1,9 @@
 from typing import Protocol
 from uuid import UUID
 
-from app.contexts.usuarios.domain.entities import Usuario
+from app.contexts.users.domain.entities import User
 
 
-class UsuarioRepository(Protocol):
-    async def por_id(self, user_id: UUID) -> Usuario | None: ...
-    async def atualizar(self, usuario: Usuario) -> Usuario: ...
+class UserRepository(Protocol):
+    async def get_by_id(self, user_id: UUID) -> User | None: ...
+    async def update(self, user: User) -> User: ...

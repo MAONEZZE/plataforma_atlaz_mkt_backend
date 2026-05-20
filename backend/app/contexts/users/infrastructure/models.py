@@ -8,8 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.shared.infrastructure.sqlalchemy_base import Base
 
 
-class UsuarioModel(Base):
-    __tablename__ = "usuario"
+class UserModel(Base):
+    __tablename__ = "users"
     __table_args__ = {"schema": "public", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)

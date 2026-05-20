@@ -4,7 +4,7 @@ from uuid import UUID
 
 
 @dataclass
-class MetricaDTO:
+class MetricDTO:
     id: UUID
     usuario_id: UUID
     semana_inicio: date
@@ -23,7 +23,7 @@ class DeltaDTO:
 
 
 @dataclass
-class ResumoDashboardDTO:
+class DashboardSummaryDTO:
     mes: str
     ligacoes_agendadas: DeltaDTO
     ligacoes_realizadas: DeltaDTO
@@ -32,7 +32,7 @@ class ResumoDashboardDTO:
 
 
 @dataclass
-class SerieSemanalDTO:
+class WeeklySeriesDTO:
     semana: date
     ligacoes_agendadas: int
     ligacoes_realizadas: int
@@ -41,12 +41,12 @@ class SerieSemanalDTO:
 
 
 @dataclass
-class SeriesDashboardDTO:
-    series: list[SerieSemanalDTO]
+class DashboardSeriesDTO:
+    series: list[WeeklySeriesDTO]
 
 
 @dataclass
-class UsuarioMetricasMesDTO:
+class UserMonthlyMetricsDTO:
     usuario_id: UUID
     nome: str
     foto_url: str | None
@@ -58,7 +58,7 @@ class UsuarioMetricasMesDTO:
 
 
 @dataclass
-class AgregadosAdminDTO:
+class AdminAggregatesDTO:
     ligacoes_agendadas_total: int
     ligacoes_realizadas_total: int
     reunioes_agendadas_total: int
@@ -68,8 +68,8 @@ class AgregadosAdminDTO:
 
 
 @dataclass
-class AdminConsolidadoDTO:
-    agregados: AgregadosAdminDTO
+class AdminConsolidatedDTO:
+    agregados: AdminAggregatesDTO
     items: list[UsuarioMetricasMesDTO]
     page: int
     page_size: int

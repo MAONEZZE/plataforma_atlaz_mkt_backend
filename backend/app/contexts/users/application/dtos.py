@@ -4,7 +4,7 @@ from uuid import UUID
 
 
 @dataclass(frozen=True)
-class UsuarioDTO:
+class UserDTO:
     id: UUID
     nome: str
     email: str
@@ -18,7 +18,7 @@ class UsuarioDTO:
 
 
 @dataclass(frozen=True)
-class AtualizarMeInput:
+class UpdateMeInput:
     nome: str | None
     telefone: str | None
     linkedin_url: str | None
@@ -27,12 +27,12 @@ class AtualizarMeInput:
 
 
 @dataclass(frozen=True)
-class UploadFotoInput:
+class UploadPhotoInput:
     usuario_id: UUID
     content_type: str
     data: bytes
 
 
 @dataclass(frozen=True)
-class FotoUrlDTO:
+class PhotoUrlDTO:
     foto_url: str

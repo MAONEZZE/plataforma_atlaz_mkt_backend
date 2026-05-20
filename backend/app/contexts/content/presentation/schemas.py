@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # ── Trilha schemas ─────────────────────────────────────────────────────────────
 
 
-class TrilhaProgressoOut(BaseModel):
+class TrackProgressOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -18,7 +18,7 @@ class TrilhaProgressoOut(BaseModel):
     progresso_pct: float
 
 
-class AulaResumoOut(BaseModel):
+class LessonSummaryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -28,24 +28,24 @@ class AulaResumoOut(BaseModel):
     concluida: bool
 
 
-class ModuloComAulasOut(BaseModel):
+class ModuleWithLessonsOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     titulo: str
     descricao: str | None
     ordem: int
-    aulas: list[AulaResumoOut]
+    aulas: list[LessonSummaryOut]
 
 
-class TrilhaResumoOut(BaseModel):
+class TrackResumoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     titulo: str
 
 
-class TrilhaComModulosOut(BaseModel):
+class TrackWithModulesOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -59,7 +59,7 @@ class TrilhaComModulosOut(BaseModel):
 # ── Aula schemas ───────────────────────────────────────────────────────────────
 
 
-class AulaDetalheOut(BaseModel):
+class LessonDetailOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -69,21 +69,21 @@ class AulaDetalheOut(BaseModel):
     drive_file_id: str
     duracao_minutos: int | None
     concluida: bool
-    trilha: TrilhaResumoOut
-    proxima_aula: AulaResumoOut | None
+    trilha: TrackResumoOut
+    proxima_aula: LessonResumoOut | None
 
 
 # ── Admin input schemas ────────────────────────────────────────────────────────
 
 
-class CriarTrilhaIn(BaseModel):
+class CreateTrackIn(BaseModel):
     titulo: str
     descricao: str | None = None
     capa_url: str | None = None
     ordem: int = 0
 
 
-class AtualizarTrilhaIn(BaseModel):
+class UpdateTrackIn(BaseModel):
     titulo: str | None = None
     descricao: str | None = None
     capa_url: str | None = None
@@ -99,20 +99,20 @@ class ReordenarIn(BaseModel):
     ordem: list[OrdemItem]
 
 
-class CriarModuloIn(BaseModel):
+class CreateModuleIn(BaseModel):
     trilha_id: UUID
     titulo: str
     descricao: str | None = None
     ordem: int = 0
 
 
-class AtualizarModuloIn(BaseModel):
+class UpdateModuleIn(BaseModel):
     titulo: str | None = None
     descricao: str | None = None
     ordem: int | None = None
 
 
-class CriarAulaIn(BaseModel):
+class CreateLessonIn(BaseModel):
     modulo_id: UUID
     titulo: str
     descricao: str | None = None
@@ -121,7 +121,7 @@ class CriarAulaIn(BaseModel):
     ordem: int = 0
 
 
-class AtualizarAulaIn(BaseModel):
+class UpdateLessonIn(BaseModel):
     titulo: str | None = None
     descricao: str | None = None
     drive_url: str | None = None
@@ -132,7 +132,7 @@ class AtualizarAulaIn(BaseModel):
 # ── Admin output schemas ───────────────────────────────────────────────────────
 
 
-class TrilhaAdminOut(BaseModel):
+class TrackAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -143,7 +143,7 @@ class TrilhaAdminOut(BaseModel):
     criado_em: datetime
 
 
-class ModuloAdminOut(BaseModel):
+class ModuleAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -153,7 +153,7 @@ class ModuloAdminOut(BaseModel):
     ordem: int
 
 
-class AulaAdminOut(BaseModel):
+class LessonAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -175,7 +175,7 @@ class AutorOut(BaseModel):
     foto_url: str | None
 
 
-class ComentarioOut(BaseModel):
+class CommentOut(BaseModel):
     id: UUID
     autor: AutorOut
     texto: str | None
@@ -185,9 +185,9 @@ class ComentarioOut(BaseModel):
     is_proprio: bool
 
 
-class CriarComentarioIn(BaseModel):
+class CreateCommentIn(BaseModel):
     texto: str = Field(..., min_length=1, max_length=2000)
 
 
-class EditarComentarioIn(BaseModel):
+class EditCommentIn(BaseModel):
     texto: str = Field(..., min_length=1, max_length=2000)

@@ -13,13 +13,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from app.contexts.auth.presentation.router import router as auth_router
-from app.contexts.comunidade.presentation.router import router as comunidade_router
-from app.contexts.conteudo.presentation.router_admin import router as admin_conteudo_router
-from app.contexts.conteudo.presentation.router_comentarios import router as comentarios_router
-from app.contexts.conteudo.presentation.router_conteudo import router as conteudo_router
-from app.contexts.metricas.presentation.router import admin_router as admin_metricas_router
-from app.contexts.metricas.presentation.router import router as metricas_router
-from app.contexts.usuarios.presentation.router import router as usuarios_router
+from app.contexts.community.presentation.router import router as community_router
+from app.contexts.content.presentation.router_admin import router as admin_content_router
+from app.contexts.content.presentation.router_comments import router as comments_router
+from app.contexts.content.presentation.router_content import router as content_router
+from app.contexts.metrics.presentation.router import admin_router as admin_metrics_router
+from app.contexts.metrics.presentation.router import router as metrics_router
+from app.contexts.users.presentation.router import router as users_router
 from app.core.config import settings
 from app.core.exceptions import AppException
 from app.core.logging import configure_logging
@@ -145,10 +145,10 @@ async def health() -> dict[str, str]:
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(auth_router, prefix="/api/v1")
-app.include_router(comunidade_router, prefix="/api/v1")
-app.include_router(usuarios_router, prefix="/api/v1")
-app.include_router(conteudo_router, prefix="/api/v1")
-app.include_router(admin_conteudo_router, prefix="/api/v1")
-app.include_router(comentarios_router, prefix="/api/v1")
-app.include_router(metricas_router, prefix="/api/v1")
-app.include_router(admin_metricas_router, prefix="/api/v1")
+app.include_router(community_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
+app.include_router(content_router, prefix="/api/v1")
+app.include_router(admin_content_router, prefix="/api/v1")
+app.include_router(comments_router, prefix="/api/v1")
+app.include_router(metrics_router, prefix="/api/v1")
+app.include_router(admin_metrics_router, prefix="/api/v1")

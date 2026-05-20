@@ -2,14 +2,14 @@ import zoneinfo
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
-from app.contexts.metricas.application.dtos import SeriesDashboardDTO, SerieSemanalDTO
-from app.contexts.metricas.domain.repositories import MetricaRepository
-from app.contexts.metricas.domain.rules import normalize_to_monday
+from app.contexts.metrics.application.dtos import DashboardSeriesDTO, WeeklySeriesDTO
+from app.contexts.metrics.domain.repositories import MetricaRepository
+from app.contexts.metrics.domain.rules import normalize_to_monday
 
 _SP = zoneinfo.ZoneInfo("America/Sao_Paulo")
 
 
-class ObterSeriesDashboard:
+class GetDashboardSeries:
     def __init__(self, repo: MetricaRepository) -> None:
         self._repo = repo
 
@@ -18,7 +18,7 @@ class ObterSeriesDashboard:
         usuario_id: UUID,
         semanas: int = 12,
         today: date | None = None,
-    ) -> SeriesDashboardDTO:
+    ) -> DashboardSeriesDTO:
         if today is None:
             today = datetime.now(tz=_SP).date()
 
@@ -30,7 +30,7 @@ class ObterSeriesDashboard:
         por_semana = {m.semana_inicio: m for m in metricas}
 
         series = [
-            SerieSemanalDTO(
+            WeeklySeriesDTO(
                 semana=d,
                 ligacoes_agendadas=por_semana[d].ligacoes_agendadas if d in por_semana else 0,
                 ligacoes_realizadas=por_semana[d].ligacoes_realizadas if d in por_semana else 0,
@@ -39,4 +39,4 @@ class ObterSeriesDashboard:
             )
             for d in datas
         ]
-        return SeriesDashboardDTO(series=series)
+        return DashboardSeriesDTO(series=series)

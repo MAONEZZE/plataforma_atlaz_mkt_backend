@@ -1,7 +1,7 @@
 import pytest
 
-from app.contexts.conteudo.domain.exceptions import DriveUrlInvalida
-from app.contexts.conteudo.domain.rules import parse_drive_file_id
+from app.contexts.content.domain.exceptions import InvalidDriveUrl
+from app.contexts.content.domain.rules import parse_drive_file_id
 
 
 def test_parse_file_d_format() -> None:
@@ -20,12 +20,12 @@ def test_parse_ampersand_id_format() -> None:
 
 
 def test_parse_invalid_url_raises() -> None:
-    with pytest.raises(DriveUrlInvalida):
+    with pytest.raises(InvalidDriveUrl):
         parse_drive_file_id("https://example.com/not-a-drive-url")
 
 
 def test_parse_empty_string_raises() -> None:
-    with pytest.raises(DriveUrlInvalida):
+    with pytest.raises(InvalidDriveUrl):
         parse_drive_file_id("")
 
 

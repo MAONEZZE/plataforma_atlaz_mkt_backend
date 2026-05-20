@@ -3,53 +3,53 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from starlette import status
 
-from app.contexts.auth.domain.entities import Usuario
-from app.contexts.conteudo.application.use_cases.aulas.crud_admin import (
-    AtualizarAula,
-    CriarAula,
-    RemoverAula,
-    ReordenarAulas,
+from app.contexts.auth.domain.entities import User
+from app.contexts.content.application.use_cases.lessons.crud_admin import (
+    UpdateLesson,
+    CreateLesson,
+    DeleteLesson,
+    ReorderLessons,
 )
-from app.contexts.conteudo.application.use_cases.modulos.crud_admin import (
-    AtualizarModulo,
-    CriarModulo,
-    RemoverModulo,
-    ReordenarModulos,
+from app.contexts.content.application.use_cases.modules.crud_admin import (
+    UpdateModule,
+    CreateModule,
+    DeleteModule,
+    ReorderModules,
 )
-from app.contexts.conteudo.application.use_cases.trilhas.crud_admin import (
-    AtualizarTrilha,
-    CriarTrilha,
-    RemoverTrilha,
-    ReordenarTrilhas,
+from app.contexts.content.application.use_cases.tracks.crud_admin import (
+    UpdateTrack,
+    CreateTrack,
+    DeleteTrack,
+    ReorderTracks,
 )
-from app.contexts.conteudo.domain.exceptions import (
-    AulaNaoEncontrada,
-    DriveUrlInvalida,
-    ModuloNaoEncontrado,
-    TrilhaNaoEncontrada,
+from app.contexts.content.domain.exceptions import (
+    LessonNotFound,
+    InvalidDriveUrl,
+    ModuleNotFound,
+    TrackNotFound,
 )
-from app.contexts.conteudo.presentation.deps import (
-    get_atualizar_aula,
-    get_atualizar_modulo,
-    get_atualizar_trilha,
-    get_criar_aula,
-    get_criar_modulo,
-    get_criar_trilha,
-    get_remover_aula,
-    get_remover_modulo,
-    get_remover_trilha,
-    get_reordenar_aulas,
-    get_reordenar_modulos,
-    get_reordenar_trilhas,
+from app.contexts.content.presentation.deps import (
+    get_update_lesson,
+    get_update_module,
+    get_update_track,
+    get_create_lesson,
+    get_create_module,
+    get_create_track,
+    get_delete_lesson,
+    get_delete_module,
+    get_delete_track,
+    get_reorder_lessons,
+    get_reorder_modules,
+    get_reorder_tracks,
 )
-from app.contexts.conteudo.presentation.schemas import (
-    AtualizarAulaIn,
-    AtualizarModuloIn,
-    AtualizarTrilhaIn,
+from app.contexts.content.presentation.schemas import (
+    UpdateLessonIn,
+    UpdateModuleIn,
+    UpdateTrackIn,
     AulaAdminOut,
-    CriarAulaIn,
-    CriarModuloIn,
-    CriarTrilhaIn,
+    CreateLessonIn,
+    CreateModuleIn,
+    CreateTrackIn,
     ModuloAdminOut,
     ReordenarIn,
     TrilhaAdminOut,
@@ -65,10 +65,10 @@ router = APIRouter(prefix="/admin", tags=["admin-conteudo"])
 
 @router.post("/trilhas", response_model=TrilhaAdminOut, status_code=status.HTTP_201_CREATED)
 async def criar_trilha(
-    body: CriarTrilhaIn,
-    _: Usuario = Depends(require_admin),
-    use_case: CriarTrilha = Depends(get_criar_trilha),
-) -> TrilhaAdminOut:
+    body: CreateTrackIn,
+    _: User = Depends(require_admin),
+    use_case: CreateTrack = Depends(get_create_track),
+) -> TrackAdminOut:
     trilha = await use_case.execute(body.titulo, body.descricao, body.capa_url, body.ordem)
     return TrilhaAdminOut(
         id=trilha.id,
@@ -83,15 +83,15 @@ async def criar_trilha(
 @router.patch("/trilhas/{trilha_id}", response_model=TrilhaAdminOut)
 async def atualizar_trilha(
     trilha_id: UUID,
-    body: AtualizarTrilhaIn,
-    _: Usuario = Depends(require_admin),
-    use_case: AtualizarTrilha = Depends(get_atualizar_trilha),
-) -> TrilhaAdminOut:
+    body: UpdateTrackIn,
+    _: User = Depends(require_admin),
+    use_case: UpdateTrack = Depends(get_update_track),
+) -> TrackAdminOut:
     try:
         trilha = await use_case.execute(
             trilha_id, body.titulo, body.descricao, body.capa_url, body.ordem
         )
-    except TrilhaNaoEncontrada as exc:
+    except TrackNotFound as exc:
         raise AppException("TRILHA_NOT_FOUND", str(exc), 404) from exc
     return TrilhaAdminOut(
         id=trilha.id,
@@ -106,20 +106,20 @@ async def atualizar_trilha(
 @router.delete("/trilhas/{trilha_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remover_trilha(
     trilha_id: UUID,
-    _: Usuario = Depends(require_admin),
-    use_case: RemoverTrilha = Depends(get_remover_trilha),
+    _: User = Depends(require_admin),
+    use_case: DeleteTrack = Depends(get_delete_track),
 ) -> None:
     try:
         await use_case.execute(trilha_id)
-    except TrilhaNaoEncontrada as exc:
+    except TrackNotFound as exc:
         raise AppException("TRILHA_NOT_FOUND", str(exc), 404) from exc
 
 
 @router.post("/trilhas/reordenar", status_code=status.HTTP_204_NO_CONTENT)
 async def reordenar_trilhas(
     body: ReordenarIn,
-    _: Usuario = Depends(require_admin),
-    use_case: ReordenarTrilhas = Depends(get_reordenar_trilhas),
+    _: User = Depends(require_admin),
+    use_case: ReorderTracks = Depends(get_reorder_tracks),
 ) -> None:
     await use_case.execute([(item.id, item.ordem) for item in body.ordem])
 
@@ -129,10 +129,10 @@ async def reordenar_trilhas(
 
 @router.post("/modulos", response_model=ModuloAdminOut, status_code=status.HTTP_201_CREATED)
 async def criar_modulo(
-    body: CriarModuloIn,
-    _: Usuario = Depends(require_admin),
-    use_case: CriarModulo = Depends(get_criar_modulo),
-) -> ModuloAdminOut:
+    body: CreateModuleIn,
+    _: User = Depends(require_admin),
+    use_case: CreateModule = Depends(get_create_module),
+) -> ModuleAdminOut:
     modulo = await use_case.execute(body.trilha_id, body.titulo, body.descricao, body.ordem)
     return ModuloAdminOut(
         id=modulo.id,
@@ -146,13 +146,13 @@ async def criar_modulo(
 @router.patch("/modulos/{modulo_id}", response_model=ModuloAdminOut)
 async def atualizar_modulo(
     modulo_id: UUID,
-    body: AtualizarModuloIn,
-    _: Usuario = Depends(require_admin),
-    use_case: AtualizarModulo = Depends(get_atualizar_modulo),
-) -> ModuloAdminOut:
+    body: UpdateModuleIn,
+    _: User = Depends(require_admin),
+    use_case: UpdateModule = Depends(get_update_module),
+) -> ModuleAdminOut:
     try:
         modulo = await use_case.execute(modulo_id, body.titulo, body.descricao, body.ordem)
-    except ModuloNaoEncontrado as exc:
+    except ModuleNotFound as exc:
         raise AppException("MODULO_NOT_FOUND", str(exc), 404) from exc
     return ModuloAdminOut(
         id=modulo.id,
@@ -166,20 +166,20 @@ async def atualizar_modulo(
 @router.delete("/modulos/{modulo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remover_modulo(
     modulo_id: UUID,
-    _: Usuario = Depends(require_admin),
-    use_case: RemoverModulo = Depends(get_remover_modulo),
+    _: User = Depends(require_admin),
+    use_case: DeleteModule = Depends(get_delete_module),
 ) -> None:
     try:
         await use_case.execute(modulo_id)
-    except ModuloNaoEncontrado as exc:
+    except ModuleNotFound as exc:
         raise AppException("MODULO_NOT_FOUND", str(exc), 404) from exc
 
 
 @router.post("/modulos/reordenar", status_code=status.HTTP_204_NO_CONTENT)
 async def reordenar_modulos(
     body: ReordenarIn,
-    _: Usuario = Depends(require_admin),
-    use_case: ReordenarModulos = Depends(get_reordenar_modulos),
+    _: User = Depends(require_admin),
+    use_case: ReorderModules = Depends(get_reorder_modules),
 ) -> None:
     await use_case.execute([(item.id, item.ordem) for item in body.ordem])
 
@@ -189,10 +189,10 @@ async def reordenar_modulos(
 
 @router.post("/aulas", response_model=AulaAdminOut, status_code=status.HTTP_201_CREATED)
 async def criar_aula(
-    body: CriarAulaIn,
-    _: Usuario = Depends(require_admin),
-    use_case: CriarAula = Depends(get_criar_aula),
-) -> AulaAdminOut:
+    body: CreateLessonIn,
+    _: User = Depends(require_admin),
+    use_case: CreateLesson = Depends(get_create_lesson),
+) -> LessonAdminOut:
     try:
         aula = await use_case.execute(
             body.modulo_id,
@@ -202,7 +202,7 @@ async def criar_aula(
             body.duracao_minutos,
             body.ordem,
         )
-    except DriveUrlInvalida as exc:
+    except InvalidDriveUrl as exc:
         raise AppException("DRIVE_URL_INVALID", str(exc), 400) from exc
     return AulaAdminOut(
         id=aula.id,
@@ -219,10 +219,10 @@ async def criar_aula(
 @router.patch("/aulas/{aula_id}", response_model=AulaAdminOut)
 async def atualizar_aula(
     aula_id: UUID,
-    body: AtualizarAulaIn,
-    _: Usuario = Depends(require_admin),
-    use_case: AtualizarAula = Depends(get_atualizar_aula),
-) -> AulaAdminOut:
+    body: UpdateLessonIn,
+    _: User = Depends(require_admin),
+    use_case: UpdateLesson = Depends(get_update_lesson),
+) -> LessonAdminOut:
     try:
         aula = await use_case.execute(
             aula_id,
@@ -232,9 +232,9 @@ async def atualizar_aula(
             body.duracao_minutos,
             body.ordem,
         )
-    except AulaNaoEncontrada as exc:
+    except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
-    except DriveUrlInvalida as exc:
+    except InvalidDriveUrl as exc:
         raise AppException("DRIVE_URL_INVALID", str(exc), 400) from exc
     return AulaAdminOut(
         id=aula.id,
@@ -251,19 +251,19 @@ async def atualizar_aula(
 @router.delete("/aulas/{aula_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remover_aula(
     aula_id: UUID,
-    _: Usuario = Depends(require_admin),
-    use_case: RemoverAula = Depends(get_remover_aula),
+    _: User = Depends(require_admin),
+    use_case: DeleteLesson = Depends(get_delete_lesson),
 ) -> None:
     try:
         await use_case.execute(aula_id)
-    except AulaNaoEncontrada as exc:
+    except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
 
 
 @router.post("/aulas/reordenar", status_code=status.HTTP_204_NO_CONTENT)
 async def reordenar_aulas(
     body: ReordenarIn,
-    _: Usuario = Depends(require_admin),
-    use_case: ReordenarAulas = Depends(get_reordenar_aulas),
+    _: User = Depends(require_admin),
+    use_case: ReorderLessons = Depends(get_reorder_lessons),
 ) -> None:
     await use_case.execute([(item.id, item.ordem) for item in body.ordem])
