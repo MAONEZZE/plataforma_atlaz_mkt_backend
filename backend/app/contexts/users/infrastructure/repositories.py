@@ -28,31 +28,31 @@ class SqlAlchemyUserRepository:
             update(UserModel)
             .where(UserModel.id == user.id)
             .values(
-                nome=user.nome,
-                telefone=user.telefone,
+                name=user.name,
+                telefone=user.phone,
                 linkedin_url=user.linkedin_url,
                 instagram_username=user.instagram_username,
-                descricao=user.descricao,
-                foto_url=user.foto_url,
-                atualizado_em=now,
+                description=user.description,
+                photo_url=user.photo_url,
+                updated_at=now,
             )
         )
-        user.atualizado_em = now
+        user.updated_at = now
         return user
 
     @staticmethod
     def _to_entity(model: UserModel) -> User:
         return User(
             id=model.id,
-            nome=model.nome,
+            name=model.name,
             email=model.email,
-            telefone=model.telefone,
+            phone=model.telefone,
             linkedin_url=model.linkedin_url,
             instagram_username=model.instagram_username,
-            descricao=model.descricao,
-            foto_url=model.foto_url,
+            description=model.description,
+            photo_url=model.photo_url,
             role=model.role,
-            inativo=model.inativo,
-            criado_em=model.criado_em,
-            atualizado_em=model.atualizado_em,
+            inactive=model.inactive,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
         )

@@ -13,14 +13,14 @@ from fastapi.testclient import TestClient
 from app.contexts.auth.domain.entities import User as AuthUser
 from app.contexts.users.application.dtos import PhotoUrlDTO
 from app.contexts.users.application.use_cases.update_me import UpdateMe
-from app.contexts.users.application.use_cases.get_me import ObterMe
+from app.contexts.users.application.use_cases.get_me import GetMe
 from app.contexts.users.application.use_cases.upload_photo import UploadPhoto
 from app.contexts.users.domain.entities import User
 from app.contexts.users.domain.exceptions import InvalidPhoto, UserNotFound
 from app.contexts.users.presentation.router import (
-    _atualizar_me,
-    _obter_me,
-    _upload_foto,
+    _update_me,
+    _get_me,
+    _upload_photo,
     router,
 )
 from app.core.deps import get_current_user
@@ -46,23 +46,23 @@ async def _exc(request: Request, exc: AppException) -> JSONResponse:
 
 
 def _auth_user(role: str = "cliente") -> AuthUser:
-    return AuthUser(id=_UID, email="ana@test.com", role=role, inativo=False)
+    return AuthUser(id=_UID, email="ana@test.com", role=role, inactive=False)
 
 
 def _domain_user() -> User:
-    return Usuario(
+    return User(
         id=_UID,
-        nome="Ana",
+        name="Ana",
         email="ana@test.com",
-        telefone=None,
+        phone=None,
         linkedin_url=None,
         instagram_username=None,
-        descricao=None,
-        foto_url=None,
+        description=None,
+        photo_url=None,
         role="cliente",
-        inativo=False,
-        criado_em=_NOW,
-        atualizado_em=_NOW,
+        inactive=False,
+        created_at=_NOW,
+        updated_at=_NOW,
     )
 
 
@@ -76,19 +76,19 @@ def _mock_use_case(spec: type, *, return_value: Any = None, side_effect: Any = N
 
 
 def _client(
-    obter: Any = None,
-    atualizar: Any = None,
+    get: Any = None,
+    update: Any = None,
     upload: Any = None,
     role: str = "cliente",
 ) -> TestClient:
     user = _auth_user(role)
     _app.dependency_overrides[get_current_user] = lambda: user
-    if obter is not None:
-        _app.dependency_overrides[_obter_me] = lambda: obter
-    if atualizar is not None:
-        _app.dependency_overrides[_atualizar_me] = lambda: atualizar
+    if get is not None:
+        _app.dependency_overrides[_get_me] = lambda: get
+    if update is not None:
+        _app.dependency_overrides[_update_me] = lambda: update
     if upload is not None:
-        _app.dependency_overrides[_upload_foto] = lambda: upload
+        _app.dependency_overrides[_upload_photo] = lambda: upload
     return TestClient(_app, raise_server_exceptions=False)
 
 
@@ -100,22 +100,22 @@ def _clear() -> None:
 
 
 def test_get_me_returns_200() -> None:
-    uc = _mock_use_case(ObterMe, return_value=_domain_user())
-    client = _client(obter=uc)
+    uc = _mock_use_case(GetMe, return_value=_domain_user())
+    client = _client(get=uc)
     try:
         resp = client.get("/api/v1/me")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["nome"] == "Ana"
+        assert data["name"] == "Ana"
         assert data["email"] == "ana@test.com"
-        assert "telefone" in data
+        assert "phone" in data
     finally:
         _clear()
 
 
 def test_get_me_not_found_returns_404() -> None:
-    uc = _mock_use_case(ObterMe, side_effect=UserNotFound("x"))
-    client = _client(obter=uc)
+    uc = _mock_use_case(GetMe, side_effect=UserNotFound("x"))
+    client = _client(get=uc)
     try:
         resp = client.get("/api/v1/me")
         assert resp.status_code == 404
@@ -129,56 +129,56 @@ def test_get_me_not_found_returns_404() -> None:
 
 def test_patch_me_returns_200() -> None:
     updated = _domain_user()
-    updated.nome = "Beatriz"
-    uc = _mock_use_case(AtualizarMe, return_value=updated)
-    client = _client(atualizar=uc)
+    updated.name = "Beatriz"
+    uc = _mock_use_case(UpdateMe, return_value=updated)
+    client = _client(update=uc)
     try:
-        resp = client.patch("/api/v1/me", json={"nome": "Beatriz"})
+        resp = client.patch("/api/v1/me", json={"name": "Beatriz"})
         assert resp.status_code == 200
-        assert resp.json()["nome"] == "Beatriz"
+        assert resp.json()["name"] == "Beatriz"
     finally:
         _clear()
 
 
-def test_patch_me_updates_descricao() -> None:
+def test_patch_me_updates_description() -> None:
     updated = _domain_user()
-    updated.descricao = "Trader profissional."
-    uc = _mock_use_case(AtualizarMe, return_value=updated)
-    client = _client(atualizar=uc)
+    updated.description = "Professional trader."
+    uc = _mock_use_case(UpdateMe, return_value=updated)
+    client = _client(update=uc)
     try:
-        resp = client.patch("/api/v1/me", json={"descricao": "Trader profissional."})
+        resp = client.patch("/api/v1/me", json={"description": "Professional trader."})
         assert resp.status_code == 200
-        assert resp.json()["descricao"] == "Trader profissional."
+        assert resp.json()["description"] == "Professional trader."
     finally:
         _clear()
 
 
-def test_get_me_returns_descricao_field() -> None:
+def test_get_me_returns_description_field() -> None:
     user = _domain_user()
-    user.descricao = "Bio do usuário."
-    uc = _mock_use_case(ObterMe, return_value=user)
-    client = _client(obter=uc)
+    user.description = "User bio."
+    uc = _mock_use_case(GetMe, return_value=user)
+    client = _client(get=uc)
     try:
         resp = client.get("/api/v1/me")
         assert resp.status_code == 200
-        assert "descricao" in resp.json()
+        assert "description" in resp.json()
     finally:
         _clear()
 
 
 def test_patch_me_rejects_email_field() -> None:
-    uc = _mock_use_case(AtualizarMe, return_value=_domain_user())
-    client = _client(atualizar=uc)
+    uc = _mock_use_case(UpdateMe, return_value=_domain_user())
+    client = _client(update=uc)
     try:
-        resp = client.patch("/api/v1/me", json={"email": "novo@test.com"})
+        resp = client.patch("/api/v1/me", json={"email": "new@test.com"})
         assert resp.status_code == 422
     finally:
         _clear()
 
 
 def test_patch_me_domain_error_returns_400() -> None:
-    uc = _mock_use_case(AtualizarMe, side_effect=DomainError("LinkedIn URL inválida."))
-    client = _client(atualizar=uc)
+    uc = _mock_use_case(UpdateMe, side_effect=DomainError("LinkedIn URL inválida."))
+    client = _client(update=uc)
     try:
         resp = client.patch("/api/v1/me", json={"linkedin_url": "https://twitter.com/x"})
         assert resp.status_code == 400
@@ -188,41 +188,41 @@ def test_patch_me_domain_error_returns_400() -> None:
 
 
 def test_patch_me_not_found_returns_404() -> None:
-    uc = _mock_use_case(AtualizarMe, side_effect=UserNotFound("x"))
-    client = _client(atualizar=uc)
+    uc = _mock_use_case(UpdateMe, side_effect=UserNotFound("x"))
+    client = _client(update=uc)
     try:
-        resp = client.patch("/api/v1/me", json={"nome": "X"})
+        resp = client.patch("/api/v1/me", json={"name": "X"})
         assert resp.status_code == 404
     finally:
         _clear()
 
 
-# ── POST /me/foto ─────────────────────────────────────────────────────────────
+# ── POST /me/photo ────────────────────────────────────────────────────────────
 
 _JPEG_BYTES = b"\xff\xd8\xff" + b"\x00" * 10
 
 
-def test_post_foto_returns_200() -> None:
-    uc = _mock_use_case(UploadFoto, return_value=PhotoUrlDTO(foto_url="https://cdn.x/foto.jpg"))
+def test_post_photo_returns_200() -> None:
+    uc = _mock_use_case(UploadPhoto, return_value=PhotoUrlDTO(photo_url="https://cdn.x/photo.jpg"))
     client = _client(upload=uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("foto.jpg", io.BytesIO(_JPEG_BYTES), "image/jpeg")},
+            "/api/v1/me/photo",
+            files={"photo": ("photo.jpg", io.BytesIO(_JPEG_BYTES), "image/jpeg")},
         )
         assert resp.status_code == 200
-        assert resp.json()["foto_url"].startswith("https://")
+        assert resp.json()["photo_url"].startswith("https://")
     finally:
         _clear()
 
 
-def test_post_foto_invalid_returns_400() -> None:
-    uc = _mock_use_case(UploadFoto, side_effect=InvalidPhoto("Tipo não suportado."))
+def test_post_photo_invalid_returns_400() -> None:
+    uc = _mock_use_case(UploadPhoto, side_effect=InvalidPhoto("Tipo não suportado."))
     client = _client(upload=uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("doc.pdf", io.BytesIO(b"fake"), "application/pdf")},
+            "/api/v1/me/photo",
+            files={"photo": ("doc.pdf", io.BytesIO(b"fake"), "application/pdf")},
         )
         assert resp.status_code == 400
         assert resp.json()["error"]["code"] == "VALIDATION_ERROR"
@@ -230,13 +230,13 @@ def test_post_foto_invalid_returns_400() -> None:
         _clear()
 
 
-def test_post_foto_user_not_found_returns_404() -> None:
-    uc = _mock_use_case(UploadFoto, side_effect=UserNotFound("x"))
+def test_post_photo_user_not_found_returns_404() -> None:
+    uc = _mock_use_case(UploadPhoto, side_effect=UserNotFound("x"))
     client = _client(upload=uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("f.jpg", io.BytesIO(_JPEG_BYTES), "image/jpeg")},
+            "/api/v1/me/photo",
+            files={"photo": ("f.jpg", io.BytesIO(_JPEG_BYTES), "image/jpeg")},
         )
         assert resp.status_code == 404
     finally:

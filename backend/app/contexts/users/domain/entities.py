@@ -6,14 +6,14 @@ from uuid import UUID
 @dataclass
 class User:
     id: UUID
-    nome: str
+    name: str
     email: str
-    telefone: str | None
+    phone: str | None
     linkedin_url: str | None
     instagram_username: str | None
-    descricao: str | None
-    foto_url: str | None
+    description: str | None
+    photo_url: str | None
     role: str
-    inativo: bool
-    criado_em: datetime
-    atualizado_em: datetime
+    inactive: bool
+    created_at: datetime
+    updated_at: datetime

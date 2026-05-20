@@ -52,7 +52,7 @@ def main(
                 "password": senha,
                 "email_confirm": True,
                 "user_metadata": {
-                    "nome": nome,
+                    "name": nome,
                     "role": role,
                 },
             }

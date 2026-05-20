@@ -1,4 +1,4 @@
-"""Integration tests: router → real UploadFoto use case → real detect_image_mime.
+"""Integration tests: router → real UploadPhoto use case → real detect_image_mime.
 
 Repo and storage are mocked; the use case itself is NOT mocked so that
 detect_image_mime is exercised end-to-end through the HTTP layer.
@@ -18,7 +18,7 @@ from app.contexts.auth.domain.entities import User as AuthUser
 from app.contexts.users.application.dtos import PhotoUrlDTO
 from app.contexts.users.application.use_cases.upload_photo import UploadPhoto
 from app.contexts.users.domain.entities import User
-from app.contexts.users.presentation.router import _upload_foto, router
+from app.contexts.users.presentation.router import _upload_photo, router
 from app.core.deps import get_current_user
 from app.core.exceptions import AppException
 
@@ -35,21 +35,21 @@ async def _exc(request: Request, exc: AppException) -> JSONResponse:
     return JSONResponse(status_code=exc.status, content=body)
 
 
-_AUTH_USER = AuthUser(id=_UID, email="ana@test.com", role="cliente", inativo=False)
+_AUTH_USER = AuthUser(id=_UID, email="ana@test.com", role="cliente", inactive=False)
 
-_DOMAIN_USER = Usuario(
+_DOMAIN_USER = User(
     id=_UID,
-    nome="Ana",
+    name="Ana",
     email="ana@test.com",
-    telefone=None,
+    phone=None,
     linkedin_url=None,
     instagram_username=None,
-    descricao=None,
-    foto_url=None,
+    description=None,
+    photo_url=None,
     role="cliente",
-    inativo=False,
-    criado_em=_NOW,
-    atualizado_em=_NOW,
+    inactive=False,
+    created_at=_NOW,
+    updated_at=_NOW,
 )
 
 # ── Magic bytes for each format ───────────────────────────────────────────────
@@ -61,21 +61,21 @@ _PHP_BYTES = b"<?php echo 'hello'; ?>" + b"\x00" * 20
 _UNKNOWN_BYTES = b"FAKEFAKEFAKE" + b"\x00" * 20
 
 
-def _make_upload_use_case(foto_url: str = "https://cdn.example.com/foto.jpg") -> UploadPhoto:
-    """Real UploadFoto with mocked repo + storage."""
+def _make_upload_use_case(photo_url: str = "https://cdn.example.com/photo.jpg") -> UploadPhoto:
+    """Real UploadPhoto with mocked repo + storage."""
     repo = AsyncMock()
-    repo.por_id.return_value = _DOMAIN_USER
-    repo.atualizar.side_effect = lambda u: u
+    repo.get_by_id.return_value = _DOMAIN_USER
+    repo.update.side_effect = lambda u: u
 
     storage = MagicMock()
-    storage.upload.return_value = foto_url
+    storage.upload.return_value = photo_url
 
     return UploadPhoto(repo=repo, storage=storage)
 
 
 def _client(use_case: UploadPhoto) -> TestClient:
     _app.dependency_overrides[get_current_user] = lambda: _AUTH_USER
-    _app.dependency_overrides[_upload_foto] = lambda: use_case
+    _app.dependency_overrides[_upload_photo] = lambda: use_case
     return TestClient(_app, raise_server_exceptions=False)
 
 
@@ -91,22 +91,22 @@ def test_valid_jpeg_returns_200() -> None:
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("photo.jpg", io.BytesIO(_JPEG_BYTES), "image/jpeg")},
+            "/api/v1/me/photo",
+            files={"photo": ("photo.jpg", io.BytesIO(_JPEG_BYTES), "image/jpeg")},
         )
         assert resp.status_code == 200
-        assert "foto_url" in resp.json()
+        assert "photo_url" in resp.json()
     finally:
         _clear()
 
 
 def test_valid_png_returns_200() -> None:
-    uc = _make_upload_use_case("https://cdn.example.com/foto.png")
+    uc = _make_upload_use_case("https://cdn.example.com/photo.png")
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("photo.png", io.BytesIO(_PNG_BYTES), "image/png")},
+            "/api/v1/me/photo",
+            files={"photo": ("photo.png", io.BytesIO(_PNG_BYTES), "image/png")},
         )
         assert resp.status_code == 200
     finally:
@@ -114,12 +114,12 @@ def test_valid_png_returns_200() -> None:
 
 
 def test_valid_webp_returns_200() -> None:
-    uc = _make_upload_use_case("https://cdn.example.com/foto.webp")
+    uc = _make_upload_use_case("https://cdn.example.com/photo.webp")
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("photo.webp", io.BytesIO(_WEBP_BYTES), "image/webp")},
+            "/api/v1/me/photo",
+            files={"photo": ("photo.webp", io.BytesIO(_WEBP_BYTES), "image/webp")},
         )
         assert resp.status_code == 200
     finally:
@@ -135,8 +135,8 @@ def test_php_renamed_as_jpg_returns_400() -> None:
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("shell.jpg", io.BytesIO(_PHP_BYTES), "image/jpeg")},
+            "/api/v1/me/photo",
+            files={"photo": ("shell.jpg", io.BytesIO(_PHP_BYTES), "image/jpeg")},
         )
         assert resp.status_code == 400
         assert resp.json()["error"]["code"] == "VALIDATION_ERROR"
@@ -149,8 +149,8 @@ def test_unknown_bytes_claimed_as_jpeg_returns_400() -> None:
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("bad.jpg", io.BytesIO(_UNKNOWN_BYTES), "image/jpeg")},
+            "/api/v1/me/photo",
+            files={"photo": ("bad.jpg", io.BytesIO(_UNKNOWN_BYTES), "image/jpeg")},
         )
         assert resp.status_code == 400
         assert resp.json()["error"]["code"] == "VALIDATION_ERROR"
@@ -164,8 +164,8 @@ def test_jpeg_bytes_claimed_as_png_returns_400() -> None:
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("photo.png", io.BytesIO(_JPEG_BYTES), "image/png")},
+            "/api/v1/me/photo",
+            files={"photo": ("photo.png", io.BytesIO(_JPEG_BYTES), "image/png")},
         )
         assert resp.status_code == 400
         assert resp.json()["error"]["code"] == "VALIDATION_ERROR"
@@ -178,8 +178,8 @@ def test_png_bytes_claimed_as_jpeg_returns_400() -> None:
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("photo.jpg", io.BytesIO(_PNG_BYTES), "image/jpeg")},
+            "/api/v1/me/photo",
+            files={"photo": ("photo.jpg", io.BytesIO(_PNG_BYTES), "image/jpeg")},
         )
         assert resp.status_code == 400
     finally:
@@ -196,8 +196,8 @@ def test_jpeg_over_5mb_returns_400() -> None:
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("big.jpg", io.BytesIO(big_jpeg), "image/jpeg")},
+            "/api/v1/me/photo",
+            files={"photo": ("big.jpg", io.BytesIO(big_jpeg), "image/jpeg")},
         )
         assert resp.status_code == 400
         assert resp.json()["error"]["code"] == "VALIDATION_ERROR"
@@ -212,8 +212,8 @@ def test_jpeg_exactly_5mb_is_accepted() -> None:
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("exact.jpg", io.BytesIO(exact_jpeg), "image/jpeg")},
+            "/api/v1/me/photo",
+            files={"photo": ("exact.jpg", io.BytesIO(exact_jpeg), "image/jpeg")},
         )
         assert resp.status_code == 200
     finally:
@@ -228,8 +228,8 @@ def test_pdf_content_type_returns_400() -> None:
     client = _client(uc)
     try:
         resp = client.post(
-            "/api/v1/me/foto",
-            files={"foto": ("doc.pdf", io.BytesIO(b"%PDF-1.4" + b"\x00" * 20), "application/pdf")},
+            "/api/v1/me/photo",
+            files={"photo": ("doc.pdf", io.BytesIO(b"%PDF-1.4" + b"\x00" * 20), "application/pdf")},
         )
         assert resp.status_code == 400
     finally:

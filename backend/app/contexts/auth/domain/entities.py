@@ -7,4 +7,4 @@ class User:
     id: UUID
     email: str
     role: str
-    inativo: bool
+    inactive: bool

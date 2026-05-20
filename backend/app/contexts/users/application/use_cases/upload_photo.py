@@ -29,19 +29,19 @@ class UploadPhoto:
         if detected != inp.content_type:
             raise InvalidPhoto("Conteúdo do arquivo não corresponde ao tipo declarado.")
 
-        user = await self._repo.get_by_id(inp.usuario_id)
+        user = await self._repo.get_by_id(inp.user_id)
         if user is None:
             raise UserNotFound("Usuário não encontrado.")
 
         ext = _EXTENSION_MAP[inp.content_type]
-        foto_url = self._storage.upload(
-            usuario_id=inp.usuario_id,
+        photo_url = self._storage.upload(
+            user_id=inp.user_id,
             data=inp.data,
             content_type=inp.content_type,
             extension=ext,
         )
 
-        user.foto_url = foto_url
+        user.photo_url = photo_url
         await self._repo.update(user)
 
-        return PhotoUrlDTO(foto_url=foto_url)
+        return PhotoUrlDTO(photo_url=photo_url)

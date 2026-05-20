@@ -7,60 +7,60 @@ from app.contexts.content.domain.exceptions import (
     TrackNotFound,
 )
 from app.contexts.content.domain.repositories import (
-    AlunoAulaRepository,
-    AulaRepository,
-    ModuloRepository,
-    TrilhaRepository,
+    StudentLessonRepository,
+    LessonRepository,
+    ModuleRepository,
+    TrackRepository,
 )
 
 
 class GetLesson:
     def __init__(
         self,
-        aula_repo: LessonRepository,
-        modulo_repo: ModuleRepository,
-        trilha_repo: TrackRepository,
-        aluno_aula_repo: AlunoAulaRepository,
+        lesson_repo: LessonRepository,
+        module_repo: ModuleRepository,
+        track_repo: TrackRepository,
+        student_lesson_repo: StudentLessonRepository,
     ) -> None:
-        self._aula_repo = aula_repo
-        self._modulo_repo = modulo_repo
-        self._trilha_repo = trilha_repo
-        self._aluno_aula_repo = aluno_aula_repo
+        self._lesson_repo = lesson_repo
+        self._module_repo = module_repo
+        self._track_repo = track_repo
+        self._student_lesson_repo = student_lesson_repo
 
-    async def execute(self, aula_id: UUID, usuario_id: UUID) -> LessonDetalheDTO:
-        aula = await self._aula_repo.get_by_id(aula_id)
-        if aula is None:
-            raise LessonNotFound(f"Aula {aula_id} não encontrada.")
+    async def execute(self, lesson_id: UUID, user_id: UUID) -> LessonDetailDTO:
+        lesson = await self._lesson_repo.get_by_id(lesson_id)
+        if lesson is None:
+            raise LessonNotFound(f"Aula {lesson_id} não encontrada.")
 
-        modulo = await self._modulo_repo.get_by_id(aula.modulo_id)
-        if modulo is None:
-            raise ModuleNotFound(f"Módulo {aula.modulo_id} não encontrado.")
+        module = await self._module_repo.get_by_id(lesson.module_id)
+        if module is None:
+            raise ModuleNotFound(f"Módulo {lesson.module_id} não encontrado.")
 
-        trilha = await self._trilha_repo.get_by_id(modulo.trilha_id)
-        if trilha is None:
-            raise TrackNotFound(f"Trilha {modulo.trilha_id} não encontrada.")
+        track = await self._track_repo.get_by_id(module.track_id)
+        if track is None:
+            raise TrackNotFound(f"Trilha {module.track_id} não encontrada.")
 
-        concluidas = await self._aluno_aula_repo.completed_ids(usuario_id)
-        proxima = await self._aula_repo.next_lesson(aula)
+        completeds = await self._student_lesson_repo.completed_ids(user_id)
+        next_lesson = await self._lesson_repo.next_lesson(lesson)
 
         return LessonDetailDTO(
-            id=aula.id,
-            modulo_id=aula.modulo_id,
-            titulo=aula.titulo,
-            descricao=aula.descricao,
-            drive_file_id=aula.drive_file_id,
-            duracao_minutos=aula.duracao_minutos,
-            concluida=aula.id in concluidas,
-            trilha=TrackSummaryDTO(id=trilha.id, titulo=trilha.titulo),
-            proxima_aula=(
+            id=lesson.id,
+            module_id=lesson.module_id,
+            title=lesson.title,
+            description=lesson.description,
+            drive_file_id=lesson.drive_file_id,
+            duration_minutes=lesson.duration_minutes,
+            completed=lesson.id in completeds,
+            track=TrackSummaryDTO(id=track.id, title=track.title),
+            next_lesson=(
                 LessonSummaryDTO(
-                    id=proxima.id,
-                    titulo=proxima.titulo,
-                    duracao_minutos=proxima.duracao_minutos,
-                    ordem=proxima.ordem,
-                    concluida=proxima.id in concluidas,
+                    id=next_lesson.id,
+                    title=next_lesson.title,
+                    duration_minutes=next_lesson.duration_minutes,
+                    order=next_lesson.order,
+                    completed=next_lesson.id in completeds,
                 )
-                if proxima
+                if next_lesson
                 else None
             ),
         )

@@ -6,62 +6,62 @@ from uuid import UUID
 @dataclass
 class Track:
     id: UUID
-    titulo: str
-    descricao: str | None
-    capa_url: str | None
-    ordem: int
-    criado_em: datetime
+    title: str
+    description: str | None
+    cover_url: str | None
+    order: int
+    created_at: datetime
 
 
 @dataclass
 class Module:
     id: UUID
-    trilha_id: UUID
-    titulo: str
-    descricao: str | None
-    ordem: int
+    track_id: UUID
+    title: str
+    description: str | None
+    order: int
 
 
 @dataclass
 class Lesson:
     id: UUID
-    modulo_id: UUID
-    titulo: str
-    descricao: str | None
+    module_id: UUID
+    title: str
+    description: str | None
     drive_file_id: str
-    duracao_minutos: int | None
-    ordem: int
-    criado_em: datetime
+    duration_minutes: int | None
+    order: int
+    created_at: datetime
 
 
 @dataclass
 class StudentLesson:
-    usuario_id: UUID
-    aula_id: UUID
-    concluida_em: datetime
+    user_id: UUID
+    lesson_id: UUID
+    completed_at: datetime
 
 
 @dataclass
 class Comment:
     id: UUID
-    aula_id: UUID
-    usuario_id: UUID
-    texto: str
-    criado_em: datetime
-    editado_em: datetime | None
-    apagado_em: datetime | None
+    lesson_id: UUID
+    user_id: UUID
+    text: str
+    created_at: datetime
+    edited_at: datetime | None
+    deleted_at: datetime | None
 
 
 @dataclass
 class CommentRead:
-    """Comentario com dados denormalizados do autor para listagem."""
+    """Comment with denormalized author data for listing."""
 
     id: UUID
-    aula_id: UUID
-    usuario_id: UUID
-    texto: str | None
-    criado_em: datetime
-    editado_em: datetime | None
-    apagado_em: datetime | None
-    autor_nome: str
-    autor_foto_url: str | None
+    lesson_id: UUID
+    user_id: UUID
+    text: str | None
+    created_at: datetime
+    edited_at: datetime | None
+    deleted_at: datetime | None
+    author_name: str
+    author_photo_url: str | None

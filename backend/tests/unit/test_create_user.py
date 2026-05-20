@@ -115,7 +115,7 @@ def test_valid_input_calls_supabase_create_user() -> None:
         assert call_args["email"] == "maria@test.com"
         assert call_args["password"] == "Senha@123"
         assert call_args["email_confirm"] is True
-        assert call_args["user_metadata"]["nome"] == "Maria Silva"
+        assert call_args["user_metadata"]["name"] == "Maria Silva"
         assert call_args["user_metadata"]["role"] == "cliente"
 
 

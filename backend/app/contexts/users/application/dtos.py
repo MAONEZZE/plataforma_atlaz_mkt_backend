@@ -6,33 +6,33 @@ from uuid import UUID
 @dataclass(frozen=True)
 class UserDTO:
     id: UUID
-    nome: str
+    name: str
     email: str
-    telefone: str | None
+    phone: str | None
     linkedin_url: str | None
     instagram_username: str | None
-    descricao: str | None
-    foto_url: str | None
+    description: str | None
+    photo_url: str | None
     role: str
-    criado_em: datetime
+    created_at: datetime
 
 
 @dataclass(frozen=True)
 class UpdateMeInput:
-    nome: str | None
-    telefone: str | None
+    name: str | None
+    phone: str | None
     linkedin_url: str | None
     instagram_username: str | None
-    descricao: str | None = None
+    description: str | None = None
 
 
 @dataclass(frozen=True)
 class UploadPhotoInput:
-    usuario_id: UUID
+    user_id: UUID
     content_type: str
     data: bytes
 
 
 @dataclass(frozen=True)
 class PhotoUrlDTO:
-    foto_url: str
+    photo_url: str

@@ -5,5 +5,5 @@ def normalize_to_monday(d: date) -> date:
     return d - timedelta(days=d.weekday())
 
 
-def dentro_janela_edicao(semana_inicio: date, today: date) -> bool:
-    return (today - semana_inicio).days <= 28 and semana_inicio <= today
+def within_edit_window(week_start: date, today: date) -> bool:
+    return (today - week_start).days <= 28 and week_start <= today

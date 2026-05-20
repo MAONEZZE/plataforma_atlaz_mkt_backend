@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 
 from app.contexts.content.domain.entities import Module
 from app.contexts.content.domain.exceptions import ModuleNotFound
-from app.contexts.content.domain.repositories import ModuloRepository
+from app.contexts.content.domain.repositories import ModuleRepository
 
 
 class CreateModule:
@@ -11,19 +11,19 @@ class CreateModule:
 
     async def execute(
         self,
-        trilha_id: UUID,
-        titulo: str,
-        descricao: str | None,
-        ordem: int,
+        track_id: UUID,
+        title: str,
+        description: str | None,
+        order: int,
     ) -> Module:
-        modulo = Module(
+        module = Module(
             id=uuid4(),
-            trilha_id=trilha_id,
-            titulo=titulo,
-            descricao=descricao,
-            ordem=ordem,
+            track_id=track_id,
+            title=title,
+            description=description,
+            order=order,
         )
-        return await self._repo.create(modulo)
+        return await self._repo.create(module)
 
 
 class UpdateModule:
@@ -32,20 +32,20 @@ class UpdateModule:
 
     async def execute(
         self,
-        modulo_id: UUID,
-        titulo: str | None,
-        descricao: str | None,
-        ordem: int | None,
+        module_id: UUID,
+        title: str | None,
+        description: str | None,
+        order: int | None,
     ) -> Module:
-        modulo = await self._repo.get_by_id(modulo_id)
-        if modulo is None:
-            raise ModuleNotFound(f"Módulo {modulo_id} não encontrado.")
+        module = await self._repo.get_by_id(module_id)
+        if module is None:
+            raise ModuleNotFound(f"Módulo {module_id} não encontrado.")
         updated = Module(
-            id=modulo.id,
-            trilha_id=modulo.trilha_id,
-            titulo=titulo if titulo is not None else modulo.titulo,
-            descricao=descricao if descricao is not None else modulo.descricao,
-            ordem=ordem if ordem is not None else modulo.ordem,
+            id=module.id,
+            track_id=module.track_id,
+            title=title if title is not None else module.title,
+            description=description if description is not None else module.description,
+            order=order if order is not None else module.order,
         )
         return await self._repo.update(updated)
 
@@ -54,16 +54,16 @@ class DeleteModule:
     def __init__(self, repo: ModuleRepository) -> None:
         self._repo = repo
 
-    async def execute(self, modulo_id: UUID) -> None:
-        modulo = await self._repo.get_by_id(modulo_id)
-        if modulo is None:
-            raise ModuleNotFound(f"Módulo {modulo_id} não encontrado.")
-        await self._repo.delete(modulo_id)
+    async def execute(self, module_id: UUID) -> None:
+        module = await self._repo.get_by_id(module_id)
+        if module is None:
+            raise ModuleNotFound(f"Módulo {module_id} não encontrado.")
+        await self._repo.delete(module_id)
 
 
 class ReorderModules:
     def __init__(self, repo: ModuleRepository) -> None:
         self._repo = repo
 
-    async def execute(self, ordens: list[tuple[UUID, int]]) -> None:
-        await self._repo.reorder(ordens)
+    async def execute(self, orders: list[tuple[UUID, int]]) -> None:
+        await self._repo.reorder(orders)

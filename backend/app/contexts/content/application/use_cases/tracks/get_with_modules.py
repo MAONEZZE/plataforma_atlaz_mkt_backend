@@ -7,69 +7,69 @@ from app.contexts.content.application.dtos import (
 )
 from app.contexts.content.domain.exceptions import TrackNotFound
 from app.contexts.content.domain.repositories import (
-    AlunoAulaRepository,
-    AulaRepository,
-    ModuloRepository,
-    TrilhaRepository,
+    StudentLessonRepository,
+    LessonRepository,
+    ModuleRepository,
+    TrackRepository,
 )
 
 
 class GetTrackWithModules:
     def __init__(
         self,
-        trilha_repo: TrackRepository,
-        modulo_repo: ModuleRepository,
-        aula_repo: LessonRepository,
-        aluno_aula_repo: AlunoAulaRepository,
+        track_repo: TrackRepository,
+        module_repo: ModuleRepository,
+        lesson_repo: LessonRepository,
+        student_lesson_repo: StudentLessonRepository,
     ) -> None:
-        self._trilha_repo = trilha_repo
-        self._modulo_repo = modulo_repo
-        self._aula_repo = aula_repo
-        self._aluno_aula_repo = aluno_aula_repo
+        self._track_repo = track_repo
+        self._module_repo = module_repo
+        self._lesson_repo = lesson_repo
+        self._student_lesson_repo = student_lesson_repo
 
-    async def execute(self, trilha_id: UUID, usuario_id: UUID) -> TrackComModulosDTO:
-        trilha = await self._trilha_repo.get_by_id(trilha_id)
-        if trilha is None:
-            raise TrackNotFound(f"Trilha {trilha_id} não encontrada.")
+    async def execute(self, track_id: UUID, user_id: UUID) -> TrackWithModulesDTO:
+        track = await self._track_repo.get_by_id(track_id)
+        if track is None:
+            raise TrackNotFound(f"Trilha {track_id} não encontrada.")
 
-        concluidas = await self._aluno_aula_repo.completed_ids(usuario_id)
-        modulos = await self._modulo_repo.list_by_track(trilha_id)
+        completeds = await self._student_lesson_repo.completed_ids(user_id)
+        modules = await self._module_repo.list_by_track(track_id)
 
-        total_aulas = 0
-        concluidas_count = 0
-        modulos_dto = []
+        total_lessons = 0
+        completeds_count = 0
+        modules_dto = []
 
-        for modulo in modulos:
-            aulas = await self._aula_repo.list_by_module(modulo.id)
-            total_aulas += len(aulas)
-            concluidas_count += sum(1 for a in aulas if a.id in concluidas)
+        for module in modules:
+            lessons = await self._lesson_repo.list_by_module(module.id)
+            total_lessons += len(lessons)
+            completeds_count += sum(1 for a in lessons if a.id in completeds)
 
-            modulos_dto.append(
+            modules_dto.append(
                 ModuleWithLessonsDTO(
-                    id=modulo.id,
-                    titulo=modulo.titulo,
-                    descricao=modulo.descricao,
-                    ordem=modulo.ordem,
-                    aulas=[
+                    id=module.id,
+                    title=module.title,
+                    description=module.description,
+                    order=module.order,
+                    lessons=[
                         LessonSummaryDTO(
                             id=a.id,
-                            titulo=a.titulo,
-                            duracao_minutos=a.duracao_minutos,
-                            ordem=a.ordem,
-                            concluida=a.id in concluidas,
+                            title=a.title,
+                            duration_minutes=a.duration_minutes,
+                            order=a.order,
+                            completed=a.id in completeds,
                         )
-                        for a in aulas
+                        for a in lessons
                     ],
                 )
             )
 
-        pct = round(concluidas_count / total_aulas * 100, 2) if total_aulas > 0 else 0.0
+        pct = round(completeds_count / total_lessons * 100, 2) if total_lessons > 0 else 0.0
 
         return TrackWithModulesDTO(
-            id=trilha.id,
-            titulo=trilha.titulo,
-            descricao=trilha.descricao,
-            capa_url=trilha.capa_url,
-            progresso_pct=pct,
-            modulos=modulos_dto,
+            id=track.id,
+            title=track.title,
+            description=track.description,
+            cover_url=track.cover_url,
+            progress_pct=pct,
+            modules=modules_dto,
         )

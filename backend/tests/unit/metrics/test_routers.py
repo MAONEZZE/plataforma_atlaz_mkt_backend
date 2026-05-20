@@ -11,37 +11,37 @@ from app.contexts.metrics.application.dtos import (
     AdminConsolidatedDTO,
     AdminAggregatesDTO,
     DeltaDTO,
-    MetricaDTO,
+    MetricDTO,
     DashboardSummaryDTO,
     DashboardSeriesDTO,
     WeeklySeriesDTO,
-    UsuarioMetricasMesDTO,
+    UserMonthlyMetricsDTO,
 )
 from app.contexts.metrics.domain.exceptions import (
-    MetricaDuplicada,
-    MetricaForaDaJanela,
+    DuplicateMetric,
+    MetricOutOfWindow,
     MetricNotFound,
-    MetricaNaoPertenceAoUsuario,
+    MetricNotOwnedByUser,
     FutureWeekNotAllowed,
 )
 from app.contexts.metrics.presentation.deps import (
-    get_admin_consolidado,
-    get_atualizar_metrica,
-    get_criar_metrica,
-    get_listar_metricas,
-    get_resumo_dashboard,
-    get_series_dashboard,
+    get_admin_consolidated,
+    get_update_metric,
+    get_create_metric,
+    get_list_metrics,
+    get_dashboard_summary,
+    get_dashboard_series,
 )
 from app.core.deps import get_current_user, require_admin
 from app.main import app
 
 
 def _cliente(user_id: UUID | None = None) -> User:
-    return Usuario(id=user_id or uuid4(), email="u@test.com", role="cliente", inativo=False)
+    return User(id=user_id or uuid4(), email="u@test.com", role="cliente", inactive=False)
 
 
 def _admin(user_id: UUID | None = None) -> User:
-    return Usuario(id=user_id or uuid4(), email="a@test.com", role="admin", inativo=False)
+    return User(id=user_id or uuid4(), email="a@test.com", role="admin", inactive=False)
 
 
 def _mock_uc(**kwargs: object) -> AsyncMock:
@@ -53,18 +53,18 @@ def _mock_uc(**kwargs: object) -> AsyncMock:
     return m
 
 
-def _metrica_dto(user_id: UUID | None = None) -> MetricaDTO:
+def _metrica_dto(user_id: UUID | None = None) -> MetricDTO:
     now = datetime.now(tz=UTC)
-    return MetricaDTO(
+    return MetricDTO(
         id=uuid4(),
-        usuario_id=user_id or uuid4(),
-        semana_inicio=date(2026, 5, 11),
-        ligacoes_agendadas=10,
-        ligacoes_realizadas=8,
-        reunioes_agendadas=3,
-        indicacoes=1,
-        criado_em=now,
-        atualizado_em=now,
+        user_id=user_id or uuid4(),
+        week_start=date(2026, 5, 11),
+        calls_scheduled=10,
+        calls_made=8,
+        meetings_scheduled=3,
+        referrals=1,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -81,7 +81,7 @@ def test_listar_metricas_200(client: TestClient) -> None:
     paged = PagedResponse(items=[_metrica_dto(user.id)], page=1, page_size=20, total=1)
     uc = _mock_uc(execute_return=paged)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_listar_metricas] = lambda: uc
+    app.dependency_overrides[get_list_metrics] = lambda: uc
     try:
         r = client.get("/api/v1/metricas")
         assert r.status_code == 200
@@ -102,38 +102,38 @@ def test_criar_metrica_201(client: TestClient) -> None:
     dto = _metrica_dto(user.id)
     uc = _mock_uc(execute_return=dto)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_criar_metrica] = lambda: uc
+    app.dependency_overrides[get_create_metric] = lambda: uc
     try:
         r = client.post(
             "/api/v1/metricas",
             json={
-                "semana_inicio": "2026-05-11",
-                "ligacoes_agendadas": 10,
-                "ligacoes_realizadas": 8,
-                "reunioes_agendadas": 3,
-                "indicacoes": 1,
+                "week_start": "2026-05-11",
+                "calls_scheduled": 10,
+                "calls_made": 8,
+                "meetings_scheduled": 3,
+                "referrals": 1,
             },
         )
         assert r.status_code == 201
-        assert r.json()["semana_inicio"] == "2026-05-11"
+        assert r.json()["week_start"] == "2026-05-11"
     finally:
         app.dependency_overrides.clear()
 
 
 def test_criar_metrica_409_duplicate(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=MetricaDuplicada("dup"))
+    uc = _mock_uc(execute_raises=DuplicateMetric("dup"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_criar_metrica] = lambda: uc
+    app.dependency_overrides[get_create_metric] = lambda: uc
     try:
         r = client.post(
             "/api/v1/metricas",
             json={
-                "semana_inicio": "2026-05-11",
-                "ligacoes_agendadas": 0,
-                "ligacoes_realizadas": 0,
-                "reunioes_agendadas": 0,
-                "indicacoes": 0,
+                "week_start": "2026-05-11",
+                "calls_scheduled": 0,
+                "calls_made": 0,
+                "meetings_scheduled": 0,
+                "referrals": 0,
             },
         )
         assert r.status_code == 409
@@ -144,18 +144,18 @@ def test_criar_metrica_409_duplicate(client: TestClient) -> None:
 
 def test_criar_metrica_422_fora_da_janela(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=MetricaForaDaJanela("janela"))
+    uc = _mock_uc(execute_raises=MetricOutOfWindow("janela"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_criar_metrica] = lambda: uc
+    app.dependency_overrides[get_create_metric] = lambda: uc
     try:
         r = client.post(
             "/api/v1/metricas",
             json={
-                "semana_inicio": "2026-01-05",
-                "ligacoes_agendadas": 0,
-                "ligacoes_realizadas": 0,
-                "reunioes_agendadas": 0,
-                "indicacoes": 0,
+                "week_start": "2026-01-05",
+                "calls_scheduled": 0,
+                "calls_made": 0,
+                "meetings_scheduled": 0,
+                "referrals": 0,
             },
         )
         assert r.status_code == 422
@@ -167,16 +167,16 @@ def test_criar_metrica_422_semana_futura(client: TestClient) -> None:
     user = _cliente()
     uc = _mock_uc(execute_raises=FutureWeekNotAllowed("futura"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_criar_metrica] = lambda: uc
+    app.dependency_overrides[get_create_metric] = lambda: uc
     try:
         r = client.post(
             "/api/v1/metricas",
             json={
-                "semana_inicio": "2026-06-01",
-                "ligacoes_agendadas": 0,
-                "ligacoes_realizadas": 0,
-                "reunioes_agendadas": 0,
-                "indicacoes": 0,
+                "week_start": "2026-06-01",
+                "calls_scheduled": 0,
+                "calls_made": 0,
+                "meetings_scheduled": 0,
+                "referrals": 0,
             },
         )
         assert r.status_code == 422
@@ -191,12 +191,12 @@ def test_criar_metrica_403_para_outro_usuario(client: TestClient) -> None:
         r = client.post(
             "/api/v1/metricas",
             json={
-                "usuario_id": str(uuid4()),  # different user
-                "semana_inicio": "2026-05-11",
-                "ligacoes_agendadas": 0,
-                "ligacoes_realizadas": 0,
-                "reunioes_agendadas": 0,
-                "indicacoes": 0,
+                "user_id": str(uuid4()),  # different user
+                "week_start": "2026-05-11",
+                "calls_scheduled": 0,
+                "calls_made": 0,
+                "meetings_scheduled": 0,
+                "referrals": 0,
             },
         )
         assert r.status_code == 403
@@ -211,9 +211,9 @@ def test_atualizar_metrica_200(client: TestClient) -> None:
     dto = _metrica_dto(user.id)
     uc = _mock_uc(execute_return=dto)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_atualizar_metrica] = lambda: uc
+    app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"ligacoes_agendadas": 20})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"calls_scheduled": 20})
         assert r.status_code == 200
     finally:
         app.dependency_overrides.clear()
@@ -223,9 +223,9 @@ def test_atualizar_metrica_404(client: TestClient) -> None:
     user = _cliente()
     uc = _mock_uc(execute_raises=MetricNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_atualizar_metrica] = lambda: uc
+    app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"ligacoes_agendadas": 5})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"calls_scheduled": 5})
         assert r.status_code == 404
     finally:
         app.dependency_overrides.clear()
@@ -233,11 +233,11 @@ def test_atualizar_metrica_404(client: TestClient) -> None:
 
 def test_atualizar_metrica_403_wrong_owner(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=MetricaNaoPertenceAoUsuario("not yours"))
+    uc = _mock_uc(execute_raises=MetricNotOwnedByUser("not yours"))
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_atualizar_metrica] = lambda: uc
+    app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"ligacoes_agendadas": 5})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"calls_scheduled": 5})
         assert r.status_code == 403
     finally:
         app.dependency_overrides.clear()
@@ -248,21 +248,21 @@ def test_atualizar_metrica_403_wrong_owner(client: TestClient) -> None:
 def test_obter_resumo_200(client: TestClient) -> None:
     user = _cliente()
     dto = DashboardSummaryDTO(
-        mes="2026-05",
-        ligacoes_agendadas=DeltaDTO(valor=120, delta_pct=20.0),
-        ligacoes_realizadas=DeltaDTO(valor=95, delta_pct=None),
-        reunioes_agendadas=DeltaDTO(valor=28, delta_pct=40.0),
-        indicacoes=DeltaDTO(valor=12, delta_pct=None),
+        month="2026-05",
+        calls_scheduled=DeltaDTO(value=120, delta_pct=20.0),
+        calls_made=DeltaDTO(value=95, delta_pct=None),
+        meetings_scheduled=DeltaDTO(value=28, delta_pct=40.0),
+        referrals=DeltaDTO(value=12, delta_pct=None),
     )
     uc = _mock_uc(execute_return=dto)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_resumo_dashboard] = lambda: uc
+    app.dependency_overrides[get_dashboard_summary] = lambda: uc
     try:
         r = client.get("/api/v1/dashboard/resumo")
         assert r.status_code == 200
         body = r.json()
-        assert body["mes"] == "2026-05"
-        assert body["ligacoes_realizadas"]["delta_pct"] is None
+        assert body["month"] == "2026-05"
+        assert body["calls_made"]["delta_pct"] is None
     finally:
         app.dependency_overrides.clear()
 
@@ -279,17 +279,17 @@ def test_obter_series_200(client: TestClient) -> None:
     dto = DashboardSeriesDTO(
         series=[
             WeeklySeriesDTO(
-                semana=date(2026, 5, 11),
-                ligacoes_agendadas=10,
-                ligacoes_realizadas=8,
-                reunioes_agendadas=3,
-                indicacoes=1,
+                week=date(2026, 5, 11),
+                calls_scheduled=10,
+                calls_made=8,
+                meetings_scheduled=3,
+                referrals=1,
             )
         ]
     )
     uc = _mock_uc(execute_return=dto)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_series_dashboard] = lambda: uc
+    app.dependency_overrides[get_dashboard_series] = lambda: uc
     try:
         r = client.get("/api/v1/dashboard/series?semanas=1")
         assert r.status_code == 200
@@ -303,24 +303,24 @@ def test_obter_series_200(client: TestClient) -> None:
 def test_admin_dashboard_200(client: TestClient) -> None:
     admin = _admin()
     dto = AdminConsolidatedDTO(
-        agregados=AdminAggregatesDTO(
-            ligacoes_agendadas_total=100,
-            ligacoes_realizadas_total=80,
-            reunioes_agendadas_total=20,
-            indicacoes_total=5,
-            mentorados_com_metrica_no_mes=3,
-            mentorados_sem_metrica_no_mes=2,
+        aggregates=AdminAggregatesDTO(
+            calls_scheduled_total=100,
+            calls_made_total=80,
+            meetings_scheduled_total=20,
+            referrals_total=5,
+            users_with_metric_in_month=3,
+            users_without_metric_in_month=2,
         ),
         items=[
-            UsuarioMetricasMesDTO(
-                usuario_id=uuid4(),
-                nome="Alice",
-                foto_url=None,
-                ligacoes_agendadas=100,
-                ligacoes_realizadas=80,
-                reunioes_agendadas=20,
-                indicacoes=5,
-                ultima_metrica_em=date(2026, 5, 4),
+            UserMonthlyMetricsDTO(
+                user_id=uuid4(),
+                name="Alice",
+                photo_url=None,
+                calls_scheduled=100,
+                calls_made=80,
+                meetings_scheduled=20,
+                referrals=5,
+                last_metric_at=date(2026, 5, 4),
             )
         ],
         page=1,
@@ -330,13 +330,13 @@ def test_admin_dashboard_200(client: TestClient) -> None:
     uc = _mock_uc(execute_return=dto)
     app.dependency_overrides[get_current_user] = lambda: admin
     app.dependency_overrides[require_admin] = lambda: admin
-    app.dependency_overrides[get_admin_consolidado] = lambda: uc
+    app.dependency_overrides[get_admin_consolidated] = lambda: uc
     try:
         r = client.get("/api/v1/admin/dashboard")
         assert r.status_code == 200
         body = r.json()
-        assert body["agregados"]["mentorados_com_metrica_no_mes"] == 3
-        assert body["items"][0]["nome"] == "Alice"
+        assert body["aggregates"]["users_with_metric_in_month"] == 3
+        assert body["items"][0]["name"] == "Alice"
     finally:
         app.dependency_overrides.clear()
 

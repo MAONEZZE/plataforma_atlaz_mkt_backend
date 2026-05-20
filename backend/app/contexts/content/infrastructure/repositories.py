@@ -25,46 +25,46 @@ from app.contexts.content.infrastructure.models import (
 def _track_from_model(m: TrackModel) -> Track:
     return Track(
         id=m.id,
-        titulo=m.titulo,
-        descricao=m.descricao,
-        capa_url=m.capa_url,
-        ordem=m.ordem,
-        criado_em=m.criado_em,
+        title=m.title,
+        description=m.description,
+        cover_url=m.cover_url,
+        order=m.order,
+        created_at=m.created_at,
     )
 
 
 def _module_from_model(m: ModuleModel) -> Module:
     return Module(
         id=m.id,
-        trilha_id=m.trilha_id,
-        titulo=m.titulo,
-        descricao=m.descricao,
-        ordem=m.ordem,
+        track_id=m.track_id,
+        title=m.title,
+        description=m.description,
+        order=m.order,
     )
 
 
 def _lesson_from_model(m: LessonModel) -> Lesson:
     return Lesson(
         id=m.id,
-        modulo_id=m.modulo_id,
-        titulo=m.titulo,
-        descricao=m.descricao,
+        module_id=m.module_id,
+        title=m.title,
+        description=m.description,
         drive_file_id=m.drive_file_id,
-        duracao_minutos=m.duracao_minutos,
-        ordem=m.ordem,
-        criado_em=m.criado_em,
+        duration_minutes=m.duration_minutes,
+        order=m.order,
+        created_at=m.created_at,
     )
 
 
 def _comment_from_model(m: CommentModel) -> Comment:
     return Comment(
         id=m.id,
-        aula_id=m.aula_id,
-        usuario_id=m.usuario_id,
-        texto=m.texto,
-        criado_em=m.criado_em,
-        editado_em=m.editado_em,
-        apagado_em=m.apagado_em,
+        lesson_id=m.lesson_id,
+        user_id=m.user_id,
+        text=m.text,
+        created_at=m.created_at,
+        edited_at=m.edited_at,
+        deleted_at=m.deleted_at,
     )
 
 
@@ -74,57 +74,57 @@ class SqlAlchemyTrackRepository:
 
     async def list_all(self) -> list[Track]:
         result = await self._session.execute(
-            select(TrackModel).order_by(TrackModel.ordem, TrackModel.criado_em)
+            select(TrackModel).order_by(TrackModel.order, TrackModel.created_at)
         )
         return [_track_from_model(m) for m in result.scalars()]
 
-    async def get_by_id(self, trilha_id: UUID) -> Track | None:
+    async def get_by_id(self, track_id: UUID) -> Track | None:
         result = await self._session.execute(
-            select(TrackModel).where(TrackModel.id == trilha_id)
+            select(TrackModel).where(TrackModel.id == track_id)
         )
         m = result.scalar_one_or_none()
         return _track_from_model(m) if m else None
 
-    async def create(self, trilha: Track) -> Track:
+    async def create(self, track: Track) -> Track:
         model = TrackModel(
-            id=trilha.id,
-            titulo=trilha.titulo,
-            descricao=trilha.descricao,
-            capa_url=trilha.capa_url,
-            ordem=trilha.ordem,
-            criado_em=trilha.criado_em,
+            id=track.id,
+            title=track.title,
+            description=track.description,
+            cover_url=track.cover_url,
+            order=track.order,
+            created_at=track.created_at,
         )
         self._session.add(model)
         await self._session.flush()
-        return trilha
+        return track
 
-    async def update(self, trilha: Track) -> Track:
+    async def update(self, track: Track) -> Track:
         await self._session.execute(
             update(TrackModel)
-            .where(TrackModel.id == trilha.id)
+            .where(TrackModel.id == track.id)
             .values(
-                titulo=trilha.titulo,
-                descricao=trilha.descricao,
-                capa_url=trilha.capa_url,
-                ordem=trilha.ordem,
+                title=track.title,
+                description=track.description,
+                cover_url=track.cover_url,
+                order=track.order,
             )
         )
-        return trilha
+        return track
 
-    async def delete(self, trilha_id: UUID) -> None:
-        await self._session.execute(delete(TrackModel).where(TrackModel.id == trilha_id))
+    async def delete(self, track_id: UUID) -> None:
+        await self._session.execute(delete(TrackModel).where(TrackModel.id == track_id))
 
-    async def reorder(self, ordens: list[tuple[UUID, int]]) -> None:
-        for trilha_id, ordem in ordens:
+    async def reorder(self, orders: list[tuple[UUID, int]]) -> None:
+        for track_id, order_val in orders:
             await self._session.execute(
-                update(TrackModel).where(TrackModel.id == trilha_id).values(ordem=ordem)
+                update(TrackModel).where(TrackModel.id == track_id).values(order=order_val)
             )
 
-    async def count_lessons(self, trilha_id: UUID) -> int:
+    async def count_lessons(self, track_id: UUID) -> int:
         result = await self._session.execute(
             select(LessonModel)
-            .join(ModuleModel, LessonModel.modulo_id == ModuleModel.id)
-            .where(ModuleModel.trilha_id == trilha_id)
+            .join(ModuleModel, LessonModel.module_id == ModuleModel.id)
+            .where(ModuleModel.track_id == track_id)
         )
         return len(result.scalars().all())
 
@@ -133,52 +133,52 @@ class SqlAlchemyModuleRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def list_by_track(self, trilha_id: UUID) -> list[Module]:
+    async def list_by_track(self, track_id: UUID) -> list[Module]:
         result = await self._session.execute(
             select(ModuleModel)
-            .where(ModuleModel.trilha_id == trilha_id)
-            .order_by(ModuleModel.ordem)
+            .where(ModuleModel.track_id == track_id)
+            .order_by(ModuleModel.order)
         )
         return [_module_from_model(m) for m in result.scalars()]
 
-    async def get_by_id(self, modulo_id: UUID) -> Module | None:
+    async def get_by_id(self, module_id: UUID) -> Module | None:
         result = await self._session.execute(
-            select(ModuleModel).where(ModuleModel.id == modulo_id)
+            select(ModuleModel).where(ModuleModel.id == module_id)
         )
         m = result.scalar_one_or_none()
         return _module_from_model(m) if m else None
 
-    async def create(self, modulo: Module) -> Module:
+    async def create(self, module: Module) -> Module:
         model = ModuleModel(
-            id=modulo.id,
-            trilha_id=modulo.trilha_id,
-            titulo=modulo.titulo,
-            descricao=modulo.descricao,
-            ordem=modulo.ordem,
+            id=module.id,
+            track_id=module.track_id,
+            title=module.title,
+            description=module.description,
+            order=module.order,
         )
         self._session.add(model)
         await self._session.flush()
-        return modulo
+        return module
 
-    async def update(self, modulo: Module) -> Module:
+    async def update(self, module: Module) -> Module:
         await self._session.execute(
             update(ModuleModel)
-            .where(ModuleModel.id == modulo.id)
+            .where(ModuleModel.id == module.id)
             .values(
-                titulo=modulo.titulo,
-                descricao=modulo.descricao,
-                ordem=modulo.ordem,
+                title=module.title,
+                description=module.description,
+                order=module.order,
             )
         )
-        return modulo
+        return module
 
-    async def delete(self, modulo_id: UUID) -> None:
-        await self._session.execute(delete(ModuleModel).where(ModuleModel.id == modulo_id))
+    async def delete(self, module_id: UUID) -> None:
+        await self._session.execute(delete(ModuleModel).where(ModuleModel.id == module_id))
 
-    async def reorder(self, ordens: list[tuple[UUID, int]]) -> None:
-        for modulo_id, ordem in ordens:
+    async def reorder(self, orders: list[tuple[UUID, int]]) -> None:
+        for module_id, order_val in orders:
             await self._session.execute(
-                update(ModuleModel).where(ModuleModel.id == modulo_id).values(ordem=ordem)
+                update(ModuleModel).where(ModuleModel.id == module_id).values(order=order_val)
             )
 
 
@@ -186,92 +186,92 @@ class SqlAlchemyLessonRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(self, aula_id: UUID) -> Lesson | None:
-        result = await self._session.execute(select(LessonModel).where(LessonModel.id == aula_id))
+    async def get_by_id(self, lesson_id: UUID) -> Lesson | None:
+        result = await self._session.execute(select(LessonModel).where(LessonModel.id == lesson_id))
         m = result.scalar_one_or_none()
         return _lesson_from_model(m) if m else None
 
-    async def list_by_module(self, modulo_id: UUID) -> list[Lesson]:
+    async def list_by_module(self, module_id: UUID) -> list[Lesson]:
         result = await self._session.execute(
-            select(LessonModel).where(LessonModel.modulo_id == modulo_id).order_by(LessonModel.ordem)
+            select(LessonModel).where(LessonModel.module_id == module_id).order_by(LessonModel.order)
         )
         return [_lesson_from_model(m) for m in result.scalars()]
 
-    async def create(self, aula: Lesson) -> Lesson:
+    async def create(self, lesson: Lesson) -> Lesson:
         model = LessonModel(
-            id=aula.id,
-            modulo_id=aula.modulo_id,
-            titulo=aula.titulo,
-            descricao=aula.descricao,
-            drive_file_id=aula.drive_file_id,
-            duracao_minutos=aula.duracao_minutos,
-            ordem=aula.ordem,
-            criado_em=aula.criado_em,
+            id=lesson.id,
+            module_id=lesson.module_id,
+            title=lesson.title,
+            description=lesson.description,
+            drive_file_id=lesson.drive_file_id,
+            duration_minutes=lesson.duration_minutes,
+            order=lesson.order,
+            created_at=lesson.created_at,
         )
         self._session.add(model)
         await self._session.flush()
-        return aula
+        return lesson
 
-    async def update(self, aula: Lesson) -> Lesson:
+    async def update(self, lesson: Lesson) -> Lesson:
         await self._session.execute(
             update(LessonModel)
-            .where(LessonModel.id == aula.id)
+            .where(LessonModel.id == lesson.id)
             .values(
-                titulo=aula.titulo,
-                descricao=aula.descricao,
-                drive_file_id=aula.drive_file_id,
-                duracao_minutos=aula.duracao_minutos,
-                ordem=aula.ordem,
+                title=lesson.title,
+                description=lesson.description,
+                drive_file_id=lesson.drive_file_id,
+                duration_minutes=lesson.duration_minutes,
+                order=lesson.order,
             )
         )
-        return aula
+        return lesson
 
-    async def delete(self, aula_id: UUID) -> None:
-        await self._session.execute(delete(LessonModel).where(LessonModel.id == aula_id))
+    async def delete(self, lesson_id: UUID) -> None:
+        await self._session.execute(delete(LessonModel).where(LessonModel.id == lesson_id))
 
-    async def reorder(self, ordens: list[tuple[UUID, int]]) -> None:
-        for aula_id, ordem in ordens:
+    async def reorder(self, orders: list[tuple[UUID, int]]) -> None:
+        for lesson_id, order_val in orders:
             await self._session.execute(
-                update(LessonModel).where(LessonModel.id == aula_id).values(ordem=ordem)
+                update(LessonModel).where(LessonModel.id == lesson_id).values(order=order_val)
             )
 
-    async def next_lesson(self, aula: Lesson) -> Lesson | None:
-        # Next in same modulo
+    async def next_lesson(self, lesson: Lesson) -> Lesson | None:
+        # Next in same module
         result = await self._session.execute(
             select(LessonModel)
-            .where(LessonModel.modulo_id == aula.modulo_id, LessonModel.ordem > aula.ordem)
-            .order_by(LessonModel.ordem)
+            .where(LessonModel.module_id == lesson.module_id, LessonModel.order > lesson.order)
+            .order_by(LessonModel.order)
             .limit(1)
         )
         next_model = result.scalar_one_or_none()
         if next_model:
             return _lesson_from_model(next_model)
 
-        # First aula of next modulo (by ordem)
-        modulo_result = await self._session.execute(
-            select(ModuleModel).where(ModuleModel.id == aula.modulo_id)
+        # First lesson of next module (by order)
+        module_result = await self._session.execute(
+            select(ModuleModel).where(ModuleModel.id == lesson.module_id)
         )
-        modulo = modulo_result.scalar_one_or_none()
-        if modulo is None:
+        module = module_result.scalar_one_or_none()
+        if module is None:
             return None
 
-        next_modulo_result = await self._session.execute(
+        next_module_result = await self._session.execute(
             select(ModuleModel)
             .where(
-                ModuleModel.trilha_id == modulo.trilha_id,
-                ModuleModel.ordem > modulo.ordem,
+                ModuleModel.track_id == module.track_id,
+                ModuleModel.order > module.order,
             )
-            .order_by(ModuleModel.ordem)
+            .order_by(ModuleModel.order)
             .limit(1)
         )
-        next_modulo = next_modulo_result.scalar_one_or_none()
-        if next_modulo is None:
+        next_module = next_module_result.scalar_one_or_none()
+        if next_module is None:
             return None
 
         first_result = await self._session.execute(
             select(LessonModel)
-            .where(LessonModel.modulo_id == next_modulo.id)
-            .order_by(LessonModel.ordem)
+            .where(LessonModel.module_id == next_module.id)
+            .order_by(LessonModel.order)
             .limit(1)
         )
         first = first_result.scalar_one_or_none()
@@ -282,34 +282,34 @@ class SqlAlchemyStudentLessonRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def mark_completed(self, usuario_id: UUID, aula_id: UUID) -> None:
+    async def mark_completed(self, user_id: UUID, lesson_id: UUID) -> None:
         existing = await self._session.execute(
             select(StudentLessonModel).where(
-                StudentLessonModel.usuario_id == usuario_id,
-                StudentLessonModel.aula_id == aula_id,
+                StudentLessonModel.user_id == user_id,
+                StudentLessonModel.lesson_id == lesson_id,
             )
         )
         if existing.scalar_one_or_none() is None:
             self._session.add(
                 StudentLessonModel(
-                    usuario_id=usuario_id,
-                    aula_id=aula_id,
-                    concluida_em=now_sp(),
+                    user_id=user_id,
+                    lesson_id=lesson_id,
+                    completed_at=now_sp(),
                 )
             )
             await self._session.flush()
 
-    async def unmark(self, usuario_id: UUID, aula_id: UUID) -> None:
+    async def unmark(self, user_id: UUID, lesson_id: UUID) -> None:
         await self._session.execute(
             delete(StudentLessonModel).where(
-                StudentLessonModel.usuario_id == usuario_id,
-                StudentLessonModel.aula_id == aula_id,
+                StudentLessonModel.user_id == user_id,
+                StudentLessonModel.lesson_id == lesson_id,
             )
         )
 
-    async def completed_ids(self, usuario_id: UUID) -> set[UUID]:
+    async def completed_ids(self, user_id: UUID) -> set[UUID]:
         result = await self._session.execute(
-            select(StudentLessonModel.aula_id).where(StudentLessonModel.usuario_id == usuario_id)
+            select(StudentLessonModel.lesson_id).where(StudentLessonModel.user_id == user_id)
         )
         return set(result.scalars())
 
@@ -319,19 +319,19 @@ class SqlAlchemyCommentRepository:
         self._session = session
 
     async def list_by_lesson(
-        self, aula_id: UUID, page: int, page_size: int
+        self, lesson_id: UUID, page: int, page_size: int
     ) -> tuple[list[CommentRead], int]:
         count_result = await self._session.execute(
-            select(CommentModel).where(CommentModel.aula_id == aula_id)
+            select(CommentModel).where(CommentModel.lesson_id == lesson_id)
         )
         total = len(count_result.scalars().all())
 
         offset = (page - 1) * page_size
         result = await self._session.execute(
             select(CommentModel, UserContentModel)
-            .join(UserContentModel, CommentModel.usuario_id == UserContentModel.id)
-            .where(CommentModel.aula_id == aula_id)
-            .order_by(CommentModel.criado_em.desc())
+            .join(UserContentModel, CommentModel.user_id == UserContentModel.id)
+            .where(CommentModel.lesson_id == lesson_id)
+            .order_by(CommentModel.created_at.desc())
             .offset(offset)
             .limit(page_size)
         )
@@ -339,55 +339,55 @@ class SqlAlchemyCommentRepository:
         items = [
             CommentRead(
                 id=c.id,
-                aula_id=c.aula_id,
-                usuario_id=c.usuario_id,
-                texto=None if c.apagado_em else c.texto,
-                criado_em=c.criado_em,
-                editado_em=c.editado_em,
-                apagado_em=c.apagado_em,
-                autor_nome=u.nome,
-                autor_foto_url=u.foto_url,
+                lesson_id=c.lesson_id,
+                user_id=c.user_id,
+                text=None if c.deleted_at else c.text,
+                created_at=c.created_at,
+                edited_at=c.edited_at,
+                deleted_at=c.deleted_at,
+                author_name=u.name,
+                author_photo_url=u.photo_url,
             )
             for c, u in rows
         ]
         return items, total
 
-    async def get_by_id(self, comentario_id: UUID) -> Comment | None:
+    async def get_by_id(self, comment_id: UUID) -> Comment | None:
         result = await self._session.execute(
-            select(CommentModel).where(CommentModel.id == comentario_id)
+            select(CommentModel).where(CommentModel.id == comment_id)
         )
         m = result.scalar_one_or_none()
         return _comment_from_model(m) if m else None
 
-    async def create(self, comentario: Comment) -> Comment:
+    async def create(self, comment: Comment) -> Comment:
         model = CommentModel(
-            id=comentario.id,
-            aula_id=comentario.aula_id,
-            usuario_id=comentario.usuario_id,
-            texto=comentario.texto,
-            criado_em=comentario.criado_em,
-            editado_em=comentario.editado_em,
-            apagado_em=comentario.apagado_em,
+            id=comment.id,
+            lesson_id=comment.lesson_id,
+            user_id=comment.user_id,
+            text=comment.text,
+            created_at=comment.created_at,
+            edited_at=comment.edited_at,
+            deleted_at=comment.deleted_at,
         )
         self._session.add(model)
         await self._session.flush()
-        return comentario
+        return comment
 
-    async def update(self, comentario: Comment) -> Comment:
+    async def update(self, comment: Comment) -> Comment:
         await self._session.execute(
             update(CommentModel)
-            .where(CommentModel.id == comentario.id)
+            .where(CommentModel.id == comment.id)
             .values(
-                texto=comentario.texto,
-                editado_em=comentario.editado_em,
-                apagado_em=comentario.apagado_em,
+                text=comment.text,
+                edited_at=comment.edited_at,
+                deleted_at=comment.deleted_at,
             )
         )
-        return comentario
+        return comment
 
-    async def delete_comment(self, comentario_id: UUID) -> None:
+    async def delete_comment(self, comment_id: UUID) -> None:
         await self._session.execute(
             update(CommentModel)
-            .where(CommentModel.id == comentario_id)
-            .values(apagado_em=now_sp())
+            .where(CommentModel.id == comment_id)
+            .values(deleted_at=now_sp())
         )

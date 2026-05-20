@@ -7,8 +7,8 @@ class CommunityMemberSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    nome: str
-    foto_url: str | None
+    name: str
+    photo_url: str | None
     linkedin_url: str | None
     instagram_username: str | None
 

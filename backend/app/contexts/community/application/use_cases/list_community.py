@@ -7,17 +7,17 @@ class ListCommunity:
         self._repo = repo
 
     async def execute(self, page: int, page_size: int) -> ListCommunityResultDTO:
-        membros, total = await self._repo.list_active(page=page, page_size=page_size)
+        members, total = await self._repo.list_active(page=page, page_size=page_size)
         return ListCommunityResultDTO(
             items=[
                 CommunityMemberDTO(
                     id=m.id,
-                    nome=m.nome,
-                    foto_url=m.foto_url,
+                    name=m.name,
+                    photo_url=m.photo_url,
                     linkedin_url=m.linkedin_url,
                     instagram_username=m.instagram_username,
                 )
-                for m in membros
+                for m in members
             ],
             page=page,
             page_size=page_size,

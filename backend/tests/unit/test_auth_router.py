@@ -49,7 +49,7 @@ def _mock_logout(*, side_effect: object = None) -> AsyncMock:
 
 
 def _auth_user() -> AuthUser:
-    return AuthUser(id=_UID, email="user@test.com", role="cliente", inativo=False)
+    return AuthUser(id=_UID, email="user@test.com", role="cliente", inactive=False)
 
 
 # ── POST /auth/login ──────────────────────────────────────────────────────────

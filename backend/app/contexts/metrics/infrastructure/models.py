@@ -12,33 +12,33 @@ from app.shared.infrastructure.sqlalchemy_base import Base
 class WeeklyMetricModel(Base):
     __tablename__ = "weekly_metrics"
     __table_args__ = (
-        UniqueConstraint("usuario_id", "semana_inicio"),
+        UniqueConstraint("user_id", "week_start"),
         {"schema": "public", "extend_existing": True},
     )
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
-    usuario_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    semana_inicio: Mapped[date] = mapped_column(Date, nullable=False)
-    ligacoes_agendadas: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    ligacoes_realizadas: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    reunioes_agendadas: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    indicacoes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    criado_em: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
-    atualizado_em: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
+    week_start: Mapped[date] = mapped_column(Date, nullable=False)
+    calls_scheduled: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    calls_made: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    meetings_scheduled: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    referrals: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
 class UserMetricModel(Base):
-    """Read-only view of public.usuario fields used by the metricas context."""
+    """Read-only view of public.users fields used by the metrics context."""
 
     __tablename__ = "users"
     __table_args__ = {"schema": "public", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
-    nome: Mapped[str] = mapped_column(String, nullable=False)
-    foto_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    photo_url: Mapped[str | None] = mapped_column(String, nullable=True)
     role: Mapped[str] = mapped_column(String, nullable=False)
-    inativo: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    inactive: Mapped[bool] = mapped_column(Boolean, nullable=False)

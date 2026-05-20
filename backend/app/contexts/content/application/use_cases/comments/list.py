@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from app.contexts.content.application.dtos import AutorDTO, ComentarioDTO
-from app.contexts.content.domain.repositories import ComentarioRepository
+from app.contexts.content.application.dtos import AuthorDTO, CommentDTO
+from app.contexts.content.domain.repositories import CommentRepository
 from app.shared.application.dtos import PagedResponse
 
 
@@ -10,18 +10,18 @@ class ListComments:
         self._repo = repo
 
     async def execute(
-        self, aula_id: UUID, page: int, page_size: int, current_user_id: UUID
-    ) -> PagedResponse[ComentarioDTO]:
-        items, total = await self._repo.list_by_lesson(aula_id, page, page_size)
+        self, lesson_id: UUID, page: int, page_size: int, current_user_id: UUID
+    ) -> PagedResponse[CommentDTO]:
+        items, total = await self._repo.list_by_lesson(lesson_id, page, page_size)
         dtos = [
-            ComentarioDTO(
+            CommentDTO(
                 id=c.id,
-                autor=AutorDTO(id=c.usuario_id, nome=c.autor_nome, foto_url=c.autor_foto_url),
-                texto=c.texto,
-                criado_em=c.criado_em,
-                editado_em=c.editado_em,
-                apagado_em=c.apagado_em,
-                is_proprio=c.usuario_id == current_user_id,
+                author=AuthorDTO(id=c.user_id, name=c.author_name, photo_url=c.author_photo_url),
+                text=c.text,
+                created_at=c.created_at,
+                edited_at=c.edited_at,
+                deleted_at=c.deleted_at,
+                is_own=c.user_id == current_user_id,
             )
             for c in items
         ]

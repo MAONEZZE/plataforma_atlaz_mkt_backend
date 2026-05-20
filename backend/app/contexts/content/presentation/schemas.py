@@ -3,130 +3,130 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# ── Trilha schemas ─────────────────────────────────────────────────────────────
+# ── Track schemas ──────────────────────────────────────────────────────────────
 
 
 class TrackProgressOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    titulo: str
-    descricao: str | None
-    capa_url: str | None
-    total_aulas: int
-    aulas_concluidas: int
-    progresso_pct: float
+    title: str
+    description: str | None
+    cover_url: str | None
+    total_lessons: int
+    lessons_completed: int
+    progress_pct: float
 
 
 class LessonSummaryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    titulo: str
-    duracao_minutos: int | None
-    ordem: int
-    concluida: bool
+    title: str
+    duration_minutes: int | None
+    order: int
+    completed: bool
 
 
 class ModuleWithLessonsOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    titulo: str
-    descricao: str | None
-    ordem: int
-    aulas: list[LessonSummaryOut]
+    title: str
+    description: str | None
+    order: int
+    lessons: list[LessonSummaryOut]
 
 
-class TrackResumoOut(BaseModel):
+class TrackSummaryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    titulo: str
+    title: str
 
 
 class TrackWithModulesOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    titulo: str
-    descricao: str | None
-    capa_url: str | None
-    progresso_pct: float
-    modulos: list[ModuloComAulasOut]
+    title: str
+    description: str | None
+    cover_url: str | None
+    progress_pct: float
+    modules: list[ModuleWithLessonsOut]
 
 
-# ── Aula schemas ───────────────────────────────────────────────────────────────
+# ── Lesson schemas ─────────────────────────────────────────────────────────────
 
 
 class LessonDetailOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    modulo_id: UUID
-    titulo: str
-    descricao: str | None
+    module_id: UUID
+    title: str
+    description: str | None
     drive_file_id: str
-    duracao_minutos: int | None
-    concluida: bool
-    trilha: TrackResumoOut
-    proxima_aula: LessonResumoOut | None
+    duration_minutes: int | None
+    completed: bool
+    track: TrackSummaryOut
+    next_lesson: LessonSummaryOut | None
 
 
 # ── Admin input schemas ────────────────────────────────────────────────────────
 
 
 class CreateTrackIn(BaseModel):
-    titulo: str
-    descricao: str | None = None
-    capa_url: str | None = None
-    ordem: int = 0
+    title: str
+    description: str | None = None
+    cover_url: str | None = None
+    order: int = 0
 
 
 class UpdateTrackIn(BaseModel):
-    titulo: str | None = None
-    descricao: str | None = None
-    capa_url: str | None = None
-    ordem: int | None = None
+    title: str | None = None
+    description: str | None = None
+    cover_url: str | None = None
+    order: int | None = None
 
 
-class OrdemItem(BaseModel):
+class OrderItem(BaseModel):
     id: UUID
-    ordem: int
+    order: int
 
 
-class ReordenarIn(BaseModel):
-    ordem: list[OrdemItem]
+class ReorderIn(BaseModel):
+    order: list[OrderItem]
 
 
 class CreateModuleIn(BaseModel):
-    trilha_id: UUID
-    titulo: str
-    descricao: str | None = None
-    ordem: int = 0
+    track_id: UUID
+    title: str
+    description: str | None = None
+    order: int = 0
 
 
 class UpdateModuleIn(BaseModel):
-    titulo: str | None = None
-    descricao: str | None = None
-    ordem: int | None = None
+    title: str | None = None
+    description: str | None = None
+    order: int | None = None
 
 
 class CreateLessonIn(BaseModel):
-    modulo_id: UUID
-    titulo: str
-    descricao: str | None = None
+    module_id: UUID
+    title: str
+    description: str | None = None
     drive_url: str
-    duracao_minutos: int | None = None
-    ordem: int = 0
+    duration_minutes: int | None = None
+    order: int = 0
 
 
 class UpdateLessonIn(BaseModel):
-    titulo: str | None = None
-    descricao: str | None = None
+    title: str | None = None
+    description: str | None = None
     drive_url: str | None = None
-    duracao_minutos: int | None = None
-    ordem: int | None = None
+    duration_minutes: int | None = None
+    order: int | None = None
 
 
 # ── Admin output schemas ───────────────────────────────────────────────────────
@@ -136,58 +136,58 @@ class TrackAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    titulo: str
-    descricao: str | None
-    capa_url: str | None
-    ordem: int
-    criado_em: datetime
+    title: str
+    description: str | None
+    cover_url: str | None
+    order: int
+    created_at: datetime
 
 
 class ModuleAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    trilha_id: UUID
-    titulo: str
-    descricao: str | None
-    ordem: int
+    track_id: UUID
+    title: str
+    description: str | None
+    order: int
 
 
 class LessonAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    modulo_id: UUID
-    titulo: str
-    descricao: str | None
+    module_id: UUID
+    title: str
+    description: str | None
     drive_file_id: str
-    duracao_minutos: int | None
-    ordem: int
-    criado_em: datetime
+    duration_minutes: int | None
+    order: int
+    created_at: datetime
 
 
-# ── Comentario schemas ─────────────────────────────────────────────────────────
+# ── Comment schemas ────────────────────────────────────────────────────────────
 
 
-class AutorOut(BaseModel):
+class AuthorOut(BaseModel):
     id: UUID
-    nome: str
-    foto_url: str | None
+    name: str
+    photo_url: str | None
 
 
 class CommentOut(BaseModel):
     id: UUID
-    autor: AutorOut
-    texto: str | None
-    criado_em: datetime
-    editado_em: datetime | None
-    apagado_em: datetime | None
-    is_proprio: bool
+    author: AuthorOut
+    text: str | None
+    created_at: datetime
+    edited_at: datetime | None
+    deleted_at: datetime | None
+    is_own: bool
 
 
 class CreateCommentIn(BaseModel):
-    texto: str = Field(..., min_length=1, max_length=2000)
+    text: str = Field(..., min_length=1, max_length=2000)
 
 
 class EditCommentIn(BaseModel):
-    texto: str = Field(..., min_length=1, max_length=2000)
+    text: str = Field(..., min_length=1, max_length=2000)

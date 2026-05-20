@@ -7,22 +7,22 @@ import pytest
 
 from app.contexts.metrics.application.dtos import (
     AdminConsolidatedDTO,
-    MetricaDTO,
+    MetricDTO,
     DashboardSummaryDTO,
     DashboardSeriesDTO,
 )
-from app.contexts.metrics.application.use_cases.create_metric import CriarMetrica
-from app.contexts.metrics.application.use_cases.update_metric import AtualizarMetrica
-from app.contexts.metrics.application.use_cases.list_metrics import ListarMetricas
-from app.contexts.metrics.application.use_cases.get_dashboard_summary import ObterResumoDashboard
-from app.contexts.metrics.application.use_cases.get_dashboard_series import ObterSeriesDashboard
-from app.contexts.metrics.application.use_cases.get_admin_consolidated import ObterAdminConsolidado
+from app.contexts.metrics.application.use_cases.create_metric import CreateMetric
+from app.contexts.metrics.application.use_cases.update_metric import UpdateMetric
+from app.contexts.metrics.application.use_cases.list_metrics import ListMetrics
+from app.contexts.metrics.application.use_cases.get_dashboard_summary import GetDashboardSummary
+from app.contexts.metrics.application.use_cases.get_dashboard_series import GetDashboardSeries
+from app.contexts.metrics.application.use_cases.get_admin_consolidated import GetAdminConsolidated
 from app.contexts.metrics.domain.entities import WeeklyMetric, UserMonthlyMetrics
 from app.contexts.metrics.domain.exceptions import (
-    MetricaDuplicada,
-    MetricaForaDaJanela,
+    DuplicateMetric,
+    MetricOutOfWindow,
     MetricNotFound,
-    MetricaNaoPertenceAoUsuario,
+    MetricNotOwnedByUser,
     FutureWeekNotAllowed,
 )
 
@@ -31,21 +31,21 @@ TODAY = date(2026, 5, 14)  # Wednesday
 MONDAY = date(2026, 5, 11)  # Monday of current week
 
 
-def _make_metrica(
-    usuario_id: UUID | None = None,
-    semana_inicio: date = MONDAY,
+def _make_metric(
+    user_id: UUID | None = None,
+    week_start: date = MONDAY,
 ) -> WeeklyMetric:
     now = datetime.now(tz=UTC)
     return WeeklyMetric(
         id=uuid4(),
-        usuario_id=usuario_id or uuid4(),
-        semana_inicio=semana_inicio,
-        ligacoes_agendadas=10,
-        ligacoes_realizadas=8,
-        reunioes_agendadas=3,
-        indicacoes=1,
-        criado_em=now,
-        atualizado_em=now,
+        user_id=user_id or uuid4(),
+        week_start=week_start,
+        calls_scheduled=10,
+        calls_made=8,
+        meetings_scheduled=3,
+        referrals=1,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -59,147 +59,147 @@ def _mock_repo(**kwargs: object) -> AsyncMock:
     return repo
 
 
-# ── CriarMetrica ──────────────────────────────────────────────────────────────
+# ── CreateMetric ──────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_criar_metrica_happy_path() -> None:
-    usuario_id = uuid4()
-    metrica = _make_metrica(usuario_id=usuario_id)
-    repo = _mock_repo(por_usuario_e_semana=None, criar=metrica)
-    uc = CriarMetrica(repo)
+async def test_create_metric_happy_path() -> None:
+    user_id = uuid4()
+    metric = _make_metric(user_id=user_id)
+    repo = _mock_repo(get_by_user_and_week=None, create=metric)
+    uc = CreateMetric(repo)
     result = await uc.execute(
-        usuario_id=usuario_id,
-        semana_inicio=MONDAY,
-        ligacoes_agendadas=10,
-        ligacoes_realizadas=8,
-        reunioes_agendadas=3,
-        indicacoes=1,
+        user_id=user_id,
+        week_start=MONDAY,
+        calls_scheduled=10,
+        calls_made=8,
+        meetings_scheduled=3,
+        referrals=1,
         is_admin=False,
         today=TODAY,
     )
-    assert isinstance(result, MetricaDTO)
-    assert result.semana_inicio == MONDAY
+    assert isinstance(result, MetricDTO)
+    assert result.week_start == MONDAY
 
 
 @pytest.mark.asyncio
-async def test_criar_metrica_normalizes_to_monday() -> None:
-    usuario_id = uuid4()
+async def test_create_metric_normalizes_to_monday() -> None:
+    user_id = uuid4()
     wednesday = date(2026, 5, 13)  # Wednesday → should normalize to Monday May 11
-    metrica = _make_metrica(usuario_id=usuario_id, semana_inicio=MONDAY)
-    repo = _mock_repo(por_usuario_e_semana=None, criar=metrica)
-    uc = CriarMetrica(repo)
+    metric = _make_metric(user_id=user_id, week_start=MONDAY)
+    repo = _mock_repo(get_by_user_and_week=None, create=metric)
+    uc = CreateMetric(repo)
     result = await uc.execute(
-        usuario_id=usuario_id,
-        semana_inicio=wednesday,
-        ligacoes_agendadas=0,
-        ligacoes_realizadas=0,
-        reunioes_agendadas=0,
-        indicacoes=0,
+        user_id=user_id,
+        week_start=wednesday,
+        calls_scheduled=0,
+        calls_made=0,
+        meetings_scheduled=0,
+        referrals=0,
         is_admin=False,
         today=TODAY,
     )
-    assert result.semana_inicio == MONDAY
+    assert result.week_start == MONDAY
 
 
 @pytest.mark.asyncio
-async def test_criar_metrica_future_semana_raises() -> None:
+async def test_create_metric_future_week_raises() -> None:
     future = date(2026, 5, 18)  # next Monday
-    repo = _mock_repo(por_usuario_e_semana=None)
-    uc = CriarMetrica(repo)
+    repo = _mock_repo(get_by_user_and_week=None)
+    uc = CreateMetric(repo)
     with pytest.raises(FutureWeekNotAllowed):
         await uc.execute(
-            usuario_id=uuid4(),
-            semana_inicio=future,
-            ligacoes_agendadas=0,
-            ligacoes_realizadas=0,
-            reunioes_agendadas=0,
-            indicacoes=0,
+            user_id=uuid4(),
+            week_start=future,
+            calls_scheduled=0,
+            calls_made=0,
+            meetings_scheduled=0,
+            referrals=0,
             is_admin=False,
             today=TODAY,
         )
 
 
 @pytest.mark.asyncio
-async def test_criar_metrica_outside_window_raises_for_cliente() -> None:
-    old_semana = date(2026, 4, 13)  # 29 days before TODAY=May 14 → wait, let me check: Apr 13 to May 14 = 31 days, outside 28-day window
-    repo = _mock_repo(por_usuario_e_semana=None)
-    uc = CriarMetrica(repo)
-    with pytest.raises(MetricaForaDaJanela):
+async def test_create_metric_outside_window_raises_for_client() -> None:
+    old_week = date(2026, 4, 13)  # 31 days before TODAY=May 14 → outside 28-day window
+    repo = _mock_repo(get_by_user_and_week=None)
+    uc = CreateMetric(repo)
+    with pytest.raises(MetricOutOfWindow):
         await uc.execute(
-            usuario_id=uuid4(),
-            semana_inicio=old_semana,
-            ligacoes_agendadas=0,
-            ligacoes_realizadas=0,
-            reunioes_agendadas=0,
-            indicacoes=0,
+            user_id=uuid4(),
+            week_start=old_week,
+            calls_scheduled=0,
+            calls_made=0,
+            meetings_scheduled=0,
+            referrals=0,
             is_admin=False,
             today=TODAY,
         )
 
 
 @pytest.mark.asyncio
-async def test_criar_metrica_outside_window_allowed_for_admin() -> None:
-    old_semana = date(2026, 1, 5)  # very old, admin can still create
-    metrica = _make_metrica(semana_inicio=old_semana)
-    repo = _mock_repo(por_usuario_e_semana=None, criar=metrica)
-    uc = CriarMetrica(repo)
+async def test_create_metric_outside_window_allowed_for_admin() -> None:
+    old_week = date(2026, 1, 5)  # very old, admin can still create
+    metric = _make_metric(week_start=old_week)
+    repo = _mock_repo(get_by_user_and_week=None, create=metric)
+    uc = CreateMetric(repo)
     result = await uc.execute(
-        usuario_id=uuid4(),
-        semana_inicio=old_semana,
-        ligacoes_agendadas=5,
-        ligacoes_realizadas=5,
-        reunioes_agendadas=1,
-        indicacoes=0,
+        user_id=uuid4(),
+        week_start=old_week,
+        calls_scheduled=5,
+        calls_made=5,
+        meetings_scheduled=1,
+        referrals=0,
         is_admin=True,
         today=TODAY,
     )
-    assert isinstance(result, MetricaDTO)
+    assert isinstance(result, MetricDTO)
 
 
 @pytest.mark.asyncio
-async def test_criar_metrica_duplicate_raises() -> None:
-    existing = _make_metrica()
-    repo = _mock_repo(por_usuario_e_semana=existing)
-    uc = CriarMetrica(repo)
-    with pytest.raises(MetricaDuplicada):
+async def test_create_metric_duplicate_raises() -> None:
+    existing = _make_metric()
+    repo = _mock_repo(get_by_user_and_week=existing)
+    uc = CreateMetric(repo)
+    with pytest.raises(DuplicateMetric):
         await uc.execute(
-            usuario_id=existing.usuario_id,
-            semana_inicio=MONDAY,
-            ligacoes_agendadas=0,
-            ligacoes_realizadas=0,
-            reunioes_agendadas=0,
-            indicacoes=0,
+            user_id=existing.user_id,
+            week_start=MONDAY,
+            calls_scheduled=0,
+            calls_made=0,
+            meetings_scheduled=0,
+            referrals=0,
             is_admin=False,
             today=TODAY,
         )
 
 
-# ── AtualizarMetrica ──────────────────────────────────────────────────────────
+# ── UpdateMetric ──────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_atualizar_metrica_happy_path() -> None:
-    usuario_id = uuid4()
-    metrica = _make_metrica(usuario_id=usuario_id)
-    updated = replace(metrica, ligacoes_agendadas=20)
-    repo = _mock_repo(por_id=metrica, atualizar=updated)
-    uc = AtualizarMetrica(repo)
+async def test_update_metric_happy_path() -> None:
+    user_id = uuid4()
+    metric = _make_metric(user_id=user_id)
+    updated = replace(metric, calls_scheduled=20)
+    repo = _mock_repo(get_by_id=metric, update=updated)
+    uc = UpdateMetric(repo)
     result = await uc.execute(
-        metrica_id=metrica.id,
-        requesting_user_id=usuario_id,
+        metric_id=metric.id,
+        requesting_user_id=user_id,
         is_admin=False,
-        ligacoes_agendadas=20,
+        calls_scheduled=20,
         today=TODAY,
     )
-    assert result.ligacoes_agendadas == 20
+    assert result.calls_scheduled == 20
 
 
 @pytest.mark.asyncio
-async def test_atualizar_metrica_not_found_raises() -> None:
-    repo = _mock_repo(por_id=None)
-    uc = AtualizarMetrica(repo)
+async def test_update_metric_not_found_raises() -> None:
+    repo = _mock_repo(get_by_id=None)
+    uc = UpdateMetric(repo)
     with pytest.raises(MetricNotFound):
         await uc.execute(
-            metrica_id=uuid4(),
+            metric_id=uuid4(),
             requesting_user_id=uuid4(),
             is_admin=False,
             today=TODAY,
@@ -207,13 +207,13 @@ async def test_atualizar_metrica_not_found_raises() -> None:
 
 
 @pytest.mark.asyncio
-async def test_atualizar_metrica_wrong_owner_raises() -> None:
-    metrica = _make_metrica()
-    repo = _mock_repo(por_id=metrica)
-    uc = AtualizarMetrica(repo)
-    with pytest.raises(MetricaNaoPertenceAoUsuario):
+async def test_update_metric_wrong_owner_raises() -> None:
+    metric = _make_metric()
+    repo = _mock_repo(get_by_id=metric)
+    uc = UpdateMetric(repo)
+    with pytest.raises(MetricNotOwnedByUser):
         await uc.execute(
-            metrica_id=metrica.id,
+            metric_id=metric.id,
             requesting_user_id=uuid4(),  # different user
             is_admin=False,
             today=TODAY,
@@ -221,224 +221,224 @@ async def test_atualizar_metrica_wrong_owner_raises() -> None:
 
 
 @pytest.mark.asyncio
-async def test_atualizar_metrica_outside_window_raises_for_cliente() -> None:
-    old_semana = date(2026, 4, 12)  # outside 28-day window (33 days from May 14)
-    usuario_id = uuid4()
-    metrica = _make_metrica(usuario_id=usuario_id, semana_inicio=old_semana)
-    repo = _mock_repo(por_id=metrica)
-    uc = AtualizarMetrica(repo)
-    with pytest.raises(MetricaForaDaJanela):
+async def test_update_metric_outside_window_raises_for_client() -> None:
+    old_week = date(2026, 4, 12)  # outside 28-day window (33 days from May 14)
+    user_id = uuid4()
+    metric = _make_metric(user_id=user_id, week_start=old_week)
+    repo = _mock_repo(get_by_id=metric)
+    uc = UpdateMetric(repo)
+    with pytest.raises(MetricOutOfWindow):
         await uc.execute(
-            metrica_id=metrica.id,
-            requesting_user_id=usuario_id,
+            metric_id=metric.id,
+            requesting_user_id=user_id,
             is_admin=False,
             today=TODAY,
         )
 
 
 @pytest.mark.asyncio
-async def test_atualizar_metrica_outside_window_allowed_for_admin() -> None:
-    old_semana = date(2026, 1, 5)
-    usuario_id = uuid4()
-    metrica = _make_metrica(usuario_id=usuario_id, semana_inicio=old_semana)
-    updated = replace(metrica, ligacoes_agendadas=99)
-    repo = _mock_repo(por_id=metrica, atualizar=updated)
-    uc = AtualizarMetrica(repo)
+async def test_update_metric_outside_window_allowed_for_admin() -> None:
+    old_week = date(2026, 1, 5)
+    user_id = uuid4()
+    metric = _make_metric(user_id=user_id, week_start=old_week)
+    updated = replace(metric, calls_scheduled=99)
+    repo = _mock_repo(get_by_id=metric, update=updated)
+    uc = UpdateMetric(repo)
     result = await uc.execute(
-        metrica_id=metrica.id,
+        metric_id=metric.id,
         requesting_user_id=uuid4(),  # admin can edit anyone's
         is_admin=True,
-        ligacoes_agendadas=99,
+        calls_scheduled=99,
         today=TODAY,
     )
-    assert result.ligacoes_agendadas == 99
+    assert result.calls_scheduled == 99
 
 
-# ── ListarMetricas ─────────────────────────────────────────────────────────────
+# ── ListMetrics ─────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_listar_metricas_returns_paged() -> None:
-    usuario_id = uuid4()
-    metricas = [_make_metrica(usuario_id=usuario_id) for _ in range(3)]
-    repo = _mock_repo(listar=(metricas, 3))
-    uc = ListarMetricas(repo)
+async def test_list_metrics_returns_paged() -> None:
+    user_id = uuid4()
+    metrics = [_make_metric(user_id=user_id) for _ in range(3)]
+    repo = _mock_repo(list_all=(metrics, 3))
+    uc = ListMetrics(repo)
     result = await uc.execute(
-        usuario_id=usuario_id, mes=None, page=1, page_size=20
+        user_id=user_id, month=None, page=1, page_size=20
     )
     assert result.total == 3
     assert len(result.items) == 3
-    assert all(isinstance(i, MetricaDTO) for i in result.items)
+    assert all(isinstance(i, MetricDTO) for i in result.items)
 
 
-# ── ObterResumoDashboard ───────────────────────────────────────────────────────
+# ── GetDashboardSummary ───────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_resumo_computes_delta() -> None:
-    usuario_id = uuid4()
+async def test_summary_computes_delta() -> None:
+    user_id = uuid4()
 
-    async def somar_por_mes(uid: UUID, mes: str) -> dict[str, int]:
-        if mes == "2026-05":
-            return {"ligacoes_agendadas": 120, "ligacoes_realizadas": 95,
-                    "reunioes_agendadas": 28, "indicacoes": 12}
+    async def sum_by_month(uid: UUID, month: str) -> dict[str, int]:
+        if month == "2026-05":
+            return {"calls_scheduled": 120, "calls_made": 95,
+                    "meetings_scheduled": 28, "referrals": 12}
         # prev month 2026-04
-        return {"ligacoes_agendadas": 100, "ligacoes_realizadas": 0,
-                "reunioes_agendadas": 20, "indicacoes": 0}
+        return {"calls_scheduled": 100, "calls_made": 0,
+                "meetings_scheduled": 20, "referrals": 0}
 
     repo = AsyncMock()
-    repo.somar_por_mes.side_effect = somar_por_mes
-    uc = ObterResumoDashboard(repo)
-    result = await uc.execute(usuario_id=usuario_id, mes="2026-05")
+    repo.sum_by_month.side_effect = sum_by_month
+    uc = GetDashboardSummary(repo)
+    result = await uc.execute(user_id=user_id, month="2026-05")
 
-    assert result.mes == "2026-05"
-    assert result.ligacoes_agendadas.valor == 120
-    assert result.ligacoes_agendadas.delta_pct == 20.0  # (120-100)/100*100
+    assert result.month == "2026-05"
+    assert result.calls_scheduled.value == 120
+    assert result.calls_scheduled.delta_pct == 20.0  # (120-100)/100*100
     # prev=0 → delta_pct=null
-    assert result.ligacoes_realizadas.delta_pct is None
-    assert result.indicacoes.delta_pct is None
+    assert result.calls_made.delta_pct is None
+    assert result.referrals.delta_pct is None
 
 
 @pytest.mark.asyncio
-async def test_resumo_defaults_mes_to_current() -> None:
+async def test_summary_defaults_month_to_current() -> None:
     repo = AsyncMock()
-    repo.somar_por_mes.return_value = {
-        "ligacoes_agendadas": 0,
-        "ligacoes_realizadas": 0,
-        "reunioes_agendadas": 0,
-        "indicacoes": 0,
+    repo.sum_by_month.return_value = {
+        "calls_scheduled": 0,
+        "calls_made": 0,
+        "meetings_scheduled": 0,
+        "referrals": 0,
     }
-    uc = ObterResumoDashboard(repo)
-    result = await uc.execute(usuario_id=uuid4())
+    uc = GetDashboardSummary(repo)
+    result = await uc.execute(user_id=uuid4())
     assert isinstance(result, DashboardSummaryDTO)
-    assert repo.somar_por_mes.call_count == 2  # current + previous month
+    assert repo.sum_by_month.call_count == 2  # current + previous month
 
 
-# ── ObterSeriesDashboard ──────────────────────────────────────────────────────
+# ── GetDashboardSeries ──────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_series_fills_gaps_with_zeros() -> None:
-    usuario_id = uuid4()
-    repo = _mock_repo(por_semanas=[])
-    uc = ObterSeriesDashboard(repo)
+    user_id = uuid4()
+    repo = _mock_repo(get_by_weeks=[])
+    uc = GetDashboardSeries(repo)
     result = await uc.execute(
-        usuario_id=usuario_id, semanas=4, today=date(2026, 5, 14)
+        user_id=user_id, semanas=4, today=date(2026, 5, 14)
     )
     assert isinstance(result, DashboardSeriesDTO)
     assert len(result.series) == 4
     for item in result.series:
-        assert item.ligacoes_agendadas == 0
-        assert item.ligacoes_realizadas == 0
+        assert item.calls_scheduled == 0
+        assert item.calls_made == 0
 
 
 @pytest.mark.asyncio
 async def test_series_correct_length() -> None:
-    repo = _mock_repo(por_semanas=[])
-    uc = ObterSeriesDashboard(repo)
+    repo = _mock_repo(get_by_weeks=[])
+    uc = GetDashboardSeries(repo)
     result = await uc.execute(
-        usuario_id=uuid4(), semanas=12, today=date(2026, 5, 14)
+        user_id=uuid4(), semanas=12, today=date(2026, 5, 14)
     )
     assert len(result.series) == 12
 
 
 @pytest.mark.asyncio
 async def test_series_ascending_order() -> None:
-    repo = _mock_repo(por_semanas=[])
-    uc = ObterSeriesDashboard(repo)
+    repo = _mock_repo(get_by_weeks=[])
+    uc = GetDashboardSeries(repo)
     result = await uc.execute(
-        usuario_id=uuid4(), semanas=4, today=date(2026, 5, 14)
+        user_id=uuid4(), semanas=4, today=date(2026, 5, 14)
     )
-    dates = [s.semana for s in result.series]
+    dates = [s.week for s in result.series]
     assert dates == sorted(dates)
 
 
 @pytest.mark.asyncio
 async def test_series_includes_data_when_available() -> None:
-    usuario_id = uuid4()
+    user_id = uuid4()
     now = datetime.now(tz=UTC)
     # May 11 is in the last 4 weeks of May 14
     week = date(2026, 5, 11)
-    metrica = WeeklyMetric(
-        id=uuid4(), usuario_id=usuario_id, semana_inicio=week,
-        ligacoes_agendadas=5, ligacoes_realizadas=4,
-        reunioes_agendadas=2, indicacoes=1,
-        criado_em=now, atualizado_em=now,
+    metric = WeeklyMetric(
+        id=uuid4(), user_id=user_id, week_start=week,
+        calls_scheduled=5, calls_made=4,
+        meetings_scheduled=2, referrals=1,
+        created_at=now, updated_at=now,
     )
-    repo = _mock_repo(por_semanas=[metrica])
-    uc = ObterSeriesDashboard(repo)
+    repo = _mock_repo(get_by_weeks=[metric])
+    uc = GetDashboardSeries(repo)
     result = await uc.execute(
-        usuario_id=usuario_id, semanas=4, today=date(2026, 5, 14)
+        user_id=user_id, semanas=4, today=date(2026, 5, 14)
     )
-    may11_entry = next(s for s in result.series if s.semana == week)
-    assert may11_entry.ligacoes_agendadas == 5
-    assert may11_entry.indicacoes == 1
+    may11_entry = next(s for s in result.series if s.week == week)
+    assert may11_entry.calls_scheduled == 5
+    assert may11_entry.referrals == 1
 
 
-# ── ObterAdminConsolidado ──────────────────────────────────────────────────────
+# ── GetAdminConsolidated ──────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_admin_consolidado_aggregates_correctly() -> None:
+async def test_admin_consolidated_aggregates_correctly() -> None:
     items = [
         UserMonthlyMetrics(
-            usuario_id=uuid4(), nome="Alice", foto_url=None,
-            ligacoes_agendadas=100, ligacoes_realizadas=80,
-            reunioes_agendadas=25, indicacoes=5,
-            ultima_metrica_em=date(2026, 5, 4),
+            user_id=uuid4(), name="Alice", photo_url=None,
+            calls_scheduled=100, calls_made=80,
+            meetings_scheduled=25, referrals=5,
+            last_metric_at=date(2026, 5, 4),
         ),
         UserMonthlyMetrics(
-            usuario_id=uuid4(), nome="Bob", foto_url=None,
-            ligacoes_agendadas=0, ligacoes_realizadas=0,
-            reunioes_agendadas=0, indicacoes=0,
-            ultima_metrica_em=None,
+            user_id=uuid4(), name="Bob", photo_url=None,
+            calls_scheduled=0, calls_made=0,
+            meetings_scheduled=0, referrals=0,
+            last_metric_at=None,
         ),
     ]
-    repo = _mock_repo(listar_clientes_com_metricas_mes=items)
-    uc = ObterAdminConsolidado(repo)
-    result = await uc.execute(mes="2026-05", busca=None, page=1, page_size=20)
+    repo = _mock_repo(list_clients_with_metrics_month=items)
+    uc = GetAdminConsolidated(repo)
+    result = await uc.execute(month="2026-05", search=None, page=1, page_size=20)
 
     assert isinstance(result, AdminConsolidatedDTO)
-    assert result.agregados.ligacoes_agendadas_total == 100
-    assert result.agregados.mentorados_com_metrica_no_mes == 1
-    assert result.agregados.mentorados_sem_metrica_no_mes == 1
+    assert result.aggregates.calls_scheduled_total == 100
+    assert result.aggregates.users_with_metric_in_month == 1
+    assert result.aggregates.users_without_metric_in_month == 1
     assert result.total == 2
 
 
 @pytest.mark.asyncio
-async def test_admin_consolidado_filters_by_busca() -> None:
+async def test_admin_consolidated_filters_by_search() -> None:
     items = [
         UserMonthlyMetrics(
-            usuario_id=uuid4(), nome="Alice", foto_url=None,
-            ligacoes_agendadas=10, ligacoes_realizadas=8,
-            reunioes_agendadas=2, indicacoes=1,
-            ultima_metrica_em=date(2026, 5, 4),
+            user_id=uuid4(), name="Alice", photo_url=None,
+            calls_scheduled=10, calls_made=8,
+            meetings_scheduled=2, referrals=1,
+            last_metric_at=date(2026, 5, 4),
         ),
         UserMonthlyMetrics(
-            usuario_id=uuid4(), nome="Carlos", foto_url=None,
-            ligacoes_agendadas=5, ligacoes_realizadas=4,
-            reunioes_agendadas=1, indicacoes=0,
-            ultima_metrica_em=date(2026, 5, 4),
+            user_id=uuid4(), name="Carlos", photo_url=None,
+            calls_scheduled=5, calls_made=4,
+            meetings_scheduled=1, referrals=0,
+            last_metric_at=date(2026, 5, 4),
         ),
     ]
-    repo = _mock_repo(listar_clientes_com_metricas_mes=items)
-    uc = ObterAdminConsolidado(repo)
-    result = await uc.execute(mes="2026-05", busca="ali", page=1, page_size=20)
+    repo = _mock_repo(list_clients_with_metrics_month=items)
+    uc = GetAdminConsolidated(repo)
+    result = await uc.execute(month="2026-05", search="ali", page=1, page_size=20)
 
     assert result.total == 1
-    assert result.items[0].nome == "Alice"
+    assert result.items[0].name == "Alice"
 
 
 @pytest.mark.asyncio
-async def test_admin_consolidado_paginates() -> None:
+async def test_admin_consolidated_paginates() -> None:
     items = [
         UserMonthlyMetrics(
-            usuario_id=uuid4(), nome=f"User{i}", foto_url=None,
-            ligacoes_agendadas=i, ligacoes_realizadas=0,
-            reunioes_agendadas=0, indicacoes=0,
-            ultima_metrica_em=None,
+            user_id=uuid4(), name=f"User{i}", photo_url=None,
+            calls_scheduled=i, calls_made=0,
+            meetings_scheduled=0, referrals=0,
+            last_metric_at=None,
         )
         for i in range(25)
     ]
-    repo = _mock_repo(listar_clientes_com_metricas_mes=items)
-    uc = ObterAdminConsolidado(repo)
-    result = await uc.execute(mes="2026-05", busca=None, page=2, page_size=10)
+    repo = _mock_repo(list_clients_with_metrics_month=items)
+    uc = GetAdminConsolidated(repo)
+    result = await uc.execute(month="2026-05", search=None, page=2, page_size=10)
 
     assert result.total == 25
     assert len(result.items) == 10

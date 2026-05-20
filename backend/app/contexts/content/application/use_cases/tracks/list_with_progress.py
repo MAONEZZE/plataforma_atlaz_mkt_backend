@@ -2,51 +2,51 @@ from uuid import UUID
 
 from app.contexts.content.application.dtos import TrackProgressDTO
 from app.contexts.content.domain.repositories import (
-    AlunoAulaRepository,
-    AulaRepository,
-    ModuloRepository,
-    TrilhaRepository,
+    StudentLessonRepository,
+    LessonRepository,
+    ModuleRepository,
+    TrackRepository,
 )
 
 
 class ListTracksWithProgress:
     def __init__(
         self,
-        trilha_repo: TrackRepository,
-        modulo_repo: ModuleRepository,
-        aula_repo: LessonRepository,
-        aluno_aula_repo: AlunoAulaRepository,
+        track_repo: TrackRepository,
+        module_repo: ModuleRepository,
+        lesson_repo: LessonRepository,
+        student_lesson_repo: StudentLessonRepository,
     ) -> None:
-        self._trilha_repo = trilha_repo
-        self._modulo_repo = modulo_repo
-        self._aula_repo = aula_repo
-        self._aluno_aula_repo = aluno_aula_repo
+        self._track_repo = track_repo
+        self._module_repo = module_repo
+        self._lesson_repo = lesson_repo
+        self._student_lesson_repo = student_lesson_repo
 
-    async def execute(self, usuario_id: UUID) -> list[TrackProgressDTO]:
-        trilhas = await self._trilha_repo.list_all()
-        concluidas = await self._aluno_aula_repo.completed_ids(usuario_id)
+    async def execute(self, user_id: UUID) -> list[TrackProgressDTO]:
+        trilhas = await self._track_repo.list_all()
+        completeds = await self._student_lesson_repo.completed_ids(user_id)
 
         result = []
-        for trilha in trilhas:
-            modulos = await self._modulo_repo.list_by_track(trilha.id)
-            all_aulas = []
-            for modulo in modulos:
-                aulas = await self._aula_repo.list_by_module(modulo.id)
-                all_aulas.extend(aulas)
+        for track in trilhas:
+            modules = await self._module_repo.list_by_track(track.id)
+            all_lessons = []
+            for module in modules:
+                lessons = await self._lesson_repo.list_by_module(module.id)
+                all_lessons.extend(lessons)
 
-            total = len(all_aulas)
-            concluidas_count = sum(1 for a in all_aulas if a.id in concluidas)
-            pct = round(concluidas_count / total * 100, 2) if total > 0 else 0.0
+            total = len(all_lessons)
+            completeds_count = sum(1 for a in all_lessons if a.id in completeds)
+            pct = round(completeds_count / total * 100, 2) if total > 0 else 0.0
 
             result.append(
                 TrackProgressDTO(
-                    id=trilha.id,
-                    titulo=trilha.titulo,
-                    descricao=trilha.descricao,
-                    capa_url=trilha.capa_url,
-                    total_aulas=total,
-                    aulas_concluidas=concluidas_count,
-                    progresso_pct=pct,
+                    id=track.id,
+                    title=track.title,
+                    description=track.description,
+                    cover_url=track.cover_url,
+                    total_lessons=total,
+                    lessons_completed=completeds_count,
+                    progress_pct=pct,
                 )
             )
         return result

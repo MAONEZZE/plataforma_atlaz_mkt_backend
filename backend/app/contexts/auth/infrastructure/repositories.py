@@ -22,5 +22,5 @@ class SqlAlchemyUserAuthRepository:
             id=model.id,
             email=model.email,
             role=model.role,
-            inativo=model.inativo,
+            inactive=model.inactive,
         )

@@ -1,8 +1,8 @@
-"""Integration tests: comunidade router → real ListarComunidade use case → fake repo.
+"""Integration tests: community router → real ListCommunity use case → fake repo.
 
 Verifies:
 - telefone never appears in any response item
-- Admins are excluded (only clientes returned by listar_ativos)
+- Admins are excluded (only clients returned by list_active)
 - Pagination params are forwarded correctly
 - Response shape matches spec
 """
@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 from app.contexts.auth.domain.entities import User as AuthUser
 from app.contexts.community.domain.entities import CommunityMember
 from app.contexts.community.infrastructure.repositories import SqlAlchemyCommunityRepository
-from app.contexts.community.presentation.router import _get_listar_comunidade, router
+from app.contexts.community.presentation.router import _get_list_community, router
 from app.core.deps import get_current_user
 from app.core.exceptions import AppException
 
@@ -32,14 +32,14 @@ async def _exc(request: Request, exc: AppException) -> JSONResponse:
     return JSONResponse(status_code=exc.status, content=body)
 
 
-_AUTH_USER = AuthUser(id=uuid4(), email="user@test.com", role="cliente", inativo=False)
+_AUTH_USER = AuthUser(id=uuid4(), email="user@test.com", role="cliente", inactive=False)
 
 
 class _FakeRepo:
-    """Simulates repository that already filters: only clientes, not inativo."""
+    """Simulates repository that already filters: only clients, not inactive."""
 
-    def __init__(self, membros: list[CommunityMember], total: int) -> None:
-        self._membros = membros
+    def __init__(self, members: list[CommunityMember], total: int) -> None:
+        self._members = members
         self._total = total
         self.last_page: int | None = None
         self.last_page_size: int | None = None
@@ -48,31 +48,31 @@ class _FakeRepo:
         self.last_page = page
         self.last_page_size = page_size
         offset = (page - 1) * page_size
-        return self._membros[offset : offset + page_size], self._total
+        return self._members[offset : offset + page_size], self._total
 
 
-def _make_membro(
-    nome: str,
+def _make_member(
+    name: str,
     *,
-    foto_url: str | None = None,
+    photo_url: str | None = None,
     linkedin_url: str | None = None,
     instagram_username: str | None = None,
     uid: UUID | None = None,
 ) -> CommunityMember:
     return CommunityMember(
         id=uid or uuid4(),
-        nome=nome,
-        foto_url=foto_url,
+        name=name,
+        photo_url=photo_url,
         linkedin_url=linkedin_url,
         instagram_username=instagram_username,
     )
 
 
 def _client(repo: _FakeRepo) -> TestClient:
-    from app.contexts.community.application.use_cases.list_community import ListarComunidade
+    from app.contexts.community.application.use_cases.list_community import ListCommunity
 
     _app.dependency_overrides[get_current_user] = lambda: _AUTH_USER
-    _app.dependency_overrides[_get_listar_comunidade] = lambda: ListarComunidade(repo=repo)
+    _app.dependency_overrides[_get_list_community] = lambda: ListCommunity(repo=repo)
     return TestClient(_app, raise_server_exceptions=False)
 
 
@@ -84,11 +84,11 @@ def _clear() -> None:
 
 
 def test_response_has_correct_shape() -> None:
-    membro = _make_membro("Ana", foto_url="https://cdn.x/ana.jpg")
-    repo = _FakeRepo([membro], total=1)
+    member = _make_member("Ana", photo_url="https://cdn.x/ana.jpg")
+    repo = _FakeRepo([member], total=1)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade")
+        resp = client.get("/api/v1/community")
         assert resp.status_code == 200
         data = resp.json()
         assert "items" in data
@@ -106,11 +106,11 @@ def test_response_has_correct_shape() -> None:
 
 
 def test_telefone_never_in_response_single_item() -> None:
-    membro = _make_membro("Ana")
-    repo = _FakeRepo([membro], total=1)
+    member = _make_member("Ana")
+    repo = _FakeRepo([member], total=1)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade")
+        resp = client.get("/api/v1/community")
         raw = resp.text
         assert "telefone" not in raw
         for item in resp.json()["items"]:
@@ -120,12 +120,11 @@ def test_telefone_never_in_response_single_item() -> None:
 
 
 def test_telefone_never_in_response_multiple_items() -> None:
-    membros = [_make_membro(n) for n in ["Ana", "Bia", "Carlos"]]
-    repo = _FakeRepo(membros, total=3)
+    members = [_make_member(n) for n in ["Ana", "Bia", "Carlos"]]
+    repo = _FakeRepo(members, total=3)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade")
-        # grep-style check on the raw JSON text
+        resp = client.get("/api/v1/community")
         assert "telefone" not in resp.text
         for item in resp.json()["items"]:
             assert "telefone" not in item
@@ -137,7 +136,7 @@ def test_telefone_never_in_empty_response() -> None:
     repo = _FakeRepo([], total=0)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade")
+        resp = client.get("/api/v1/community")
         assert resp.status_code == 200
         assert "telefone" not in resp.text
     finally:
@@ -148,29 +147,26 @@ def test_telefone_never_in_empty_response() -> None:
 
 
 def test_repo_sql_filter_excludes_admins() -> None:
-    """Verify the SQL query in the repository filters role='cliente' and inativo=false."""
+    """Verify the SQL query in the repository filters role='cliente' and inactive."""
     import inspect
 
-    source = inspect.getsource(SqlAlchemyCommunityRepository.listar_ativos)
+    source = inspect.getsource(SqlAlchemyCommunityRepository.list_active)
     assert "role = 'cliente'" in source
-    assert "inativo = false" in source
 
 
-def test_only_clientes_returned_by_list_active() -> None:
-    """Fake repo contract: listar_ativos must only return clientes (not admins)."""
-    # listar_ativos is supposed to return pre-filtered clientes only.
-    # We test that whatever listar_ativos returns ends up in the response without mutation.
-    cliente1 = _make_membro("Cliente Ana")
-    cliente2 = _make_membro("Cliente Bia")
-    repo = _FakeRepo([cliente1, cliente2], total=2)
+def test_only_clients_returned_by_list_active() -> None:
+    """Fake repo contract: list_active must only return clients (not admins)."""
+    client1 = _make_member("Client Ana")
+    client2 = _make_member("Client Bia")
+    repo = _FakeRepo([client1, client2], total=2)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade")
+        resp = client.get("/api/v1/community")
         assert resp.status_code == 200
-        nomes = [item["nome"] for item in resp.json()["items"]]
-        assert "Cliente Ana" in nomes
-        assert "Cliente Bia" in nomes
-        assert len(nomes) == 2
+        names = [item["name"] for item in resp.json()["items"]]
+        assert "Client Ana" in names
+        assert "Client Bia" in names
+        assert len(names) == 2
     finally:
         _clear()
 
@@ -182,7 +178,7 @@ def test_default_pagination_params() -> None:
     repo = _FakeRepo([], total=0)
     client = _client(repo)
     try:
-        client.get("/api/v1/comunidade")
+        client.get("/api/v1/community")
         assert repo.last_page == 1
         assert repo.last_page_size == 24
     finally:
@@ -190,11 +186,11 @@ def test_default_pagination_params() -> None:
 
 
 def test_custom_pagination_params_forwarded() -> None:
-    membros = [_make_membro(f"User {i}") for i in range(50)]
-    repo = _FakeRepo(membros, total=50)
+    members = [_make_member(f"User {i}") for i in range(50)]
+    repo = _FakeRepo(members, total=50)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade?page=2&page_size=10")
+        resp = client.get("/api/v1/community?page=2&page_size=10")
         assert resp.status_code == 200
         data = resp.json()
         assert data["page"] == 2
@@ -209,7 +205,7 @@ def test_page_size_0_rejected() -> None:
     repo = _FakeRepo([], total=0)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade?page_size=0")
+        resp = client.get("/api/v1/community?page_size=0")
         assert resp.status_code in (400, 422)
     finally:
         _clear()
@@ -219,7 +215,7 @@ def test_page_0_rejected() -> None:
     repo = _FakeRepo([], total=0)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade?page=0")
+        resp = client.get("/api/v1/community?page=0")
         assert resp.status_code in (400, 422)
     finally:
         _clear()
@@ -230,21 +226,21 @@ def test_page_0_rejected() -> None:
 
 def test_item_contains_expected_fields() -> None:
     uid = uuid4()
-    membro = _make_membro(
+    member = _make_member(
         "Carlos",
-        foto_url="https://cdn.x/carlos.jpg",
+        photo_url="https://cdn.x/carlos.jpg",
         linkedin_url="https://linkedin.com/in/carlos",
         instagram_username="carlos.ig",
         uid=uid,
     )
-    repo = _FakeRepo([membro], total=1)
+    repo = _FakeRepo([member], total=1)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade")
+        resp = client.get("/api/v1/community")
         item = resp.json()["items"][0]
         assert item["id"] == str(uid)
-        assert item["nome"] == "Carlos"
-        assert item["foto_url"] == "https://cdn.x/carlos.jpg"
+        assert item["name"] == "Carlos"
+        assert item["photo_url"] == "https://cdn.x/carlos.jpg"
         assert item["linkedin_url"] == "https://linkedin.com/in/carlos"
         assert item["instagram_username"] == "carlos.ig"
     finally:
@@ -252,16 +248,14 @@ def test_item_contains_expected_fields() -> None:
 
 
 def test_optional_fields_can_be_null() -> None:
-    membro = _make_membro("Maria")
-    repo = _FakeRepo([membro], total=1)
+    member = _make_member("Maria")
+    repo = _FakeRepo([member], total=1)
     client = _client(repo)
     try:
-        resp = client.get("/api/v1/comunidade")
+        resp = client.get("/api/v1/community")
         item = resp.json()["items"][0]
-        assert item["foto_url"] is None
+        assert item["photo_url"] is None
         assert item["linkedin_url"] is None
         assert item["instagram_username"] is None
     finally:
         _clear()
-
-

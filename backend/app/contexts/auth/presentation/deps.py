@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.contexts.auth.application.use_cases.login import Login
 from app.contexts.auth.application.use_cases.logout import Logout
-from app.contexts.auth.application.use_cases.validate_token import ValidarToken
+from app.contexts.auth.application.use_cases.validate_token import ValidateToken
 from app.contexts.auth.infrastructure.jwt_decoder import decode_supabase_jwt
 from app.contexts.auth.infrastructure.repositories import SqlAlchemyUserAuthRepository
 from app.contexts.auth.infrastructure.supabase_auth_gateway import SupabaseAuthGatewayImpl
@@ -14,11 +14,11 @@ from app.shared.infrastructure.supabase_client import (
 )
 
 
-def get_validar_token_use_case(
+def get_validate_token_use_case(
     session: AsyncSession = Depends(get_session),
-) -> ValidarToken:
+) -> ValidateToken:
     repo = SqlAlchemyUserAuthRepository(session)
-    return ValidarToken(repo=repo, jwt_decoder=decode_supabase_jwt)
+    return ValidateToken(repo=repo, jwt_decoder=decode_supabase_jwt)
 
 
 def get_login_use_case() -> Login:

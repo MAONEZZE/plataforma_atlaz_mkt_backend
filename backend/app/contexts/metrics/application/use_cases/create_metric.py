@@ -1,71 +1,71 @@
 from datetime import date
 from uuid import UUID, uuid4
 
-from app.contexts.metrics.application.dtos import MetricaDTO
+from app.contexts.metrics.application.dtos import MetricDTO
 from app.contexts.metrics.domain.entities import WeeklyMetric
 from app.contexts.metrics.domain.exceptions import (
-    MetricaDuplicada,
-    MetricaForaDaJanela,
+    DuplicateMetric,
+    MetricOutOfWindow,
     FutureWeekNotAllowed,
 )
-from app.contexts.metrics.domain.repositories import MetricaRepository
-from app.contexts.metrics.domain.rules import dentro_janela_edicao, normalize_to_monday
+from app.contexts.metrics.domain.repositories import MetricRepository
+from app.contexts.metrics.domain.rules import within_edit_window, normalize_to_monday
 from app.shared.utils import now_sp, today_sp
 
 
-def _to_dto(m: WeeklyMetric) -> MetricaDTO:
-    return MetricaDTO(
+def _to_dto(m: WeeklyMetric) -> MetricDTO:
+    return MetricDTO(
         id=m.id,
-        usuario_id=m.usuario_id,
-        semana_inicio=m.semana_inicio,
-        ligacoes_agendadas=m.ligacoes_agendadas,
-        ligacoes_realizadas=m.ligacoes_realizadas,
-        reunioes_agendadas=m.reunioes_agendadas,
-        indicacoes=m.indicacoes,
-        criado_em=m.criado_em,
-        atualizado_em=m.atualizado_em,
+        user_id=m.user_id,
+        week_start=m.week_start,
+        calls_scheduled=m.calls_scheduled,
+        calls_made=m.calls_made,
+        meetings_scheduled=m.meetings_scheduled,
+        referrals=m.referrals,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
     )
 
 
 class CreateMetric:
-    def __init__(self, repo: MetricaRepository) -> None:
+    def __init__(self, repo: MetricRepository) -> None:
         self._repo = repo
 
     async def execute(
         self,
-        usuario_id: UUID,
-        semana_inicio: date,
-        ligacoes_agendadas: int,
-        ligacoes_realizadas: int,
-        reunioes_agendadas: int,
-        indicacoes: int,
+        user_id: UUID,
+        week_start: date,
+        calls_scheduled: int,
+        calls_made: int,
+        meetings_scheduled: int,
+        referrals: int,
         is_admin: bool,
         today: date | None = None,
-    ) -> MetricaDTO:
+    ) -> MetricDTO:
         today = today or today_sp()
-        semana = normalize_to_monday(semana_inicio)
+        semana = normalize_to_monday(week_start)
 
         if semana > today:
             raise FutureWeekNotAllowed(f"Semana {semana} é futura.")
 
-        if not is_admin and not dentro_janela_edicao(semana, today):
-            raise MetricaForaDaJanela(f"Semana {semana} fora da janela de edição de 28 dias.")
+        if not is_admin and not within_edit_window(semana, today):
+            raise MetricOutOfWindow(f"Semana {semana} fora da janela de edição de 28 dias.")
 
-        existing = await self._repo.por_usuario_e_semana(usuario_id, semana)
+        existing = await self._repo.get_by_user_and_week(user_id, semana)
         if existing is not None:
-            raise MetricaDuplicada(f"Já existe métrica para a semana {semana}.")
+            raise DuplicateMetric(f"Já existe métrica para a semana {semana}.")
 
         now = now_sp()
         metrica = WeeklyMetric(
             id=uuid4(),
-            usuario_id=usuario_id,
-            semana_inicio=semana,
-            ligacoes_agendadas=ligacoes_agendadas,
-            ligacoes_realizadas=ligacoes_realizadas,
-            reunioes_agendadas=reunioes_agendadas,
-            indicacoes=indicacoes,
-            criado_em=now,
-            atualizado_em=now,
+            user_id=user_id,
+            week_start=semana,
+            calls_scheduled=calls_scheduled,
+            calls_made=calls_made,
+            meetings_scheduled=meetings_scheduled,
+            referrals=referrals,
+            created_at=now,
+            updated_at=now,
         )
         created = await self._repo.create(metrica)
         return _to_dto(created)

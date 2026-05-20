@@ -2,10 +2,10 @@ import structlog
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.contexts.auth.application.use_cases.validate_token import ValidarToken
+from app.contexts.auth.application.use_cases.validate_token import ValidateToken
 from app.contexts.auth.domain.entities import User
 from app.contexts.auth.domain.exceptions import InactiveAccount, ExpiredToken, InvalidToken
-from app.contexts.auth.presentation.deps import get_validar_token_use_case
+from app.contexts.auth.presentation.deps import get_validate_token_use_case
 from app.core.exceptions import AppException
 
 http_bearer = HTTPBearer(auto_error=False)
@@ -13,14 +13,14 @@ http_bearer = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(http_bearer),
-    use_case: ValidarToken = Depends(get_validar_token_use_case),
+    use_case: ValidateToken = Depends(get_validate_token_use_case),
 ) -> User:
     token = credentials.credentials if credentials else None
     if not token:
         raise AppException("TOKEN_INVALID", "Token não fornecido.", 401)
     try:
         user = await use_case.execute(token)
-        structlog.contextvars.bind_contextvars(usuario_id=str(user.id))
+        structlog.contextvars.bind_contextvars(user_id=str(user.id))
         return user
     except ExpiredToken as exc:
         raise AppException("TOKEN_EXPIRED", "Token expirado.", 401) from exc

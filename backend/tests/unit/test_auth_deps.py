@@ -7,10 +7,10 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.application.use_cases.validate_token import ValidarToken
+from app.contexts.auth.application.use_cases.validate_token import ValidateToken
 from app.contexts.auth.domain.entities import User
 from app.contexts.auth.domain.exceptions import InactiveAccount, ExpiredToken, InvalidToken
-from app.contexts.auth.presentation.deps import get_validar_token_use_case
+from app.contexts.auth.presentation.deps import get_validate_token_use_case
 from app.core.deps import get_current_user, require_admin
 from app.core.exceptions import AppException
 
@@ -40,8 +40,8 @@ async def _admin_only(user: User = Depends(require_admin)) -> dict[str, str]:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _mock_use_case(*, user: User | None = None, exc: Exception | None = None) -> ValidarToken:
-    mock: ValidarToken = AsyncMock(spec=ValidarToken)  # type: ignore[assignment]
+def _mock_use_case(*, user: User | None = None, exc: Exception | None = None) -> ValidateToken:
+    mock: ValidateToken = AsyncMock(spec=ValidateToken)  # type: ignore[assignment]
     if exc:
         mock.execute.side_effect = exc  # type: ignore[attr-defined]
     else:
@@ -49,8 +49,8 @@ def _mock_use_case(*, user: User | None = None, exc: Exception | None = None) ->
     return mock
 
 
-def _client(use_case: ValidarToken) -> TestClient:
-    _app.dependency_overrides[get_validar_token_use_case] = lambda: use_case
+def _client(use_case: ValidateToken) -> TestClient:
+    _app.dependency_overrides[get_validate_token_use_case] = lambda: use_case
     return TestClient(_app, raise_server_exceptions=False)
 
 
@@ -65,12 +65,12 @@ def _clear_overrides() -> None:
 
 @pytest.fixture
 def cliente_user() -> User:
-    return Usuario(id=uuid4(), email="c@c.com", role="cliente", inativo=False)
+    return User(id=uuid4(), email="c@c.com", role="cliente", inactive=False)
 
 
 @pytest.fixture
 def admin_user() -> User:
-    return Usuario(id=uuid4(), email="a@a.com", role="admin", inativo=False)
+    return User(id=uuid4(), email="a@a.com", role="admin", inactive=False)
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────

@@ -6,74 +6,74 @@ from uuid import UUID
 @dataclass
 class TrackProgressDTO:
     id: UUID
-    titulo: str
-    descricao: str | None
-    capa_url: str | None
-    total_aulas: int
-    aulas_concluidas: int
-    progresso_pct: float
+    title: str
+    description: str | None
+    cover_url: str | None
+    total_lessons: int
+    lessons_completed: int
+    progress_pct: float
 
 
 @dataclass
 class LessonSummaryDTO:
     id: UUID
-    titulo: str
-    duracao_minutos: int | None
-    ordem: int
-    concluida: bool
+    title: str
+    duration_minutes: int | None
+    order: int
+    completed: bool
 
 
 @dataclass
 class ModuleWithLessonsDTO:
     id: UUID
-    titulo: str
-    descricao: str | None
-    ordem: int
-    aulas: list[LessonSummaryDTO]
+    title: str
+    description: str | None
+    order: int
+    lessons: list[LessonSummaryDTO]
 
 
 @dataclass
 class TrackWithModulesDTO:
     id: UUID
-    titulo: str
-    descricao: str | None
-    capa_url: str | None
-    progresso_pct: float
-    modulos: list[ModuleWithLessonsDTO]
+    title: str
+    description: str | None
+    cover_url: str | None
+    progress_pct: float
+    modules: list[ModuleWithLessonsDTO]
 
 
 @dataclass
 class TrackSummaryDTO:
     id: UUID
-    titulo: str
+    title: str
 
 
 @dataclass
 class LessonDetailDTO:
     id: UUID
-    modulo_id: UUID
-    titulo: str
-    descricao: str | None
+    module_id: UUID
+    title: str
+    description: str | None
     drive_file_id: str
-    duracao_minutos: int | None
-    concluida: bool
-    trilha: TrackSummaryDTO
-    proxima_aula: LessonSummaryDTO | None
+    duration_minutes: int | None
+    completed: bool
+    track: TrackSummaryDTO
+    next_lesson: LessonSummaryDTO | None
 
 
 @dataclass
-class AutorDTO:
+class AuthorDTO:
     id: UUID
-    nome: str
-    foto_url: str | None
+    name: str
+    photo_url: str | None
 
 
 @dataclass
 class CommentDTO:
     id: UUID
-    autor: AutorDTO
-    texto: str | None
-    criado_em: datetime
-    editado_em: datetime | None
-    apagado_em: datetime | None
-    is_proprio: bool
+    author: AuthorDTO
+    text: str | None
+    created_at: datetime
+    edited_at: datetime | None
+    deleted_at: datetime | None
+    is_own: bool

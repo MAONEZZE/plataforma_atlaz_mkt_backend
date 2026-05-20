@@ -7,27 +7,27 @@ from pydantic import BaseModel, ConfigDict
 class PatchMeBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    nome: str | None = None
-    telefone: str | None = None
+    name: str | None = None
+    phone: str | None = None
     linkedin_url: str | None = None
     instagram_username: str | None = None
-    descricao: str | None = None
+    description: str | None = None
 
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    nome: str
+    name: str
     email: str
-    telefone: str | None
+    phone: str | None
     linkedin_url: str | None
     instagram_username: str | None
-    descricao: str | None
-    foto_url: str | None
+    description: str | None
+    photo_url: str | None
     role: str
-    criado_em: datetime
+    created_at: datetime
 
 
 class PhotoUrlResponse(BaseModel):
-    foto_url: str
+    photo_url: str

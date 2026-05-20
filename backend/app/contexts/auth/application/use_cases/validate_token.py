@@ -21,6 +21,6 @@ class ValidateToken:
         user = await self._repo.get_by_id(user_id)
         if user is None:
             raise InvalidToken("Usuário não encontrado em public.usuario.")
-        if user.inativo:
+        if user.inactive:
             raise InactiveAccount()
         return user

@@ -10,7 +10,7 @@ from app.contexts.content.application.use_cases.comments.edit import EditComment
 from app.contexts.content.application.use_cases.comments.list import ListComments
 from app.contexts.content.domain.exceptions import (
     CommentNotFound,
-    ComentarioNaoPertenceAoUsuario,
+    CommentNotOwnedByUser,
 )
 from app.contexts.content.presentation.deps import (
     get_delete_comment,
@@ -19,8 +19,8 @@ from app.contexts.content.presentation.deps import (
     get_list_comments,
 )
 from app.contexts.content.presentation.schemas import (
-    AutorOut,
-    ComentarioOut,
+    AuthorOut,
+    CommentOut,
     CreateCommentIn,
     EditCommentIn,
 )
@@ -28,28 +28,28 @@ from app.core.deps import get_current_user
 from app.core.exceptions import AppException
 from app.shared.application.dtos import PagedResponse
 
-router = APIRouter(tags=["comentarios"])
+router = APIRouter(tags=["comments"])
 
 
-@router.get("/aulas/{aula_id}/comentarios", response_model=PagedResponse[ComentarioOut])
-async def listar_comentarios(
-    aula_id: UUID,
+@router.get("/lessons/{lesson_id}/comments", response_model=PagedResponse[CommentOut])
+async def list_comments(
+    lesson_id: UUID,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: User = Depends(get_current_user),
     use_case: ListComments = Depends(get_list_comments),
-) -> PagedResponse[ComentarioOut]:
-    result = await use_case.execute(aula_id, page, page_size, user.id)
+) -> PagedResponse[CommentOut]:
+    result = await use_case.execute(lesson_id, page, page_size, user.id)
     return PagedResponse(
         items=[
-            ComentarioOut(
+            CommentOut(
                 id=c.id,
-                autor=AutorOut(id=c.autor.id, nome=c.autor.nome, foto_url=c.autor.foto_url),
-                texto=c.texto,
-                criado_em=c.criado_em,
-                editado_em=c.editado_em,
-                apagado_em=c.apagado_em,
-                is_proprio=c.is_proprio,
+                author=AuthorOut(id=c.author.id, name=c.author.name, photo_url=c.author.photo_url),
+                text=c.text,
+                created_at=c.created_at,
+                edited_at=c.edited_at,
+                deleted_at=c.deleted_at,
+                is_own=c.is_own,
             )
             for c in result.items
         ],
@@ -60,12 +60,12 @@ async def listar_comentarios(
 
 
 @router.post(
-    "/aulas/{aula_id}/comentarios",
-    response_model=ComentarioOut,
+    "/lessons/{lesson_id}/comments",
+    response_model=CommentOut,
     status_code=status.HTTP_201_CREATED,
 )
-async def criar_comentario(
-    aula_id: UUID,
+async def create_comment(
+    lesson_id: UUID,
     body: CreateCommentIn,
     user: User = Depends(get_current_user),
     use_case: CreateComment = Depends(get_create_comment),
@@ -73,58 +73,56 @@ async def criar_comentario(
     from app.contexts.content.domain.exceptions import LessonNotFound
 
     try:
-        comentario = await use_case.execute(aula_id, user.id, body.texto)
+        comment = await use_case.execute(lesson_id, user.id, body.text)
     except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
 
-    # For the created response we don't have autor_nome from the entity — use user.id as placeholder
-    # The list endpoint does the join; here we return minimal data
-    return ComentarioOut(
-        id=comentario.id,
-        autor=AutorOut(id=user.id, nome="", foto_url=None),
-        texto=comentario.texto,
-        criado_em=comentario.criado_em,
-        editado_em=comentario.editado_em,
-        apagado_em=comentario.apagado_em,
-        is_proprio=True,
+    return CommentOut(
+        id=comment.id,
+        author=AuthorOut(id=user.id, name="", photo_url=None),
+        text=comment.text,
+        created_at=comment.created_at,
+        edited_at=comment.edited_at,
+        deleted_at=comment.deleted_at,
+        is_own=True,
     )
 
 
-@router.patch("/comentarios/{comentario_id}", response_model=ComentarioOut)
-async def editar_comentario(
-    comentario_id: UUID,
+@router.patch("/comments/{comment_id}", response_model=CommentOut)
+async def edit_comment(
+    comment_id: UUID,
     body: EditCommentIn,
     user: User = Depends(get_current_user),
     use_case: EditComment = Depends(get_edit_comment),
 ) -> CommentOut:
     try:
-        comentario = await use_case.execute(
-            comentario_id, user.id, user.role == "admin", body.texto
+        comment = await use_case.execute(
+            comment_id, user.id, user.role == "admin", body.text
         )
     except CommentNotFound as exc:
         raise AppException("COMENTARIO_NOT_FOUND", str(exc), 404) from exc
-    except ComentarioNaoPertenceAoUsuario as exc:
+    except CommentNotOwnedByUser as exc:
         raise AppException("FORBIDDEN", str(exc), 403) from exc
-    return ComentarioOut(
-        id=comentario.id,
-        autor=AutorOut(id=user.id, nome="", foto_url=None),
-        texto=comentario.texto,
-        criado_em=comentario.criado_em,
-        editado_em=comentario.editado_em,
-        apagado_em=comentario.apagado_em,
-        is_proprio=True,
+    return CommentOut(
+        id=comment.id,
+        author=AuthorOut(id=user.id, name="", photo_url=None),
+        text=comment.text,
+        created_at=comment.created_at,
+        edited_at=comment.edited_at,
+        deleted_at=comment.deleted_at,
+        is_own=True,
     )
 
 
-@router.delete("/comentarios/{comentario_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def apagar_comentario(
-    comentario_id: UUID,
+@router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_comment(
+    comment_id: UUID,
     user: User = Depends(get_current_user),
     use_case: DeleteComment = Depends(get_delete_comment),
 ) -> None:
     try:
-        await use_case.execute(comentario_id, user.id, user.role == "admin")
+        await use_case.execute(comment_id, user.id, user.role == "admin")
     except CommentNotFound as exc:
         raise AppException("COMENTARIO_NOT_FOUND", str(exc), 404) from exc
-    except ComentarioNaoPertenceAoUsuario as exc:
+    except CommentNotOwnedByUser as exc:
         raise AppException("FORBIDDEN", str(exc), 403) from exc

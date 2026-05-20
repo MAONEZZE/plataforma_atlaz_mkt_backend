@@ -28,132 +28,132 @@ from app.contexts.content.presentation.deps import (
 from app.contexts.content.presentation.schemas import (
     LessonDetailOut,
     LessonSummaryOut,
-    ModuloComAulasOut,
-    TrilhaComModulosOut,
-    TrilhaProgressoOut,
-    TrilhaResumoOut,
+    ModuleWithLessonsOut,
+    TrackSummaryOut,
+    TrackWithModulesOut,
+    TrackProgressOut,
 )
 from app.core.deps import get_current_user
 from app.core.exceptions import AppException
 
-router = APIRouter(tags=["conteudo"])
+router = APIRouter(tags=["content"])
 
 
-@router.get("/trilhas", response_model=list[TrilhaProgressoOut])
-async def listar_trilhas(
+@router.get("/tracks", response_model=list[TrackProgressOut])
+async def list_tracks(
     user: User = Depends(get_current_user),
     use_case: ListTracksWithProgress = Depends(get_list_tracks),
-) -> list[TrilhaProgressoOut]:
+) -> list[TrackProgressOut]:
     dtos = await use_case.execute(user.id)
     return [
-        TrilhaProgressoOut(
+        TrackProgressOut(
             id=d.id,
-            titulo=d.titulo,
-            descricao=d.descricao,
-            capa_url=d.capa_url,
-            total_aulas=d.total_aulas,
-            aulas_concluidas=d.aulas_concluidas,
-            progresso_pct=d.progresso_pct,
+            title=d.title,
+            description=d.description,
+            cover_url=d.cover_url,
+            total_lessons=d.total_lessons,
+            lessons_completed=d.lessons_completed,
+            progress_pct=d.progress_pct,
         )
         for d in dtos
     ]
 
 
-@router.get("/trilhas/{trilha_id}", response_model=TrilhaComModulosOut)
-async def obter_trilha(
-    trilha_id: UUID,
+@router.get("/tracks/{track_id}", response_model=TrackWithModulesOut)
+async def get_track(
+    track_id: UUID,
     user: User = Depends(get_current_user),
     use_case: GetTrackWithModules = Depends(get_track_with_modules),
 ) -> TrackWithModulesOut:
     try:
-        dto = await use_case.execute(trilha_id, user.id)
+        dto = await use_case.execute(track_id, user.id)
     except TrackNotFound as exc:
         raise AppException("TRILHA_NOT_FOUND", str(exc), 404) from exc
-    return TrilhaComModulosOut(
+    return TrackWithModulesOut(
         id=dto.id,
-        titulo=dto.titulo,
-        descricao=dto.descricao,
-        capa_url=dto.capa_url,
-        progresso_pct=dto.progresso_pct,
-        modulos=[
-            ModuloComAulasOut(
+        title=dto.title,
+        description=dto.description,
+        cover_url=dto.cover_url,
+        progress_pct=dto.progress_pct,
+        modules=[
+            ModuleWithLessonsOut(
                 id=m.id,
-                titulo=m.titulo,
-                descricao=m.descricao,
-                ordem=m.ordem,
-                aulas=[
+                title=m.title,
+                description=m.description,
+                order=m.order,
+                lessons=[
                     LessonSummaryOut(
                         id=a.id,
-                        titulo=a.titulo,
-                        duracao_minutos=a.duracao_minutos,
-                        ordem=a.ordem,
-                        concluida=a.concluida,
+                        title=a.title,
+                        duration_minutes=a.duration_minutes,
+                        order=a.order,
+                        completed=a.completed,
                     )
-                    for a in m.aulas
+                    for a in m.lessons
                 ],
             )
-            for m in dto.modulos
+            for m in dto.modules
         ],
     )
 
 
-@router.get("/aulas/{aula_id}", response_model=LessonDetailOut)
-async def obter_aula(
-    aula_id: UUID,
+@router.get("/lessons/{lesson_id}", response_model=LessonDetailOut)
+async def get_lesson(
+    lesson_id: UUID,
     user: User = Depends(get_current_user),
     use_case: GetLesson = Depends(get_lesson),
-) -> LessonDetalheOut:
+) -> LessonDetailOut:
     try:
-        dto = await use_case.execute(aula_id, user.id)
+        dto = await use_case.execute(lesson_id, user.id)
     except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
     except (ModuleNotFound, TrackNotFound) as exc:
         raise AppException("INTERNAL_ERROR", str(exc), 500) from exc
     return LessonDetailOut(
         id=dto.id,
-        modulo_id=dto.modulo_id,
-        titulo=dto.titulo,
-        descricao=dto.descricao,
+        module_id=dto.module_id,
+        title=dto.title,
+        description=dto.description,
         drive_file_id=dto.drive_file_id,
-        duracao_minutos=dto.duracao_minutos,
-        concluida=dto.concluida,
-        trilha=TrilhaResumoOut(id=dto.trilha.id, titulo=dto.trilha.titulo),
-        proxima_aula=(
+        duration_minutes=dto.duration_minutes,
+        completed=dto.completed,
+        track=TrackSummaryOut(id=dto.track.id, title=dto.track.title),
+        next_lesson=(
             LessonSummaryOut(
-                id=dto.proxima_aula.id,
-                titulo=dto.proxima_aula.titulo,
-                duracao_minutos=dto.proxima_aula.duracao_minutos,
-                ordem=dto.proxima_aula.ordem,
-                concluida=dto.proxima_aula.concluida,
+                id=dto.next_lesson.id,
+                title=dto.next_lesson.title,
+                duration_minutes=dto.next_lesson.duration_minutes,
+                order=dto.next_lesson.order,
+                completed=dto.next_lesson.completed,
             )
-            if dto.proxima_aula
+            if dto.next_lesson
             else None
         ),
     )
 
 
 @router.post(
-    "/aulas/{aula_id}/concluir",
+    "/lessons/{lesson_id}/complete",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def mark_completed(
-    aula_id: UUID,
+async def mark_lesson_completed(
+    lesson_id: UUID,
     user: User = Depends(get_current_user),
     use_case: MarkCompleted = Depends(get_mark_completed),
 ) -> None:
     try:
-        await use_case.execute(aula_id, user.id)
+        await use_case.execute(lesson_id, user.id)
     except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
 
 
 @router.delete(
-    "/aulas/{aula_id}/concluir",
+    "/lessons/{lesson_id}/complete",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def desmarcar_concluida(
-    aula_id: UUID,
+async def unmark_lesson_completed(
+    lesson_id: UUID,
     user: User = Depends(get_current_user),
     use_case: Unmark = Depends(get_unmark),
 ) -> None:
-    await use_case.execute(aula_id, user.id)
+    await use_case.execute(lesson_id, user.id)

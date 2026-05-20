@@ -16,18 +16,18 @@ class UpdateMe:
         if user is None:
             raise UserNotFound("Usuário não encontrado.")
 
-        if inp.nome is not None:
-            user.nome = inp.nome
-        if inp.telefone is not None:
-            Telefone(inp.telefone)
-            user.telefone = inp.telefone
+        if inp.name is not None:
+            user.name = inp.name
+        if inp.phone is not None:
+            Telefone(inp.phone)
+            user.phone = inp.phone
         if inp.linkedin_url is not None:
             LinkedinUrl(inp.linkedin_url)
             user.linkedin_url = inp.linkedin_url
         if inp.instagram_username is not None:
             InstagramUsername(inp.instagram_username)
             user.instagram_username = inp.instagram_username
-        if inp.descricao is not None:
-            user.descricao = inp.descricao
+        if inp.description is not None:
+            user.description = inp.description
 
         return await self._repo.update(user)

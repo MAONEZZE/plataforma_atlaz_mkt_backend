@@ -16,65 +16,65 @@ from app.contexts.content.domain.exceptions import LessonNotFound, InvalidDriveU
 
 # ── Fake repos ─────────────────────────────────────────────────────────────────
 
-class FakeAulaRepo:
-    def __init__(self, aulas: list[Lesson] | None = None) -> None:
-        self._aulas: list[Lesson] = aulas or []
+class FakeLessonRepo:
+    def __init__(self, lessons: list[Lesson] | None = None) -> None:
+        self._lessons: list[Lesson] = lessons or []
 
-    async def get_by_id(self, aula_id: UUID) -> Lesson | None:
-        return next((a for a in self._aulas if a.id == aula_id), None)
+    async def get_by_id(self, lesson_id: UUID) -> Lesson | None:
+        return next((a for a in self._lessons if a.id == lesson_id), None)
 
-    async def create(self, aula: Lesson) -> Lesson:
-        self._aulas.append(aula)
-        return aula
+    async def create(self, lesson: Lesson) -> Lesson:
+        self._lessons.append(lesson)
+        return lesson
 
-    async def update(self, aula: Lesson) -> Lesson:
-        self._aulas = [aula if a.id == aula.id else a for a in self._aulas]
-        return aula
+    async def update(self, lesson: Lesson) -> Lesson:
+        self._lessons = [lesson if a.id == lesson.id else a for a in self._lessons]
+        return lesson
 
-    async def delete(self, aula_id: UUID) -> None:
-        self._aulas = [a for a in self._aulas if a.id != aula_id]
+    async def delete(self, lesson_id: UUID) -> None:
+        self._lessons = [a for a in self._lessons if a.id != lesson_id]
 
 
-class FakeAlunoAulaRepo:
+class FakeStudentLessonRepo:
     def __init__(self) -> None:
-        self._concluidas: set[tuple[UUID, UUID]] = set()
+        self._completeds: set[tuple[UUID, UUID]] = set()
 
-    async def mark_completed(self, usuario_id: UUID, aula_id: UUID) -> None:
-        self._concluidas.add((usuario_id, aula_id))
+    async def mark_completed(self, user_id: UUID, lesson_id: UUID) -> None:
+        self._completeds.add((user_id, lesson_id))
 
-    async def unmark(self, usuario_id: UUID, aula_id: UUID) -> None:
-        self._concluidas.discard((usuario_id, aula_id))
+    async def unmark(self, user_id: UUID, lesson_id: UUID) -> None:
+        self._completeds.discard((user_id, lesson_id))
 
-    async def completed_ids(self, usuario_id: UUID) -> set[UUID]:
-        return {aula_id for uid, aula_id in self._concluidas if uid == usuario_id}
+    async def completed_ids(self, user_id: UUID) -> set[UUID]:
+        return {lesson_id for uid, lesson_id in self._completeds if uid == user_id}
 
 
-def _make_aula(drive_file_id: str = "abc123") -> Lesson:
+def _make_lesson(drive_file_id: str = "abc123") -> Lesson:
     return Lesson(
         id=uuid4(),
-        modulo_id=uuid4(),
-        titulo="Aula",
-        descricao=None,
+        module_id=uuid4(),
+        title="Lesson",
+        description=None,
         drive_file_id=drive_file_id,
-        duracao_minutos=None,
-        ordem=0,
-        criado_em=datetime.now(tz=UTC),
+        duration_minutes=None,
+        order=0,
+        created_at=datetime.now(tz=UTC),
     )
 
 
-# ── CreateLesson ──────────────────────────────────────────────────────────────────
+# ── CreateLesson ──────────────────────────────────────────────────────────────
 
-async def test_criar_aula_extracts_drive_id() -> None:
-    repo = FakeAulaRepo()
+async def test_create_lesson_extracts_drive_id() -> None:
+    repo = FakeLessonRepo()
     use_case = CreateLesson(repo)
-    aula = await use_case.execute(
-        uuid4(), "Título", None, "https://drive.google.com/file/d/abc123/view", None, 0
+    lesson = await use_case.execute(
+        uuid4(), "Title", None, "https://drive.google.com/file/d/abc123/view", None, 0
     )
-    assert aula.drive_file_id == "abc123"
+    assert lesson.drive_file_id == "abc123"
 
 
-async def test_criar_aula_invalid_drive_url_raises() -> None:
-    repo = FakeAulaRepo()
+async def test_create_lesson_invalid_drive_url_raises() -> None:
+    repo = FakeLessonRepo()
     use_case = CreateLesson(repo)
     with pytest.raises(InvalidDriveUrl):
         await use_case.execute(uuid4(), "T", None, "https://example.com/bad", None, 0)
@@ -82,55 +82,55 @@ async def test_criar_aula_invalid_drive_url_raises() -> None:
 
 # ── UpdateLesson ──────────────────────────────────────────────────────────────
 
-async def test_atualizar_aula_not_found_raises() -> None:
-    repo = FakeAulaRepo()
+async def test_update_lesson_not_found_raises() -> None:
+    repo = FakeLessonRepo()
     use_case = UpdateLesson(repo)
     with pytest.raises(LessonNotFound):
         await use_case.execute(uuid4(), None, None, None, None, None)
 
 
-async def test_atualizar_aula_updates_drive_url() -> None:
-    aula = _make_aula()
-    repo = FakeAulaRepo([aula])
+async def test_update_lesson_updates_drive_url() -> None:
+    lesson = _make_lesson()
+    repo = FakeLessonRepo([lesson])
     use_case = UpdateLesson(repo)
     updated = await use_case.execute(
-        aula.id, None, None, "https://drive.google.com/file/d/newid/view", None, None
+        lesson.id, None, None, "https://drive.google.com/file/d/newid/view", None, None
     )
     assert updated.drive_file_id == "newid"
 
 
 # ── DeleteLesson ────────────────────────────────────────────────────────────────
 
-async def test_remover_aula_not_found_raises() -> None:
-    use_case = DeleteLesson(FakeAulaRepo())
+async def test_delete_lesson_not_found_raises() -> None:
+    use_case = DeleteLesson(FakeLessonRepo())
     with pytest.raises(LessonNotFound):
         await use_case.execute(uuid4())
 
 
-# ── MarkCompleted / Desmarcar ────────────────────────────────────────────────
+# ── MarkCompleted / Unmark ────────────────────────────────────────────────────
 
-async def test_marcar_concluida_idempotente() -> None:
-    aula = _make_aula()
-    aula_repo = FakeAulaRepo([aula])
-    aluno_repo = FakeAlunoAulaRepo()
-    use_case = MarkCompleted(aula_repo, aluno_repo)
-    usuario_id = uuid4()
-    await use_case.execute(aula.id, usuario_id)
-    await use_case.execute(aula.id, usuario_id)
-    assert len(aluno_repo._concluidas) == 1
+async def test_mark_completed_idempotent() -> None:
+    lesson = _make_lesson()
+    lesson_repo = FakeLessonRepo([lesson])
+    student_repo = FakeStudentLessonRepo()
+    use_case = MarkCompleted(lesson_repo, student_repo)
+    user_id = uuid4()
+    await use_case.execute(lesson.id, user_id)
+    await use_case.execute(lesson.id, user_id)
+    assert len(student_repo._completeds) == 1
 
 
-async def test_marcar_concluida_aula_not_found_raises() -> None:
-    use_case = MarkCompleted(FakeAulaRepo(), FakeAlunoAulaRepo())
+async def test_mark_completed_lesson_not_found_raises() -> None:
+    use_case = MarkCompleted(FakeLessonRepo(), FakeStudentLessonRepo())
     with pytest.raises(LessonNotFound):
         await use_case.execute(uuid4(), uuid4())
 
 
-async def test_desmarcar_concluida_idempotente() -> None:
-    aluno_repo = FakeAlunoAulaRepo()
-    use_case = Unmark(aluno_repo)
-    usuario_id = uuid4()
-    aula_id = uuid4()
-    # Desmarcar sem ter marcado não deve falhar
-    await use_case.execute(aula_id, usuario_id)
-    assert len(aluno_repo._concluidas) == 0
+async def test_unmark_completed_idempotent() -> None:
+    student_repo = FakeStudentLessonRepo()
+    use_case = Unmark(student_repo)
+    user_id = uuid4()
+    lesson_id = uuid4()
+    # Unmark without marking first should not fail
+    await use_case.execute(lesson_id, user_id)
+    assert len(student_repo._completeds) == 0

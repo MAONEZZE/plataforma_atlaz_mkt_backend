@@ -12,7 +12,7 @@ class SupabaseStorageGateway:
 
     def upload(
         self,
-        usuario_id: UUID,
+        user_id: UUID,
         data: bytes,
         content_type: str,
         extension: str,

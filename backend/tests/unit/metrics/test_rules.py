@@ -1,6 +1,6 @@
 from datetime import date
 import pytest
-from app.contexts.metrics.domain.rules import normalize_to_monday, dentro_janela_edicao
+from app.contexts.metrics.domain.rules import normalize_to_monday, within_edit_window
 
 
 def test_normalize_monday_stays_monday() -> None:
@@ -18,26 +18,26 @@ def test_normalize_sunday_to_monday() -> None:
     assert normalize_to_monday(d) == date(2026, 5, 4)
 
 
-def test_dentro_janela_same_week() -> None:
-    semana = date(2026, 5, 4)
+def test_within_window_same_week() -> None:
+    week = date(2026, 5, 4)
     today = date(2026, 5, 7)
-    assert dentro_janela_edicao(semana, today) is True
+    assert within_edit_window(week, today) is True
 
 
-def test_dentro_janela_exactly_28_days() -> None:
-    semana = date(2026, 4, 13)
+def test_within_window_exactly_28_days() -> None:
+    week = date(2026, 4, 13)
     today = date(2026, 5, 11)  # 28 days later
-    assert (today - semana).days == 28
-    assert dentro_janela_edicao(semana, today) is True
+    assert (today - week).days == 28
+    assert within_edit_window(week, today) is True
 
 
-def test_fora_janela_29_days() -> None:
-    semana = date(2026, 4, 12)
+def test_outside_window_29_days() -> None:
+    week = date(2026, 4, 12)
     today = date(2026, 5, 11)  # 29 days later
-    assert dentro_janela_edicao(semana, today) is False
+    assert within_edit_window(week, today) is False
 
 
-def test_fora_janela_future_semana() -> None:
-    semana = date(2026, 5, 18)
+def test_outside_window_future_week() -> None:
+    week = date(2026, 5, 18)
     today = date(2026, 5, 14)
-    assert dentro_janela_edicao(semana, today) is False
+    assert within_edit_window(week, today) is False

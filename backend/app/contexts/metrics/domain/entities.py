@@ -6,25 +6,25 @@ from uuid import UUID
 @dataclass
 class WeeklyMetric:
     id: UUID
-    usuario_id: UUID
-    semana_inicio: date
-    ligacoes_agendadas: int
-    ligacoes_realizadas: int
-    reunioes_agendadas: int
-    indicacoes: int
-    criado_em: datetime
-    atualizado_em: datetime
+    user_id: UUID
+    week_start: date
+    calls_scheduled: int
+    calls_made: int
+    meetings_scheduled: int
+    referrals: int
+    created_at: datetime
+    updated_at: datetime
 
 
 @dataclass
 class UserMonthlyMetrics:
     """Aggregated metrics for one user in one month — used by admin dashboard."""
 
-    usuario_id: UUID
-    nome: str
-    foto_url: str | None
-    ligacoes_agendadas: int
-    ligacoes_realizadas: int
-    reunioes_agendadas: int
-    indicacoes: int
-    ultima_metrica_em: date | None
+    user_id: UUID
+    name: str
+    photo_url: str | None
+    calls_scheduled: int
+    calls_made: int
+    meetings_scheduled: int
+    referrals: int
+    last_metric_at: date | None

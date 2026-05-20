@@ -21,7 +21,7 @@ class SqlAlchemyCommunityRepository:
         offset = (page - 1) * page_size
         rows_result = await self._session.execute(
             text(
-                "SELECT id, nome, foto_url, linkedin_url, instagram_username "
+                "SELECT id, name, photo_url, linkedin_url, instagram_username "
                 "FROM public.users "
                 "WHERE role = 'cliente' AND inativo = false "
                 "ORDER BY name ASC "
@@ -31,8 +31,8 @@ class SqlAlchemyCommunityRepository:
         membros = [
             CommunityMember(
                 id=UUID(str(row["id"])),
-                nome=str(row["nome"]),
-                foto_url=str(row["foto_url"]) if row["foto_url"] is not None else None,
+                name=str(row["name"]),
+                photo_url=str(row["photo_url"]) if row["photo_url"] is not None else None,
                 linkedin_url=(
                     str(row["linkedin_url"]) if row["linkedin_url"] is not None else None
                 ),

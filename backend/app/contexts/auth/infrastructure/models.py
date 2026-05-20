@@ -14,4 +14,4 @@ class UserAuthModel(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     email: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String, nullable=False)
-    inativo: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    inactive: Mapped[bool] = mapped_column(Boolean, nullable=False)

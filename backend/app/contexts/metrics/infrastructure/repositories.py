@@ -20,14 +20,14 @@ def _month_range(year: int, month: int) -> tuple[date, date]:
 def _from_model(m: WeeklyMetricModel) -> WeeklyMetric:
     return WeeklyMetric(
         id=m.id,
-        usuario_id=m.usuario_id,
-        semana_inicio=m.semana_inicio,
-        ligacoes_agendadas=m.ligacoes_agendadas,
-        ligacoes_realizadas=m.ligacoes_realizadas,
-        reunioes_agendadas=m.reunioes_agendadas,
-        indicacoes=m.indicacoes,
-        criado_em=m.criado_em,
-        atualizado_em=m.atualizado_em,
+        user_id=m.user_id,
+        week_start=m.week_start,
+        calls_scheduled=m.calls_scheduled,
+        calls_made=m.calls_made,
+        meetings_scheduled=m.meetings_scheduled,
+        referrals=m.referrals,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
     )
 
 
@@ -35,52 +35,52 @@ class SqlAlchemyMetricRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def create(self, metrica: WeeklyMetric) -> WeeklyMetric:
+    async def create(self, metric: WeeklyMetric) -> WeeklyMetric:
         model = WeeklyMetricModel(
-            id=metrica.id,
-            usuario_id=metrica.usuario_id,
-            semana_inicio=metrica.semana_inicio,
-            ligacoes_agendadas=metrica.ligacoes_agendadas,
-            ligacoes_realizadas=metrica.ligacoes_realizadas,
-            reunioes_agendadas=metrica.reunioes_agendadas,
-            indicacoes=metrica.indicacoes,
-            criado_em=metrica.criado_em,
-            atualizado_em=metrica.atualizado_em,
+            id=metric.id,
+            user_id=metric.user_id,
+            week_start=metric.week_start,
+            calls_scheduled=metric.calls_scheduled,
+            calls_made=metric.calls_made,
+            meetings_scheduled=metric.meetings_scheduled,
+            referrals=metric.referrals,
+            created_at=metric.created_at,
+            updated_at=metric.updated_at,
         )
         self._session.add(model)
         await self._session.flush()
-        return metrica
+        return metric
 
-    async def get_by_id(self, metrica_id: UUID) -> WeeklyMetric | None:
+    async def get_by_id(self, metric_id: UUID) -> WeeklyMetric | None:
         result = await self._session.execute(
-            select(WeeklyMetricModel).where(WeeklyMetricModel.id == metrica_id)
+            select(WeeklyMetricModel).where(WeeklyMetricModel.id == metric_id)
         )
         m = result.scalar_one_or_none()
         return _from_model(m) if m else None
 
-    async def por_usuario_e_semana(
-        self, usuario_id: UUID, semana_inicio: date
+    async def get_by_user_and_week(
+        self, user_id: UUID, week_start: date
     ) -> WeeklyMetric | None:
         result = await self._session.execute(
             select(WeeklyMetricModel).where(
-                WeeklyMetricModel.usuario_id == usuario_id,
-                WeeklyMetricModel.semana_inicio == semana_inicio,
+                WeeklyMetricModel.user_id == user_id,
+                WeeklyMetricModel.week_start == week_start,
             )
         )
         m = result.scalar_one_or_none()
         return _from_model(m) if m else None
 
     async def list_all(
-        self, usuario_id: UUID, mes: str | None, page: int, page_size: int
+        self, user_id: UUID, month: str | None, page: int, page_size: int
     ) -> tuple[list[WeeklyMetric], int]:
-        conditions = [WeeklyMetricModel.usuario_id == usuario_id]
-        if mes:
-            year, month = int(mes[:4]), int(mes[5:7])
-            start, end = _month_range(year, month)
+        conditions = [WeeklyMetricModel.user_id == user_id]
+        if month:
+            year, mo = int(month[:4]), int(month[5:7])
+            start, end = _month_range(year, mo)
             conditions.extend(
                 [
-                    WeeklyMetricModel.semana_inicio >= start,
-                    WeeklyMetricModel.semana_inicio <= end,
+                    WeeklyMetricModel.week_start >= start,
+                    WeeklyMetricModel.week_start <= end,
                 ]
             )
 
@@ -92,104 +92,104 @@ class SqlAlchemyMetricRepository:
         result = await self._session.execute(
             select(WeeklyMetricModel)
             .where(*conditions)
-            .order_by(WeeklyMetricModel.semana_inicio.desc())
+            .order_by(WeeklyMetricModel.week_start.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
         )
         return [_from_model(m) for m in result.scalars()], total
 
-    async def update(self, metrica: WeeklyMetric) -> WeeklyMetric:
+    async def update(self, metric: WeeklyMetric) -> WeeklyMetric:
         await self._session.execute(
             update(WeeklyMetricModel)
-            .where(WeeklyMetricModel.id == metrica.id)
+            .where(WeeklyMetricModel.id == metric.id)
             .values(
-                ligacoes_agendadas=metrica.ligacoes_agendadas,
-                ligacoes_realizadas=metrica.ligacoes_realizadas,
-                reunioes_agendadas=metrica.reunioes_agendadas,
-                indicacoes=metrica.indicacoes,
-                atualizado_em=metrica.atualizado_em,
+                calls_scheduled=metric.calls_scheduled,
+                calls_made=metric.calls_made,
+                meetings_scheduled=metric.meetings_scheduled,
+                referrals=metric.referrals,
+                updated_at=metric.updated_at,
             )
         )
-        return metrica
+        return metric
 
-    async def por_semanas(self, usuario_id: UUID, semanas: list[date]) -> list[WeeklyMetric]:
-        if not semanas:
+    async def get_by_weeks(self, user_id: UUID, weeks: list[date]) -> list[WeeklyMetric]:
+        if not weeks:
             return []
         result = await self._session.execute(
             select(WeeklyMetricModel).where(
-                WeeklyMetricModel.usuario_id == usuario_id,
-                WeeklyMetricModel.semana_inicio.in_(semanas),
+                WeeklyMetricModel.user_id == user_id,
+                WeeklyMetricModel.week_start.in_(weeks),
             )
         )
         return [_from_model(m) for m in result.scalars()]
 
-    async def somar_por_mes(self, usuario_id: UUID, mes: str) -> dict[str, int]:
-        year, month = int(mes[:4]), int(mes[5:7])
-        start, end = _month_range(year, month)
+    async def sum_by_month(self, user_id: UUID, month: str) -> dict[str, int]:
+        year, mo = int(month[:4]), int(month[5:7])
+        start, end = _month_range(year, mo)
         result = await self._session.execute(
             select(
-                func.coalesce(func.sum(WeeklyMetricModel.ligacoes_agendadas), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.ligacoes_realizadas), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.reunioes_agendadas), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.indicacoes), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.calls_scheduled), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.calls_made), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.meetings_scheduled), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.referrals), 0),
             ).where(
-                WeeklyMetricModel.usuario_id == usuario_id,
-                WeeklyMetricModel.semana_inicio >= start,
-                WeeklyMetricModel.semana_inicio <= end,
+                WeeklyMetricModel.user_id == user_id,
+                WeeklyMetricModel.week_start >= start,
+                WeeklyMetricModel.week_start <= end,
             )
         )
         row = result.one()
         return {
-            "ligacoes_agendadas": int(row[0]),
-            "ligacoes_realizadas": int(row[1]),
-            "reunioes_agendadas": int(row[2]),
-            "indicacoes": int(row[3]),
+            "calls_scheduled": int(row[0]),
+            "calls_made": int(row[1]),
+            "meetings_scheduled": int(row[2]),
+            "referrals": int(row[3]),
         }
 
-    async def listar_clientes_com_metricas_mes(self, mes: str) -> list[UserMonthlyMetrics]:
-        year, month = int(mes[:4]), int(mes[5:7])
-        start, end = _month_range(year, month)
+    async def list_clients_with_metrics_month(self, month: str) -> list[UserMonthlyMetrics]:
+        year, mo = int(month[:4]), int(month[5:7])
+        start, end = _month_range(year, mo)
         result = await self._session.execute(
             select(
                 UserMetricModel.id,
-                UserMetricModel.nome,
-                UserMetricModel.foto_url,
-                func.coalesce(func.sum(WeeklyMetricModel.ligacoes_agendadas), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.ligacoes_realizadas), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.reunioes_agendadas), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.indicacoes), 0),
-                func.max(WeeklyMetricModel.semana_inicio),
+                UserMetricModel.name,
+                UserMetricModel.photo_url,
+                func.coalesce(func.sum(WeeklyMetricModel.calls_scheduled), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.calls_made), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.meetings_scheduled), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.referrals), 0),
+                func.max(WeeklyMetricModel.week_start),
             )
             .select_from(UserMetricModel)
             .outerjoin(
                 WeeklyMetricModel,
                 and_(
-                    WeeklyMetricModel.usuario_id == UserMetricModel.id,
-                    WeeklyMetricModel.semana_inicio >= start,
-                    WeeklyMetricModel.semana_inicio <= end,
+                    WeeklyMetricModel.user_id == UserMetricModel.id,
+                    WeeklyMetricModel.week_start >= start,
+                    WeeklyMetricModel.week_start <= end,
                 ),
             )
             .where(
                 UserMetricModel.role == "cliente",
-                UserMetricModel.inativo.is_(False),
+                UserMetricModel.inactive.is_(False),
             )
             .group_by(
                 UserMetricModel.id,
-                UserMetricModel.nome,
-                UserMetricModel.foto_url,
+                UserMetricModel.name,
+                UserMetricModel.photo_url,
             )
-            .order_by(UserMetricModel.nome)
+            .order_by(UserMetricModel.name)
         )
         return [
             UserMonthlyMetrics(
-                usuario_id=row[0],
-                nome=row[1],
-                foto_url=row[2],
-                ligacoes_agendadas=int(row[3]),
-                ligacoes_realizadas=int(row[4]),
-                reunioes_agendadas=int(row[5]),
-                indicacoes=int(row[6]),
-                ultima_metrica_em=row[7],
+                user_id=row[0],
+                name=row[1],
+                photo_url=row[2],
+                calls_scheduled=int(row[3]),
+                calls_made=int(row[4]),
+                meetings_scheduled=int(row[5]),
+                referrals=int(row[6]),
+                last_metric_at=row[7],
             )
             for row in result.all()
         ]

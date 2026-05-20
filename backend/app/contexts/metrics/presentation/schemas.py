@@ -5,59 +5,59 @@ from pydantic import BaseModel, Field
 
 
 class MetricIn(BaseModel):
-    usuario_id: UUID | None = None
-    semana_inicio: date
-    ligacoes_agendadas: int = Field(ge=0)
-    ligacoes_realizadas: int = Field(ge=0)
-    reunioes_agendadas: int = Field(ge=0)
-    indicacoes: int = Field(ge=0)
+    user_id: UUID | None = None
+    week_start: date
+    calls_scheduled: int = Field(ge=0)
+    calls_made: int = Field(ge=0)
+    meetings_scheduled: int = Field(ge=0)
+    referrals: int = Field(ge=0)
 
 
 class MetricPatchIn(BaseModel):
-    ligacoes_agendadas: int | None = Field(default=None, ge=0)
-    ligacoes_realizadas: int | None = Field(default=None, ge=0)
-    reunioes_agendadas: int | None = Field(default=None, ge=0)
-    indicacoes: int | None = Field(default=None, ge=0)
+    calls_scheduled: int | None = Field(default=None, ge=0)
+    calls_made: int | None = Field(default=None, ge=0)
+    meetings_scheduled: int | None = Field(default=None, ge=0)
+    referrals: int | None = Field(default=None, ge=0)
 
 
 class MetricOut(BaseModel):
     id: UUID
-    usuario_id: UUID
-    semana_inicio: date
-    ligacoes_agendadas: int
-    ligacoes_realizadas: int
-    reunioes_agendadas: int
-    indicacoes: int
-    criado_em: datetime
-    atualizado_em: datetime
+    user_id: UUID
+    week_start: date
+    calls_scheduled: int
+    calls_made: int
+    meetings_scheduled: int
+    referrals: int
+    created_at: datetime
+    updated_at: datetime
 
 
 class MetricListOut(BaseModel):
-    items: list[MetricaOut]
+    items: list[MetricOut]
     page: int
     page_size: int
     total: int
 
 
 class DeltaOut(BaseModel):
-    valor: int
+    value: int
     delta_pct: float | None
 
 
 class DashboardSummaryOut(BaseModel):
-    mes: str
-    ligacoes_agendadas: DeltaOut
-    ligacoes_realizadas: DeltaOut
-    reunioes_agendadas: DeltaOut
-    indicacoes: DeltaOut
+    month: str
+    calls_scheduled: DeltaOut
+    calls_made: DeltaOut
+    meetings_scheduled: DeltaOut
+    referrals: DeltaOut
 
 
 class WeeklySeriesOut(BaseModel):
-    semana: date
-    ligacoes_agendadas: int
-    ligacoes_realizadas: int
-    reunioes_agendadas: int
-    indicacoes: int
+    week: date
+    calls_scheduled: int
+    calls_made: int
+    meetings_scheduled: int
+    referrals: int
 
 
 class DashboardSeriesOut(BaseModel):
@@ -65,28 +65,28 @@ class DashboardSeriesOut(BaseModel):
 
 
 class UserMonthlyMetricsOut(BaseModel):
-    usuario_id: UUID
-    nome: str
-    foto_url: str | None
-    ligacoes_agendadas: int
-    ligacoes_realizadas: int
-    reunioes_agendadas: int
-    indicacoes: int
-    ultima_metrica_em: date | None
+    user_id: UUID
+    name: str
+    photo_url: str | None
+    calls_scheduled: int
+    calls_made: int
+    meetings_scheduled: int
+    referrals: int
+    last_metric_at: date | None
 
 
 class AdminAggregatesOut(BaseModel):
-    ligacoes_agendadas_total: int
-    ligacoes_realizadas_total: int
-    reunioes_agendadas_total: int
-    indicacoes_total: int
-    mentorados_com_metrica_no_mes: int
-    mentorados_sem_metrica_no_mes: int
+    calls_scheduled_total: int
+    calls_made_total: int
+    meetings_scheduled_total: int
+    referrals_total: int
+    users_with_metric_in_month: int
+    users_without_metric_in_month: int
 
 
 class AdminConsolidatedOut(BaseModel):
-    agregados: AdminAggregatesOut
-    items: list[UsuarioMetricasMesOut]
+    aggregates: AdminAggregatesOut
+    items: list[UserMonthlyMetricsOut]
     page: int
     page_size: int
     total: int

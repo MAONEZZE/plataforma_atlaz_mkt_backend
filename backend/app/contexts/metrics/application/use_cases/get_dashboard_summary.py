@@ -3,46 +3,46 @@ from datetime import datetime
 from uuid import UUID
 
 from app.contexts.metrics.application.dtos import DeltaDTO, DashboardSummaryDTO
-from app.contexts.metrics.domain.repositories import MetricaRepository
+from app.contexts.metrics.domain.repositories import MetricRepository
 
 _SP = zoneinfo.ZoneInfo("America/Sao_Paulo")
 
 
-def _prev_mes(mes: str) -> str:
-    year, month = int(mes[:4]), int(mes[5:7])
-    if month == 1:
+def _prev_month(month: str) -> str:
+    year, mo = int(month[:4]), int(month[5:7])
+    if mo == 1:
         return f"{year - 1:04d}-12"
-    return f"{year:04d}-{month - 1:02d}"
+    return f"{year:04d}-{mo - 1:02d}"
 
 
-def _delta(valor: int, anterior: int) -> DeltaDTO:
-    if anterior == 0:
-        return DeltaDTO(valor=valor, delta_pct=None)
-    return DeltaDTO(valor=valor, delta_pct=round((valor - anterior) / anterior * 100, 1))
+def _delta(current: int, previous: int) -> DeltaDTO:
+    if previous == 0:
+        return DeltaDTO(value=current, delta_pct=None)
+    return DeltaDTO(value=current, delta_pct=round((current - previous) / previous * 100, 1))
 
 
 class GetDashboardSummary:
-    def __init__(self, repo: MetricaRepository) -> None:
+    def __init__(self, repo: MetricRepository) -> None:
         self._repo = repo
 
     async def execute(
         self,
-        usuario_id: UUID,
-        mes: str | None = None,
+        user_id: UUID,
+        month: str | None = None,
     ) -> DashboardSummaryDTO:
-        if mes is None:
+        if month is None:
             today_sp = datetime.now(tz=_SP).date()
-            mes = f"{today_sp.year:04d}-{today_sp.month:02d}"
+            month = f"{today_sp.year:04d}-{today_sp.month:02d}"
 
-        atual = await self._repo.somar_por_mes(usuario_id, mes)
-        anterior = await self._repo.somar_por_mes(usuario_id, _prev_mes(mes))
+        atual = await self._repo.sum_by_month(user_id, month)
+        anterior = await self._repo.sum_by_month(user_id, _prev_month(month))
 
         return DashboardSummaryDTO(
-            mes=mes,
-            ligacoes_agendadas=_delta(atual["ligacoes_agendadas"], anterior["ligacoes_agendadas"]),
-            ligacoes_realizadas=_delta(
-                atual["ligacoes_realizadas"], anterior["ligacoes_realizadas"]
+            month=month,
+            calls_scheduled=_delta(atual["calls_scheduled"], anterior["calls_scheduled"]),
+            calls_made=_delta(
+                atual["calls_made"], anterior["calls_made"]
             ),
-            reunioes_agendadas=_delta(atual["reunioes_agendadas"], anterior["reunioes_agendadas"]),
-            indicacoes=_delta(atual["indicacoes"], anterior["indicacoes"]),
+            meetings_scheduled=_delta(atual["meetings_scheduled"], anterior["meetings_scheduled"]),
+            referrals=_delta(atual["referrals"], anterior["referrals"]),
         )

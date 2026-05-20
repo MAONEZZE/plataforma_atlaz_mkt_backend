@@ -3,9 +3,9 @@ from uuid import UUID
 from app.contexts.content.domain.entities import Comment
 from app.contexts.content.domain.exceptions import (
     CommentNotFound,
-    ComentarioNaoPertenceAoUsuario,
+    CommentNotOwnedByUser,
 )
-from app.contexts.content.domain.repositories import ComentarioRepository
+from app.contexts.content.domain.repositories import CommentRepository
 from app.shared.utils import now_sp
 
 
@@ -14,22 +14,22 @@ class EditComment:
         self._repo = repo
 
     async def execute(
-        self, comentario_id: UUID, usuario_id: UUID, is_admin: bool, texto: str
+        self, comment_id: UUID, user_id: UUID, is_admin: bool, text: str
     ) -> Comment:
-        comentario = await self._repo.get_by_id(comentario_id)
-        if comentario is None:
-            raise CommentNotFound(f"Comentário {comentario_id} não encontrado.")
+        comment = await self._repo.get_by_id(comment_id)
+        if comment is None:
+            raise CommentNotFound(f"Comentário {comment_id} não encontrado.")
 
-        if not is_admin and comentario.usuario_id != usuario_id:
-            raise ComentarioNaoPertenceAoUsuario("Sem permissão para editar este comentário.")
+        if not is_admin and comment.user_id != user_id:
+            raise CommentNotOwnedByUser("Sem permissão para editar este comentário.")
 
         updated = Comment(
-            id=comentario.id,
-            aula_id=comentario.aula_id,
-            usuario_id=comentario.usuario_id,
-            texto=texto,
-            criado_em=comentario.criado_em,
-            editado_em=now_sp(),
-            apagado_em=comentario.apagado_em,
+            id=comment.id,
+            lesson_id=comment.lesson_id,
+            user_id=comment.user_id,
+            text=text,
+            created_at=comment.created_at,
+            edited_at=now_sp(),
+            deleted_at=comment.deleted_at,
         )
         return await self._repo.update(updated)
