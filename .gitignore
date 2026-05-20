@@ -16,3 +16,6 @@ htmlcov/
 specs-mvp/
 config/
 *_cache/
+.cache/
+.claude/
+.worktrees/
