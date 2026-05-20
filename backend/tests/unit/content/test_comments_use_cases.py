@@ -3,18 +3,17 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.content.application.use_cases.comments.delete import DeleteComment
-from app.contexts.content.application.use_cases.comments.create import CreateComment
-from app.contexts.content.application.use_cases.comments.edit import EditComment
-from app.contexts.content.application.use_cases.comments.list import ListComments
-from app.contexts.content.domain.entities import Lesson, Comment, CommentRead
-from app.contexts.content.domain.exceptions import (
-    LessonNotFound,
+from app.domain.content_module.content_exceptions import (
     CommentNotFound,
     CommentNotOwnedByUser,
+    LessonNotFound,
 )
+from app.domain.content_module.content_model import Comment, CommentRead, Lesson
+from app.services.content_module.content_service.comments.create import CreateComment
+from app.services.content_module.content_service.comments.delete import DeleteComment
+from app.services.content_module.content_service.comments.edit import EditComment
+from app.services.content_module.content_service.comments.list import ListComments
 from app.shared.application.dtos import PagedResponse
-
 
 # ── Fake repos ─────────────────────────────────────────────────────────────────
 

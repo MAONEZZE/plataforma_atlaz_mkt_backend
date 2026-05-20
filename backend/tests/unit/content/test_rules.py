@@ -1,7 +1,7 @@
 import pytest
 
-from app.contexts.content.domain.exceptions import InvalidDriveUrl
-from app.contexts.content.domain.rules import parse_drive_file_id
+from app.domain.content_module.content_exceptions import InvalidDriveUrl
+from app.domain.content_module.content_validator import parse_drive_file_id
 
 
 def test_parse_file_d_format() -> None:

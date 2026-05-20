@@ -3,16 +3,15 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.content.application.use_cases.lessons.crud_admin import (
-    UpdateLesson,
+from app.domain.content_module.content_exceptions import InvalidDriveUrl, LessonNotFound
+from app.domain.content_module.content_model import Lesson
+from app.services.content_module.content_service.lessons.crud_admin import (
     CreateLesson,
     DeleteLesson,
+    UpdateLesson,
 )
-from app.contexts.content.application.use_cases.lessons.unmark import Unmark
-from app.contexts.content.application.use_cases.lessons.mark_completed import MarkCompleted
-from app.contexts.content.domain.entities import Lesson
-from app.contexts.content.domain.exceptions import LessonNotFound, InvalidDriveUrl
-
+from app.services.content_module.content_service.lessons.mark_completed import MarkCompleted
+from app.services.content_module.content_service.lessons.unmark import Unmark
 
 # ── Fake repos ─────────────────────────────────────────────────────────────────
 

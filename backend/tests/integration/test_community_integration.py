@@ -7,7 +7,6 @@ Verifies:
 - Response shape matches spec
 """
 
-import json
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -15,12 +14,15 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import User as AuthUser
-from app.contexts.community.domain.entities import CommunityMember
-from app.contexts.community.infrastructure.repositories import SqlAlchemyCommunityRepository
-from app.contexts.community.presentation.router import _get_list_community, router
-from app.core.deps import get_current_user
-from app.core.exceptions import AppException
+from app.api.config.dependencies.auth_deps import get_current_user
+from app.api.controllers.community_module.community_routes.community_router import (
+    _get_list_community,
+    router,
+)
+from app.database.community_module.community_repo import SqlAlchemyCommunityRepository
+from app.domain.auth_module.auth_model import User as AuthUser
+from app.domain.community_module.community_model import CommunityMember
+from app.domain.shared.base_exceptions import AppException
 
 _app = FastAPI()
 _app.include_router(router, prefix="/api/v1")
@@ -69,7 +71,7 @@ def _make_member(
 
 
 def _client(repo: _FakeRepo) -> TestClient:
-    from app.contexts.community.application.use_cases.list_community import ListCommunity
+    from app.services.community_module.community_service.list_community import ListCommunity
 
     _app.dependency_overrides[get_current_user] = lambda: _AUTH_USER
     _app.dependency_overrides[_get_list_community] = lambda: ListCommunity(repo=repo)

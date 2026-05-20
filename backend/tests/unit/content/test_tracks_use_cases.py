@@ -3,18 +3,17 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.content.application.use_cases.tracks.crud_admin import (
-    UpdateTrack,
+from app.domain.content_module.content_exceptions import TrackNotFound
+from app.domain.content_module.content_model import Lesson, Module, Track
+from app.services.content_module.content_service.tracks.crud_admin import (
     CreateTrack,
     DeleteTrack,
     ReorderTracks,
+    UpdateTrack,
 )
-from app.contexts.content.application.use_cases.tracks.list_with_progress import (
+from app.services.content_module.content_service.tracks.list_with_progress import (
     ListTracksWithProgress,
 )
-from app.contexts.content.domain.entities import Lesson, Module, Track
-from app.contexts.content.domain.exceptions import TrackNotFound
-
 
 # ── Fake repos ─────────────────────────────────────────────────────────────────
 

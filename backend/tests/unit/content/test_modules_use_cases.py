@@ -2,14 +2,14 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.content.application.use_cases.modules.crud_admin import (
-    UpdateModule,
+from app.domain.content_module.content_exceptions import ModuleNotFound
+from app.domain.content_module.content_model import Module
+from app.services.content_module.content_service.modules.crud_admin import (
     CreateModule,
     DeleteModule,
     ReorderModules,
+    UpdateModule,
 )
-from app.contexts.content.domain.entities import Module
-from app.contexts.content.domain.exceptions import ModuleNotFound
 
 
 class FakeModuleRepo:

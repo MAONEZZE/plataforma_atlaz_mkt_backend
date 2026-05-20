@@ -3,9 +3,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.auth.application.use_cases.validate_token import ValidateToken
-from app.contexts.auth.domain.entities import User
-from app.contexts.auth.domain.exceptions import InactiveAccount, ExpiredToken, InvalidToken
+from app.domain.auth_module.auth_exceptions import ExpiredToken, InactiveAccount, InvalidToken
+from app.domain.auth_module.auth_model import User
+from app.services.auth_module.auth_service.validate_token_service import ValidateToken
 
 
 class _FakeRepo:

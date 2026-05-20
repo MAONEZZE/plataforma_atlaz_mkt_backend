@@ -3,13 +3,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.content.application.use_cases.lessons.get import GetLesson
-from app.contexts.content.application.use_cases.tracks.get_with_modules import (
+from app.domain.content_module.content_exceptions import LessonNotFound, TrackNotFound
+from app.domain.content_module.content_model import Lesson, Module, Track
+from app.services.content_module.content_service.lessons.get import GetLesson
+from app.services.content_module.content_service.tracks.get_with_modules import (
     GetTrackWithModules,
 )
-from app.contexts.content.domain.entities import Lesson, Module, Track
-from app.contexts.content.domain.exceptions import LessonNotFound, TrackNotFound
-
 
 # ── Fake repos ─────────────────────────────────────────────────────────────────
 

@@ -14,13 +14,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import User as AuthUser
-from app.contexts.users.application.dtos import PhotoUrlDTO
-from app.contexts.users.application.use_cases.upload_photo import UploadPhoto
-from app.contexts.users.domain.entities import User
-from app.contexts.users.presentation.router import _upload_photo, router
-from app.core.deps import get_current_user
-from app.core.exceptions import AppException
+from app.api.config.dependencies.auth_deps import get_current_user
+from app.api.controllers.user_module.user_routes.user_router import _upload_photo, router
+from app.domain.auth_module.auth_model import User as AuthUser
+from app.domain.shared.base_exceptions import AppException
+from app.domain.user_module.user_model import User
+from app.services.user_module.user_service.upload_photo_service import UploadPhoto
 
 _NOW = datetime(2024, 1, 1, tzinfo=UTC)
 _UID = uuid4()

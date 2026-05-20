@@ -4,13 +4,13 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.users.application.dtos import UpdateMeInput, UploadPhotoInput
-from app.contexts.users.application.use_cases.update_me import UpdateMe
-from app.contexts.users.application.use_cases.get_me import GetMe
-from app.contexts.users.application.use_cases.upload_photo import UploadPhoto
-from app.contexts.users.domain.entities import User
-from app.contexts.users.domain.exceptions import InvalidPhoto, UserNotFound
-from app.shared.domain.exceptions import DomainError
+from app.api.controllers.user_module.user_dto.user_dto import UpdateMeInput, UploadPhotoInput
+from app.domain.shared.base_exceptions import DomainError
+from app.domain.user_module.user_exceptions import InvalidPhoto, UserNotFound
+from app.domain.user_module.user_model import User
+from app.services.user_module.user_service.get_me_service import GetMe
+from app.services.user_module.user_service.update_me_service import UpdateMe
+from app.services.user_module.user_service.upload_photo_service import UploadPhoto
 
 _NOW = datetime(2024, 1, 1, tzinfo=UTC)
 

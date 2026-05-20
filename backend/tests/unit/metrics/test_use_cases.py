@@ -5,27 +5,26 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.contexts.metrics.application.dtos import (
+from app.api.controllers.metrics_module.metrics_dto.metrics_dto import (
     AdminConsolidatedDTO,
-    MetricDTO,
-    DashboardSummaryDTO,
     DashboardSeriesDTO,
+    DashboardSummaryDTO,
+    MetricDTO,
 )
-from app.contexts.metrics.application.use_cases.create_metric import CreateMetric
-from app.contexts.metrics.application.use_cases.update_metric import UpdateMetric
-from app.contexts.metrics.application.use_cases.list_metrics import ListMetrics
-from app.contexts.metrics.application.use_cases.get_dashboard_summary import GetDashboardSummary
-from app.contexts.metrics.application.use_cases.get_dashboard_series import GetDashboardSeries
-from app.contexts.metrics.application.use_cases.get_admin_consolidated import GetAdminConsolidated
-from app.contexts.metrics.domain.entities import WeeklyMetric, UserMonthlyMetrics
-from app.contexts.metrics.domain.exceptions import (
+from app.domain.metrics_module.metrics_exceptions import (
     DuplicateMetric,
-    MetricOutOfWindow,
+    FutureWeekNotAllowed,
     MetricNotFound,
     MetricNotOwnedByUser,
-    FutureWeekNotAllowed,
+    MetricOutOfWindow,
 )
-
+from app.domain.metrics_module.metrics_model import UserMonthlyMetrics, WeeklyMetric
+from app.services.metrics_module.metrics_service.create_metric import CreateMetric
+from app.services.metrics_module.metrics_service.get_admin_consolidated import GetAdminConsolidated
+from app.services.metrics_module.metrics_service.get_dashboard_series import GetDashboardSeries
+from app.services.metrics_module.metrics_service.get_dashboard_summary import GetDashboardSummary
+from app.services.metrics_module.metrics_service.list_metrics import ListMetrics
+from app.services.metrics_module.metrics_service.update_metric import UpdateMetric
 
 TODAY = date(2026, 5, 14)  # Wednesday
 MONDAY = date(2026, 5, 11)  # Monday of current week

@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from jose import jwt
 
-from app.contexts.auth.domain.exceptions import ExpiredToken, InvalidToken
+from app.domain.auth_module.auth_exceptions import ExpiredToken, InvalidToken
 
 TEST_SECRET = "test-jwt-secret"
 
@@ -26,10 +26,10 @@ def _make_token(
 
 
 def test_valid_token_returns_payload(monkeypatch: pytest.MonkeyPatch) -> None:
-    from app.core import config as cfg
+    from app.api.config import settings as cfg_module
 
-    monkeypatch.setattr(cfg.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
-    from app.contexts.auth.infrastructure import jwt_decoder
+    monkeypatch.setattr(cfg_module.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
+    from app.services.auth_module.auth_service import jwt_decoder
 
     token = _make_token()
     payload = jwt_decoder.decode_supabase_jwt(token)
@@ -37,10 +37,10 @@ def test_valid_token_returns_payload(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_expired_token_raises_token_expirado(monkeypatch: pytest.MonkeyPatch) -> None:
-    from app.core import config as cfg
+    from app.api.config import settings as cfg_module
 
-    monkeypatch.setattr(cfg.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
-    from app.contexts.auth.infrastructure import jwt_decoder
+    monkeypatch.setattr(cfg_module.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
+    from app.services.auth_module.auth_service import jwt_decoder
 
     token = _make_token(exp_delta=timedelta(seconds=-1))
     with pytest.raises(ExpiredToken):
@@ -48,10 +48,10 @@ def test_expired_token_raises_token_expirado(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_wrong_secret_raises_token_invalido(monkeypatch: pytest.MonkeyPatch) -> None:
-    from app.core import config as cfg
+    from app.api.config import settings as cfg_module
 
-    monkeypatch.setattr(cfg.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
-    from app.contexts.auth.infrastructure import jwt_decoder
+    monkeypatch.setattr(cfg_module.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
+    from app.services.auth_module.auth_service import jwt_decoder
 
     token = _make_token(secret="wrong-secret")
     with pytest.raises(InvalidToken):

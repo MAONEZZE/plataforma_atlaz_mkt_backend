@@ -6,33 +6,33 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import User
-from app.contexts.metrics.application.dtos import (
-    AdminConsolidatedDTO,
+from app.api.config.dependencies.auth_deps import get_current_user, require_admin
+from app.api.controllers.metrics_module.metrics_dto.metrics_dto import (
     AdminAggregatesDTO,
+    AdminConsolidatedDTO,
+    DashboardSeriesDTO,
+    DashboardSummaryDTO,
     DeltaDTO,
     MetricDTO,
-    DashboardSummaryDTO,
-    DashboardSeriesDTO,
-    WeeklySeriesDTO,
     UserMonthlyMetricsDTO,
+    WeeklySeriesDTO,
 )
-from app.contexts.metrics.domain.exceptions import (
+from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
+    get_admin_consolidated,
+    get_create_metric,
+    get_dashboard_series,
+    get_dashboard_summary,
+    get_list_metrics,
+    get_update_metric,
+)
+from app.domain.auth_module.auth_model import User
+from app.domain.metrics_module.metrics_exceptions import (
     DuplicateMetric,
-    MetricOutOfWindow,
+    FutureWeekNotAllowed,
     MetricNotFound,
     MetricNotOwnedByUser,
-    FutureWeekNotAllowed,
+    MetricOutOfWindow,
 )
-from app.contexts.metrics.presentation.deps import (
-    get_admin_consolidated,
-    get_update_metric,
-    get_create_metric,
-    get_list_metrics,
-    get_dashboard_summary,
-    get_dashboard_series,
-)
-from app.core.deps import get_current_user, require_admin
 from app.main import app
 
 

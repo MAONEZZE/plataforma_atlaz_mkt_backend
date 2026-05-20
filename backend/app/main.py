@@ -9,40 +9,37 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 
-from app.contexts.auth.presentation.router import router as auth_router
-from app.contexts.community.presentation.router import router as community_router
-from app.contexts.content.presentation.router_admin import router as admin_content_router
-from app.contexts.content.presentation.router_comments import router as comments_router
-from app.contexts.content.presentation.router_content import router as content_router
-from app.contexts.metrics.presentation.router import admin_router as admin_metrics_router
-from app.contexts.metrics.presentation.router import router as metrics_router
-from app.contexts.users.presentation.router import router as users_router
-from app.core.config import settings
-from app.core.exceptions import AppException
-from app.core.logging import configure_logging
-from app.core.rate_limit import limiter
+from app.api.config.logging import configure_logging
+from app.api.config.middlewares.middlewares import (
+    SecurityHeadersMiddleware,
+    StructlogContextMiddleware,
+)
+from app.api.config.rate_limiter import limiter
+from app.api.config.settings import settings
+from app.api.controllers.auth_module.auth_routes.auth_router import router as auth_router
+from app.api.controllers.community_module.community_routes.community_router import (
+    router as community_router,
+)
+from app.api.controllers.content_module.content_routes.content_router import (
+    admin_router as admin_content_router,
+)
+from app.api.controllers.content_module.content_routes.content_router import (
+    comments_router,
+)
+from app.api.controllers.content_module.content_routes.content_router import (
+    router as content_router,
+)
+from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
+    admin_router as admin_metrics_router,
+)
+from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
+    router as metrics_router,
+)
+from app.api.controllers.user_module.user_routes.user_router import router as users_router
+from app.domain.shared.base_exceptions import AppException
 
 logger = structlog.get_logger(__name__)
-
-
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Any) -> Response:
-        response: Response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        return response
-
-
-class StructlogContextMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Any) -> Response:
-        structlog.contextvars.clear_contextvars()
-        response: Response = await call_next(request)
-        return response
 
 
 @asynccontextmanager

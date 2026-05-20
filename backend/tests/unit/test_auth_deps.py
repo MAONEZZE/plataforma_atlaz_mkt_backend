@@ -7,12 +7,15 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.application.use_cases.validate_token import ValidateToken
-from app.contexts.auth.domain.entities import User
-from app.contexts.auth.domain.exceptions import InactiveAccount, ExpiredToken, InvalidToken
-from app.contexts.auth.presentation.deps import get_validate_token_use_case
-from app.core.deps import get_current_user, require_admin
-from app.core.exceptions import AppException
+from app.api.config.dependencies.auth_deps import (
+    get_current_user,
+    get_validate_token_use_case,
+    require_admin,
+)
+from app.domain.auth_module.auth_exceptions import ExpiredToken, InactiveAccount, InvalidToken
+from app.domain.auth_module.auth_model import User
+from app.domain.shared.base_exceptions import AppException
+from app.services.auth_module.auth_service.validate_token_service import ValidateToken
 
 # ── Minimal test app with exception handler ───────────────────────────────────
 

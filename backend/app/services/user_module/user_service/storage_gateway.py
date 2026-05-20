@@ -1,0 +1,12 @@
+from typing import Protocol
+from uuid import UUID
+
+
+class PhotoStorageGateway(Protocol):
+    def upload(
+        self,
+        user_id: UUID,
+        data: bytes,
+        content_type: str,
+        extension: str,
+    ) -> str: ...

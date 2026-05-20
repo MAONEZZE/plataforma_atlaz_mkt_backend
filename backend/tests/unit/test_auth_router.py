@@ -6,14 +6,14 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.application.dtos import TokensDTO
-from app.contexts.auth.application.use_cases.login import Login
-from app.contexts.auth.application.use_cases.logout import Logout
-from app.contexts.auth.domain.entities import User as AuthUser
-from app.contexts.auth.domain.exceptions import InvalidCredentials, LogoutFailed
-from app.contexts.auth.presentation.router import _login, _logout
-from app.core.deps import get_current_user
+from app.api.config.dependencies.auth_deps import get_current_user
+from app.api.controllers.auth_module.auth_dto.auth_dto import TokensDTO
+from app.api.controllers.auth_module.auth_routes.auth_router import _login, _logout
+from app.domain.auth_module.auth_exceptions import InvalidCredentials, LogoutFailed
+from app.domain.auth_module.auth_model import User as AuthUser
 from app.main import app
+from app.services.auth_module.auth_service.login_service import Login
+from app.services.auth_module.auth_service.logout_service import Logout
 
 _UID = uuid4()
 

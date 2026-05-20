@@ -6,53 +6,48 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from app.contexts.auth.domain.entities import User
-from app.contexts.content.application.dtos import (
-    LessonDetailDTO,
-    LessonSummaryDTO,
-    CommentDTO,
+from app.api.config.dependencies.auth_deps import get_current_user, require_admin
+from app.api.controllers.content_module.content_dto.content_dto import (
     AuthorDTO,
+    CommentDTO,
+    LessonDetailDTO,
     ModuleWithLessonsDTO,
-    TrackWithModulesDTO,
     TrackProgressDTO,
     TrackSummaryDTO,
+    TrackWithModulesDTO,
 )
-from app.contexts.content.domain.entities import Lesson, Comment, Module, Track
-from app.contexts.content.domain.exceptions import (
-    LessonNotFound,
-    CommentNotFound,
-    CommentNotOwnedByUser,
-    InvalidDriveUrl,
-    ModuleNotFound,
-    TrackNotFound,
-)
-from app.contexts.content.presentation.deps import (
-    get_delete_comment,
-    get_update_lesson,
-    get_update_module,
-    get_update_track,
+from app.api.controllers.content_module.content_routes.content_router import (
     get_create_lesson,
-    get_create_comment,
     get_create_module,
     get_create_track,
-    get_unmark,
+    get_delete_comment,
+    get_delete_module,
+    get_delete_track,
     get_edit_comment,
+    get_lesson,
     get_list_comments,
     get_list_tracks,
     get_mark_completed,
-    get_lesson,
-    get_track_with_modules,
-    get_delete_lesson,
-    get_delete_module,
-    get_delete_track,
     get_reorder_lessons,
     get_reorder_modules,
     get_reorder_tracks,
+    get_track_with_modules,
+    get_unmark,
+    get_update_module,
+    get_update_track,
 )
-from app.core.deps import get_current_user, require_admin
+from app.domain.auth_module.auth_model import User
+from app.domain.content_module.content_exceptions import (
+    CommentNotFound,
+    CommentNotOwnedByUser,
+    InvalidDriveUrl,
+    LessonNotFound,
+    ModuleNotFound,
+    TrackNotFound,
+)
+from app.domain.content_module.content_model import Lesson, Module, Track
 from app.main import app
 from app.shared.application.dtos import PagedResponse
-
 
 # ── Auth helpers ───────────────────────────────────────────────────────────────
 

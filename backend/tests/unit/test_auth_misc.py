@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock
 from uuid import uuid4
 
-from app.contexts.auth.application.dtos import AuthenticatedUserDTO
-from app.contexts.auth.application.use_cases.validate_token import ValidateToken
-from app.contexts.auth.presentation.deps import get_validate_token_use_case
+from app.api.config.dependencies.auth_deps import get_validate_token_use_case
+from app.api.controllers.auth_module.auth_dto.auth_dto import AuthenticatedUserDTO
+from app.services.auth_module.auth_service.validate_token_service import ValidateToken
 
 
 def test_authenticated_user_dto_fields() -> None:

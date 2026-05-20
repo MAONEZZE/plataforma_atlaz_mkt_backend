@@ -1,13 +1,13 @@
 import json
 from uuid import uuid4
 
-from app.contexts.community.application.dtos import ListCommunityResultDTO
-from app.contexts.community.application.use_cases.list_community import ListCommunity
-from app.contexts.community.domain.entities import CommunityMember
-from app.contexts.community.presentation.schemas import (
-    ListCommunityResponse,
+from app.api.controllers.community_module.community_dto.community_dto import (
     CommunityMemberSchema,
+    ListCommunityResponse,
+    ListCommunityResultDTO,
 )
+from app.domain.community_module.community_model import CommunityMember
+from app.services.community_module.community_service.list_community import ListCommunity
 
 
 class _FakeRepo:
