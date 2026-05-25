@@ -6,7 +6,6 @@ Create Date: 2026-05-18
 """
 
 import sqlalchemy as sa
-
 from alembic import op
 
 revision = "0002"
@@ -19,9 +18,9 @@ def upgrade() -> None:
     op.add_column(
         "usuario",
         sa.Column("descricao", sa.Text(), nullable=True),
-        schema="public",
+        schema="ATZ_HUB",
     )
 
 
 def downgrade() -> None:
-    op.drop_column("usuario", "descricao", schema="public")
+    op.drop_column("usuario", "descricao", schema="ATZ_HUB")

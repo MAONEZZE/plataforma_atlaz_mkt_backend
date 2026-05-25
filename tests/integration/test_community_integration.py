@@ -59,6 +59,7 @@ def _make_member(
     photo_url: str | None = None,
     linkedin_url: str | None = None,
     instagram_username: str | None = None,
+    description: str | None = None,
     uid: UUID | None = None,
 ) -> CommunityMember:
     return CommunityMember(
@@ -67,11 +68,12 @@ def _make_member(
         photo_url=photo_url,
         linkedin_url=linkedin_url,
         instagram_username=instagram_username,
+        description=description,
     )
 
 
 def _client(repo: _FakeRepo) -> TestClient:
-    from app.services.community_module.community_service.list_community import ListCommunity
+    from app.services.community_module.list_community import ListCommunity
 
     _app.dependency_overrides[get_current_user] = lambda: _AUTH_USER
     _app.dependency_overrides[_get_list_community] = lambda: ListCommunity(repo=repo)
@@ -261,3 +263,15 @@ def test_optional_fields_can_be_null() -> None:
         assert item["instagram_username"] is None
     finally:
         _clear()
+
+
+# ── SQL column name regression (Fix #3) ───────────────────────────────────────
+
+def test_community_repo_sql_uses_inactive_not_inativo() -> None:
+    """SqlAlchemyCommunityRepository SQL must reference 'inactive' (renamed by 0003), not 'inativo'."""
+    import inspect
+
+    from app.database.community_module.community_repo import SqlAlchemyCommunityRepository
+    source = inspect.getsource(SqlAlchemyCommunityRepository)
+    assert "inativo" not in source, "SQL still references old column name 'inativo'"
+    assert "inactive" in source

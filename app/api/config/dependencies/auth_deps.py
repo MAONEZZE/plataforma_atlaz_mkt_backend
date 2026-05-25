@@ -3,13 +3,13 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.auth_module.auth_service.validate_token_service import ValidateToken
-from app.services.auth_module.auth_service.jwt_decoder import decode_supabase_jwt
 from app.database.auth_module.auth_repo import SqlAlchemyUserAuthRepository
 from app.database.shared.db_factory import get_session
+from app.domain.auth_module.auth_exceptions import ExpiredToken, InactiveAccount, InvalidToken
 from app.domain.auth_module.auth_model import User
-from app.domain.auth_module.auth_exceptions import InactiveAccount, ExpiredToken, InvalidToken
 from app.domain.shared.base_exceptions import AppException
+from app.services.auth_module.jwt_decoder import decode_supabase_jwt
+from app.services.auth_module.validate_token_service import ValidateToken
 
 http_bearer = HTTPBearer(auto_error=False)
 

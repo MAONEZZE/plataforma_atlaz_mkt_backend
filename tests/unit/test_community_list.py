@@ -7,7 +7,7 @@ from app.api.controllers.community_module.community_dto.community_dto import (
     ListCommunityResultDTO,
 )
 from app.domain.community_module.community_model import CommunityMember
-from app.services.community_module.community_service.list_community import ListCommunity
+from app.services.community_module.list_community import ListCommunity
 
 
 class _FakeRepo:
@@ -26,6 +26,7 @@ def _make_member(
     photo_url: str | None = None,
     linkedin_url: str | None = None,
     instagram_username: str | None = None,
+    description: str | None = None,
 ) -> CommunityMember:
     return CommunityMember(
         id=uuid4(),
@@ -33,6 +34,7 @@ def _make_member(
         photo_url=photo_url,
         linkedin_url=linkedin_url,
         instagram_username=instagram_username,
+        description=description,
     )
 
 
@@ -83,6 +85,7 @@ async def test_use_case_maps_all_fields() -> None:
         photo_url="https://photo.com",
         linkedin_url="https://linkedin.com/in/carlos",
         instagram_username="carlos.ig",
+        description=None,
     )
     repo = _FakeRepo([member], total=1)
     result = await ListCommunity(repo).execute(page=1, page_size=24)
@@ -102,6 +105,7 @@ def test_response_schema_fields() -> None:
         photo_url=None,
         linkedin_url=None,
         instagram_username=None,
+        description=None,
     )
     data = json.loads(schema.model_dump_json())
     assert "name" in data
@@ -117,6 +121,7 @@ def test_list_response_schema_fields() -> None:
                 photo_url=None,
                 linkedin_url=None,
                 instagram_username=None,
+                description=None,
             )
         ],
         page=1,

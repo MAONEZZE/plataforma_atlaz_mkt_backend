@@ -21,46 +21,46 @@ from app.domain.shared.utils import now_sp
 
 class TrackModel(Base):
     __tablename__ = "tracks"
-    __table_args__ = {"schema": "public", "extend_existing": True}
+    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
-    titulo: Mapped[str] = mapped_column(Text, nullable=False)
-    descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
-    capa_url: Mapped[str | None] = mapped_column(Text, nullable=True)
-    ordem: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    title: Mapped[str] = mapped_column("titulo", Text, nullable=False)
+    description: Mapped[str | None] = mapped_column("descricao", Text, nullable=True)
+    cover_url: Mapped[str | None] = mapped_column("capa_url", Text, nullable=True)
+    order: Mapped[int] = mapped_column("ordem", Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
 class ModuleModel(Base):
     __tablename__ = "modules"
-    __table_args__ = {"schema": "public", "extend_existing": True}
+    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     track_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.tracks.id", ondelete="CASCADE"),
+        ForeignKey("ATZ_HUB.tracks.id", ondelete="CASCADE"),
         nullable=False,
     )
-    titulo: Mapped[str] = mapped_column(Text, nullable=False)
-    descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
-    ordem: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    title: Mapped[str] = mapped_column("titulo", Text, nullable=False)
+    description: Mapped[str | None] = mapped_column("descricao", Text, nullable=True)
+    order: Mapped[int] = mapped_column("ordem", Integer, nullable=False, default=0)
 
 
 class LessonModel(Base):
     __tablename__ = "lessons"
-    __table_args__ = {"schema": "public", "extend_existing": True}
+    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     module_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.modules.id", ondelete="CASCADE"),
+        ForeignKey("ATZ_HUB.modules.id", ondelete="CASCADE"),
         nullable=False,
     )
-    titulo: Mapped[str] = mapped_column(Text, nullable=False)
-    descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
+    title: Mapped[str] = mapped_column("titulo", Text, nullable=False)
+    description: Mapped[str | None] = mapped_column("descricao", Text, nullable=True)
     drive_file_id: Mapped[str] = mapped_column(Text, nullable=False)
-    duracao_minutos: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    ordem: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    duration_minutes: Mapped[int | None] = mapped_column("duracao_minutos", Integer, nullable=True)
+    order: Mapped[int] = mapped_column("ordem", Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
@@ -68,17 +68,17 @@ class StudentLessonModel(Base):
     __tablename__ = "student_lessons"
     __table_args__ = (
         UniqueConstraint("user_id", "lesson_id"),
-        {"schema": "public", "extend_existing": True},
+        {"schema": "ATZ_HUB", "extend_existing": True},
     )
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.users.id", ondelete="CASCADE"),
+        ForeignKey("ATZ_HUB.users.id", ondelete="CASCADE"),
         primary_key=True,
     )
     lesson_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.lessons.id", ondelete="CASCADE"),
+        ForeignKey("ATZ_HUB.lessons.id", ondelete="CASCADE"),
         primary_key=True,
     )
     completed_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
@@ -86,20 +86,20 @@ class StudentLessonModel(Base):
 
 class CommentModel(Base):
     __tablename__ = "comments"
-    __table_args__ = {"schema": "public", "extend_existing": True}
+    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     lesson_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.lessons.id", ondelete="CASCADE"),
+        ForeignKey("ATZ_HUB.lessons.id", ondelete="CASCADE"),
         nullable=False,
     )
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("public.users.id", ondelete="CASCADE"),
+        ForeignKey("ATZ_HUB.users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    texto: Mapped[str] = mapped_column(Text, nullable=False)
+    text: Mapped[str] = mapped_column("texto", Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     edited_at: Mapped[datetime | None] = mapped_column(TIMESTAMP, nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(TIMESTAMP, nullable=True)
@@ -109,7 +109,7 @@ class UserContentModel(Base):
     """Read-only view of public.users fields needed by the content context."""
 
     __tablename__ = "users"
-    __table_args__ = {"schema": "public", "extend_existing": True}
+    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
@@ -213,15 +213,6 @@ class SqlAlchemyTrackRepository:
             await self._session.execute(
                 update(TrackModel).where(TrackModel.id == track_id).values(order=order_val)
             )
-
-    async def count_lessons(self, track_id: UUID) -> int:
-        result = await self._session.execute(
-            select(LessonModel)
-            .join(ModuleModel, LessonModel.module_id == ModuleModel.id)
-            .where(ModuleModel.track_id == track_id)
-        )
-        return len(result.scalars().all())
-
 
 class SqlAlchemyModuleRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -404,6 +395,7 @@ class SqlAlchemyStudentLessonRepository:
                 StudentLessonModel.lesson_id == lesson_id,
             )
         )
+        await self._session.flush()
 
     async def completed_ids(self, user_id: UUID) -> set[UUID]:
         result = await self._session.execute(

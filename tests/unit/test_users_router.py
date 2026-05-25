@@ -22,9 +22,9 @@ from app.domain.auth_module.auth_model import User as AuthUser
 from app.domain.shared.base_exceptions import AppException, DomainError
 from app.domain.user_module.user_exceptions import InvalidPhoto, UserNotFound
 from app.domain.user_module.user_model import User
-from app.services.user_module.user_service.get_me_service import GetMe
-from app.services.user_module.user_service.update_me_service import UpdateMe
-from app.services.user_module.user_service.upload_photo_service import UploadPhoto
+from app.services.user_module.get_me_service import GetMe
+from app.services.user_module.update_me_service import UpdateMe
+from app.services.user_module.upload_photo_service import UploadPhoto
 
 _NOW = datetime(2024, 1, 1, tzinfo=UTC)
 _UID = uuid4()

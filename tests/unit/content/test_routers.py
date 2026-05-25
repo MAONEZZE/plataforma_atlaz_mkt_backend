@@ -486,3 +486,36 @@ def test_admin_reorder_modules_204(client: TestClient) -> None:
         assert r.status_code == 204
     finally:
         app.dependency_overrides.clear()
+
+
+def test_create_track_handles_domain_error(client: TestClient) -> None:
+    """create_track must return 404, not 500, when service raises TrackNotFound (Fix #6)."""
+    user = _admin_user()
+    uc = _mock_uc(execute_raises=TrackNotFound("not found"))
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[require_admin] = lambda: user
+    app.dependency_overrides[get_create_track] = lambda: uc
+    try:
+        r = client.post("/api/v1/admin/tracks", json={"title": "T"})
+        assert r.status_code == 404
+        assert r.json()["error"]["code"] == "TRILHA_NOT_FOUND"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_create_module_handles_domain_error(client: TestClient) -> None:
+    """create_module must return 404, not 500, when service raises ModuleNotFound (Fix #6)."""
+    user = _admin_user()
+    uc = _mock_uc(execute_raises=ModuleNotFound("not found"))
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[require_admin] = lambda: user
+    app.dependency_overrides[get_create_module] = lambda: uc
+    try:
+        r = client.post(
+            "/api/v1/admin/modules",
+            json={"track_id": str(uuid4()), "title": "M", "order": 0},
+        )
+        assert r.status_code == 404
+        assert r.json()["error"]["code"] == "MODULO_NOT_FOUND"
+    finally:
+        app.dependency_overrides.clear()

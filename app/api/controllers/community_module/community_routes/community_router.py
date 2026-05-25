@@ -10,7 +10,7 @@ from app.api.controllers.community_module.community_dto.community_dto import (
 from app.database.community_module.community_repo import SqlAlchemyCommunityRepository
 from app.database.shared.db_factory import get_session
 from app.domain.auth_module.auth_model import User as AuthUser
-from app.services.community_module.community_service.list_community import ListCommunity
+from app.services.community_module.list_community import ListCommunity
 
 router = APIRouter(prefix="/community", tags=["community"])
 
@@ -37,6 +37,7 @@ async def list_community(
                 photo_url=item.photo_url,
                 linkedin_url=item.linkedin_url,
                 instagram_username=item.instagram_username,
+                description=item.description,
             )
             for item in result.items
         ],

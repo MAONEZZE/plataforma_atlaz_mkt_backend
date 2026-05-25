@@ -13,6 +13,7 @@ class CommunityMemberDTO:
     photo_url: str | None
     linkedin_url: str | None
     instagram_username: str | None
+    description: str | None
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class CommunityMemberSchema(BaseModel):
     photo_url: str | None
     linkedin_url: str | None
     instagram_username: str | None
+    description: str | None
 
 
 class ListCommunityResponse(BaseModel):

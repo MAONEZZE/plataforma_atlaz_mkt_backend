@@ -5,7 +5,7 @@ import pytest
 
 from app.domain.auth_module.auth_exceptions import ExpiredToken, InactiveAccount, InvalidToken
 from app.domain.auth_module.auth_model import User
-from app.services.auth_module.auth_service.validate_token_service import ValidateToken
+from app.services.auth_module.validate_token_service import ValidateToken
 
 
 class _FakeRepo:

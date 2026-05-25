@@ -5,13 +5,13 @@ import pytest
 
 from app.domain.content_module.content_exceptions import TrackNotFound
 from app.domain.content_module.content_model import Lesson, Module, Track
-from app.services.content_module.content_service.tracks.crud_admin import (
+from app.services.content_module.tracks.crud_admin import (
     CreateTrack,
     DeleteTrack,
     ReorderTracks,
     UpdateTrack,
 )
-from app.services.content_module.content_service.tracks.list_with_progress import (
+from app.services.content_module.tracks.list_with_progress import (
     ListTracksWithProgress,
 )
 

@@ -35,13 +35,6 @@ class Lesson:
 
 
 @dataclass
-class StudentLesson:
-    user_id: UUID
-    lesson_id: UUID
-    completed_at: datetime
-
-
-@dataclass
 class Comment:
     id: UUID
     lesson_id: UUID

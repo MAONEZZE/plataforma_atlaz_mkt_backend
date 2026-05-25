@@ -6,9 +6,9 @@ load_dotenv()
 
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import create_engine
 
-from alembic import context
 from app.database.shared.sqlalchemy_base import Base
 
 # Alembic Config object
@@ -37,6 +37,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         include_schemas=True,
+        version_table_schema="ATZ_HUB",
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -47,6 +48,7 @@ def do_run_migrations(connection):  # type: ignore[no-untyped-def]
         connection=connection,
         target_metadata=target_metadata,
         include_schemas=True,
+        version_table_schema="ATZ_HUB",
     )
     with context.begin_transaction():
         context.run_migrations()

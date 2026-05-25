@@ -1,6 +1,4 @@
-# Merged from: content/domain/value_objects.py + content/domain/rules.py
 import re
-from dataclasses import dataclass
 
 from app.domain.content_module.content_exceptions import InvalidDriveUrl
 
@@ -16,8 +14,3 @@ def parse_drive_file_id(url: str) -> str:
         if m:
             return m.group(1)
     raise InvalidDriveUrl(url)
-
-
-@dataclass(frozen=True)
-class DriveFileId:
-    value: str

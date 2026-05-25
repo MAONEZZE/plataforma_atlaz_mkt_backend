@@ -12,8 +12,8 @@ from app.api.controllers.auth_module.auth_routes.auth_router import _login, _log
 from app.domain.auth_module.auth_exceptions import InvalidCredentials, LogoutFailed
 from app.domain.auth_module.auth_model import User as AuthUser
 from app.main import app
-from app.services.auth_module.auth_service.login_service import Login
-from app.services.auth_module.auth_service.logout_service import Logout
+from app.services.auth_module.login_service import Login
+from app.services.auth_module.logout_service import Logout
 
 _UID = uuid4()
 
@@ -133,3 +133,39 @@ def test_logout_gateway_failure_returns_500(client: TestClient) -> None:
         assert r.json()["error"]["code"] == "INTERNAL_ERROR"
     finally:
         app.dependency_overrides.clear()
+
+
+def test_logout_malformed_header_returns_401(client: TestClient) -> None:
+    """Malformed Authorization header (no 'Bearer ' prefix) must return 401 (Fix #7)."""
+    uc = _mock_logout()
+    app.dependency_overrides[get_current_user] = lambda: _auth_user()
+    app.dependency_overrides[_logout] = lambda: uc
+    try:
+        r = client.post(
+            "/api/v1/auth/logout",
+            headers={"Authorization": "NotBearer access-token-abc"},
+        )
+        assert r.status_code == 401
+        assert r.json()["error"]["code"] == "INVALID_AUTH_HEADER"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_login_empty_password_returns_400(client: TestClient) -> None:
+    """Empty password must be rejected (Fix #8: min_length=1 on LoginBody). App maps validation → 400."""
+    r = client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@test.com", "password": ""},
+    )
+    assert r.status_code == 400
+    assert r.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_login_invalid_email_returns_400(client: TestClient) -> None:
+    """Invalid email format must be rejected (Fix #8: EmailStr on LoginBody). App maps validation → 400."""
+    r = client.post(
+        "/api/v1/auth/login",
+        json={"email": "not-an-email", "password": "senha123"},
+    )
+    assert r.status_code == 400
+    assert r.json()["error"]["code"] == "VALIDATION_ERROR"

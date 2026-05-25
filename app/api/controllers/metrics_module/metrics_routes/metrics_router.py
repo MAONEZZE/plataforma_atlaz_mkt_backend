@@ -30,12 +30,12 @@ from app.domain.metrics_module.metrics_exceptions import (
     MetricOutOfWindow,
 )
 from app.domain.shared.base_exceptions import AppException
-from app.services.metrics_module.metrics_service.create_metric import CreateMetric
-from app.services.metrics_module.metrics_service.get_admin_consolidated import GetAdminConsolidated
-from app.services.metrics_module.metrics_service.get_dashboard_series import GetDashboardSeries
-from app.services.metrics_module.metrics_service.get_dashboard_summary import GetDashboardSummary
-from app.services.metrics_module.metrics_service.list_metrics import ListMetrics
-from app.services.metrics_module.metrics_service.update_metric import UpdateMetric
+from app.services.metrics_module.create_metric import CreateMetric
+from app.services.metrics_module.get_admin_consolidated import GetAdminConsolidated
+from app.services.metrics_module.get_dashboard_series import GetDashboardSeries
+from app.services.metrics_module.get_dashboard_summary import GetDashboardSummary
+from app.services.metrics_module.list_metrics import ListMetrics
+from app.services.metrics_module.update_metric import UpdateMetric
 
 # ── Dependency helpers ─────────────────────────────────────────────────────────
 

@@ -5,13 +5,13 @@ import pytest
 
 from app.domain.content_module.content_exceptions import InvalidDriveUrl, LessonNotFound
 from app.domain.content_module.content_model import Lesson
-from app.services.content_module.content_service.lessons.crud_admin import (
+from app.services.content_module.lessons.crud_admin import (
     CreateLesson,
     DeleteLesson,
     UpdateLesson,
 )
-from app.services.content_module.content_service.lessons.mark_completed import MarkCompleted
-from app.services.content_module.content_service.lessons.unmark import Unmark
+from app.services.content_module.lessons.mark_completed import MarkCompleted
+from app.services.content_module.lessons.unmark import Unmark
 
 # ── Fake repos ─────────────────────────────────────────────────────────────────
 
@@ -133,3 +133,20 @@ async def test_unmark_completed_idempotent() -> None:
     # Unmark without marking first should not fail
     await use_case.execute(lesson_id, user_id)
     assert len(student_repo._completeds) == 0
+
+
+async def test_unmark_persists() -> None:
+    """After unmark, completed_ids must not contain the lesson (Fix #5 regression)."""
+    lesson = _make_lesson()
+    lesson_repo = FakeLessonRepo([lesson])
+    student_repo = FakeStudentLessonRepo()
+    user_id = uuid4()
+
+    mark_uc = MarkCompleted(lesson_repo, student_repo)
+    unmark_uc = Unmark(student_repo)
+
+    await mark_uc.execute(lesson.id, user_id)
+    assert lesson.id in await student_repo.completed_ids(user_id)
+
+    await unmark_uc.execute(lesson.id, user_id)
+    assert lesson.id not in await student_repo.completed_ids(user_id)

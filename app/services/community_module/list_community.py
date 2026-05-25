@@ -19,6 +19,7 @@ class ListCommunity:
                     photo_url=m.photo_url,
                     linkedin_url=m.linkedin_url,
                     instagram_username=m.instagram_username,
+                    description=m.description,
                 )
                 for m in members
             ],

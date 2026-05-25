@@ -18,8 +18,8 @@ from app.database.shared.supabase_client import (
 from app.domain.auth_module.auth_exceptions import InvalidCredentials, LogoutFailed
 from app.domain.auth_module.auth_model import User as AuthUser
 from app.domain.shared.base_exceptions import AppException
-from app.services.auth_module.auth_service.login_service import Login
-from app.services.auth_module.auth_service.logout_service import Logout
+from app.services.auth_module.login_service import Login
+from app.services.auth_module.logout_service import Logout
 
 
 class SupabaseAuthGatewayImpl:
@@ -106,7 +106,10 @@ async def logout(
     current_user: AuthUser = Depends(get_current_user),
     use_case: Logout = Depends(_logout),
 ) -> Response:
-    token = request.headers.get("Authorization", "")[len("Bearer "):]
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise AppException("INVALID_AUTH_HEADER", "Authorization header inválido.", 401)
+    token = auth[7:]
     try:
         await use_case.execute(token)
     except LogoutFailed as exc:

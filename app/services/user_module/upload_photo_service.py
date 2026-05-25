@@ -1,8 +1,8 @@
 from app.api.controllers.user_module.user_dto.user_dto import PhotoUrlDTO, UploadPhotoInput
 from app.domain.user_module.user_exceptions import InvalidPhoto, UserNotFound
 from app.domain.user_module.user_repo_interface import UserRepository
-from app.services.user_module.user_service.image_validation import detect_image_mime
-from app.services.user_module.user_service.storage_gateway import PhotoStorageGateway
+from app.services.user_module.image_validation import detect_image_mime
+from app.services.user_module.storage_gateway import PhotoStorageGateway
 
 _EXTENSION_MAP: dict[str, str] = {
     "image/jpeg": "jpg",

@@ -5,8 +5,8 @@ import pytest
 
 from app.domain.content_module.content_exceptions import LessonNotFound, TrackNotFound
 from app.domain.content_module.content_model import Lesson, Module, Track
-from app.services.content_module.content_service.lessons.get import GetLesson
-from app.services.content_module.content_service.tracks.get_with_modules import (
+from app.services.content_module.lessons.get import GetLesson
+from app.services.content_module.tracks.get_with_modules import (
     GetTrackWithModules,
 )
 
@@ -180,3 +180,59 @@ async def test_get_lesson_completed_flag() -> None:
     dto = await use_case.execute(lesson.id, uuid4())
     assert dto.completed is True
     assert dto.track.id == track.id
+
+
+# ── Mapper EN attribute regression (Fix #1) ────────────────────────────────────
+
+def test_track_model_exposes_en_attributes() -> None:
+    """TrackModel must have EN Python attrs so mapper doesn't raise AttributeError."""
+    from app.database.content_module.content_repo import TrackModel, _track_from_model
+
+    now = datetime.now(tz=UTC)
+    m = TrackModel(id=uuid4(), title="T", description="D", cover_url=None, order=2, created_at=now)
+    assert m.title == "T"
+    assert m.description == "D"
+    assert m.order == 2
+    track = _track_from_model(m)
+    assert track.title == "T"
+    assert track.order == 2
+
+
+def test_module_model_exposes_en_attributes() -> None:
+    from app.database.content_module.content_repo import ModuleModel, _module_from_model
+
+    tid = uuid4()
+    m = ModuleModel(id=uuid4(), track_id=tid, title="M", description=None, order=1)
+    assert m.title == "M"
+    assert m.order == 1
+    module = _module_from_model(m)
+    assert module.title == "M"
+    assert module.track_id == tid
+
+
+def test_lesson_model_exposes_en_attributes() -> None:
+    from app.database.content_module.content_repo import LessonModel, _lesson_from_model
+
+    now = datetime.now(tz=UTC)
+    m = LessonModel(
+        id=uuid4(), module_id=uuid4(), title="L", description=None,
+        drive_file_id="abc", duration_minutes=30, order=0, created_at=now,
+    )
+    assert m.title == "L"
+    assert m.duration_minutes == 30
+    lesson = _lesson_from_model(m)
+    assert lesson.title == "L"
+    assert lesson.duration_minutes == 30
+
+
+def test_comment_model_exposes_en_attributes() -> None:
+    from app.database.content_module.content_repo import CommentModel, _comment_from_model
+
+    now = datetime.now(tz=UTC)
+    m = CommentModel(
+        id=uuid4(), lesson_id=uuid4(), user_id=uuid4(),
+        text="hello", created_at=now, edited_at=None, deleted_at=None,
+    )
+    assert m.text == "hello"
+    comment = _comment_from_model(m)
+    assert comment.text == "hello"

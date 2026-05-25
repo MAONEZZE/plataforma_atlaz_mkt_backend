@@ -19,7 +19,7 @@ from app.api.controllers.user_module.user_routes.user_router import _upload_phot
 from app.domain.auth_module.auth_model import User as AuthUser
 from app.domain.shared.base_exceptions import AppException
 from app.domain.user_module.user_model import User
-from app.services.user_module.user_service.upload_photo_service import UploadPhoto
+from app.services.user_module.upload_photo_service import UploadPhoto
 
 _NOW = datetime(2024, 1, 1, tzinfo=UTC)
 _UID = uuid4()

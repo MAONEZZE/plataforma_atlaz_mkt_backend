@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 # ── Application DTOs ───────────────────────────────────────────────────────────
 
@@ -32,8 +32,8 @@ class TokensDTO:
 class LoginBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    email: str
-    password: str
+    email: EmailStr
+    password: str = Field(min_length=1)
 
 
 class TokensResponse(BaseModel):

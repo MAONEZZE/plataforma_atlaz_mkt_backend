@@ -4,7 +4,7 @@ import pytest
 
 from app.domain.content_module.content_exceptions import ModuleNotFound
 from app.domain.content_module.content_model import Module
-from app.services.content_module.content_service.modules.crud_admin import (
+from app.services.content_module.modules.crud_admin import (
     CreateModule,
     DeleteModule,
     ReorderModules,

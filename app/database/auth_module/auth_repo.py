@@ -12,7 +12,7 @@ from app.domain.auth_module.auth_model import User
 
 class UserAuthModel(Base):
     __tablename__ = "users"
-    __table_args__ = {"schema": "public", "extend_existing": True}
+    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     email: Mapped[str] = mapped_column(String, nullable=False)

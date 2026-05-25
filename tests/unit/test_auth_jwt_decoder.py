@@ -29,7 +29,7 @@ def test_valid_token_returns_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.api.config import settings as cfg_module
 
     monkeypatch.setattr(cfg_module.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
-    from app.services.auth_module.auth_service import jwt_decoder
+    from app.services.auth_module import jwt_decoder
 
     token = _make_token()
     payload = jwt_decoder.decode_supabase_jwt(token)
@@ -40,7 +40,7 @@ def test_expired_token_raises_token_expirado(monkeypatch: pytest.MonkeyPatch) ->
     from app.api.config import settings as cfg_module
 
     monkeypatch.setattr(cfg_module.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
-    from app.services.auth_module.auth_service import jwt_decoder
+    from app.services.auth_module import jwt_decoder
 
     token = _make_token(exp_delta=timedelta(seconds=-1))
     with pytest.raises(ExpiredToken):
@@ -51,7 +51,7 @@ def test_wrong_secret_raises_token_invalido(monkeypatch: pytest.MonkeyPatch) -> 
     from app.api.config import settings as cfg_module
 
     monkeypatch.setattr(cfg_module.settings, "SUPABASE_JWT_SECRET", TEST_SECRET)
-    from app.services.auth_module.auth_service import jwt_decoder
+    from app.services.auth_module import jwt_decoder
 
     token = _make_token(secret="wrong-secret")
     with pytest.raises(InvalidToken):

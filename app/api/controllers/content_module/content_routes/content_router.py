@@ -1,9 +1,14 @@
 # Merged from: contexts/content/presentation/deps.py + router_content.py + router_admin.py + router_comments.py
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+
+from app.database.shared.supabase_client import create_supabase_admin_client
+from app.api.config.settings import settings
+from app.services.user_module.image_validation import detect_image_mime
 
 from app.api.config.dependencies.auth_deps import get_current_user, require_admin
 from app.api.controllers.content_module.content_dto.content_dto import (
@@ -47,33 +52,33 @@ from app.domain.content_module.content_exceptions import (
 )
 from app.domain.shared.base_exceptions import AppException
 from app.domain.shared.dtos import PagedResponse
-from app.services.content_module.content_service.comments.create import CreateComment
-from app.services.content_module.content_service.comments.delete import DeleteComment
-from app.services.content_module.content_service.comments.edit import EditComment
-from app.services.content_module.content_service.comments.list import ListComments
-from app.services.content_module.content_service.lessons.crud_admin import (
+from app.services.content_module.comments.create import CreateComment
+from app.services.content_module.comments.delete import DeleteComment
+from app.services.content_module.comments.edit import EditComment
+from app.services.content_module.comments.list import ListComments
+from app.services.content_module.lessons.crud_admin import (
     CreateLesson,
     DeleteLesson,
     ReorderLessons,
     UpdateLesson,
 )
-from app.services.content_module.content_service.lessons.get import GetLesson
-from app.services.content_module.content_service.lessons.mark_completed import MarkCompleted
-from app.services.content_module.content_service.lessons.unmark import Unmark
-from app.services.content_module.content_service.modules.crud_admin import (
+from app.services.content_module.lessons.get import GetLesson
+from app.services.content_module.lessons.mark_completed import MarkCompleted
+from app.services.content_module.lessons.unmark import Unmark
+from app.services.content_module.modules.crud_admin import (
     CreateModule,
     DeleteModule,
     ReorderModules,
     UpdateModule,
 )
-from app.services.content_module.content_service.tracks.crud_admin import (
+from app.services.content_module.tracks.crud_admin import (
     CreateTrack,
     DeleteTrack,
     ReorderTracks,
     UpdateTrack,
 )
-from app.services.content_module.content_service.tracks.get_with_modules import GetTrackWithModules
-from app.services.content_module.content_service.tracks.list_with_progress import (
+from app.services.content_module.tracks.get_with_modules import GetTrackWithModules
+from app.services.content_module.tracks.list_with_progress import (
     ListTracksWithProgress,
 )
 
@@ -338,7 +343,10 @@ async def create_track(
     _: AuthUser = Depends(require_admin),
     use_case: CreateTrack = Depends(get_create_track),
 ) -> TrackAdminOut:
-    track = await use_case.execute(body.title, body.description, body.cover_url, body.order)
+    try:
+        track = await use_case.execute(body.title, body.description, body.cover_url, body.order)
+    except TrackNotFound as exc:
+        raise AppException("TRILHA_NOT_FOUND", str(exc), 404) from exc
     return TrackAdminOut(
         id=track.id,
         title=track.title,
@@ -393,13 +401,61 @@ async def reorder_tracks(
     await use_case.execute([(item.id, item.order) for item in body.order])
 
 
+class CoverUrlOut(BaseModel):
+    cover_url: str
+
+
+_COVER_EXT_MAP: dict[str, str] = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+}
+_COVER_MAX_SIZE = 5 * 1024 * 1024
+
+
+@admin_router.post("/tracks/cover", response_model=CoverUrlOut)
+async def upload_track_cover(
+    image: UploadFile = File(...),
+    _: AuthUser = Depends(require_admin),
+) -> CoverUrlOut:
+    content_type = image.content_type or ""
+    if content_type not in _COVER_EXT_MAP:
+        raise AppException(
+            "VALIDATION_ERROR", "Tipo de imagem não suportado. Use JPEG, PNG ou WebP.", 400
+        )
+
+    data = await image.read()
+    if len(data) > _COVER_MAX_SIZE:
+        raise AppException("VALIDATION_ERROR", "Imagem deve ter no máximo 5 MB.", 400)
+
+    detected = detect_image_mime(data)
+    if detected != content_type:
+        raise AppException(
+            "VALIDATION_ERROR", "Conteúdo do arquivo não corresponde ao tipo declarado.", 400
+        )
+
+    ext = _COVER_EXT_MAP[content_type]
+    path = f"tracks/{uuid4()}.{ext}"
+    client = create_supabase_admin_client()
+    client.storage.from_(settings.SUPABASE_BUCKET).upload(
+        path,
+        data,
+        file_options={"content-type": content_type, "upsert": "true"},
+    )
+    cover_url = client.storage.from_(settings.SUPABASE_BUCKET).get_public_url(path)
+    return CoverUrlOut(cover_url=cover_url)
+
+
 @admin_router.post("/modules", response_model=ModuleAdminOut, status_code=status.HTTP_201_CREATED)
 async def create_module(
     body: CreateModuleIn,
     _: AuthUser = Depends(require_admin),
     use_case: CreateModule = Depends(get_create_module),
 ) -> ModuleAdminOut:
-    module = await use_case.execute(body.track_id, body.title, body.description, body.order)
+    try:
+        module = await use_case.execute(body.track_id, body.title, body.description, body.order)
+    except ModuleNotFound as exc:
+        raise AppException("MODULO_NOT_FOUND", str(exc), 404) from exc
     return ModuleAdminOut(
         id=module.id,
         track_id=module.track_id,

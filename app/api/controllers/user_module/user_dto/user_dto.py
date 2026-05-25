@@ -5,22 +5,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-# ── Application DTOs ───────────────────────────────────────────────────────────
-
-@dataclass(frozen=True)
-class UserDTO:
-    id: UUID
-    name: str
-    email: str
-    phone: str | None
-    linkedin_url: str | None
-    instagram_username: str | None
-    description: str | None
-    photo_url: str | None
-    role: str
-    created_at: datetime
-
-
 @dataclass(frozen=True)
 class UpdateMeInput:
     name: str | None
