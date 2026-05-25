@@ -1,4 +1,3 @@
-# Merged from: contexts/auth/presentation/router.py + contexts/auth/presentation/deps.py
 from fastapi import APIRouter, Depends, Request, Response
 from supabase import Client
 from supabase_auth.errors import AuthApiError

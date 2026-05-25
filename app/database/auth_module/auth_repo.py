@@ -1,4 +1,3 @@
-# Merged from: contexts/auth/infrastructure/models.py + contexts/auth/infrastructure/repositories.py
 from uuid import UUID
 
 from sqlalchemy import Boolean, String, select

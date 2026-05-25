@@ -1,4 +1,3 @@
-# Merged from: contexts/community/presentation/router.py
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 

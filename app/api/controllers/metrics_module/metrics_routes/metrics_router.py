@@ -1,4 +1,3 @@
-# Merged from: contexts/metrics/presentation/deps.py + router.py
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query

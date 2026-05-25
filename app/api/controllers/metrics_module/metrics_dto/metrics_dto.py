@@ -1,4 +1,3 @@
-# Merged from: contexts/metrics/application/dtos.py + contexts/metrics/presentation/schemas.py
 from dataclasses import dataclass
 from datetime import date, datetime
 from uuid import UUID

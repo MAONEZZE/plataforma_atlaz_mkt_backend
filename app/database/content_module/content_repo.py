@@ -1,4 +1,3 @@
-# Merged from: contexts/content/infrastructure/models.py + contexts/content/infrastructure/repositories.py
 from datetime import datetime
 from uuid import UUID
 

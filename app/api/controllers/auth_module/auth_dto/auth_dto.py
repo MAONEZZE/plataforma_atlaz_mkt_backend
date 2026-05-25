@@ -1,4 +1,3 @@
-# Merged from: contexts/auth/application/dtos.py + contexts/auth/presentation/schemas.py
 from dataclasses import dataclass
 from uuid import UUID
 

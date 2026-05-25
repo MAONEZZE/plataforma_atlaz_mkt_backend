@@ -1,5 +1,3 @@
-# Merged from: shared/domain/exceptions.py + core/exceptions.py
-
 
 class DomainError(Exception):
     pass

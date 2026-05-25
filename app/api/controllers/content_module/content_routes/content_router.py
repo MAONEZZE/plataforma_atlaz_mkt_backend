@@ -1,4 +1,3 @@
-# Merged from: contexts/content/presentation/deps.py + router_content.py + router_admin.py + router_comments.py
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
@@ -6,11 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from app.database.shared.supabase_client import create_supabase_admin_client
-from app.api.config.settings import settings
-from app.services.user_module.image_validation import detect_image_mime
-
 from app.api.config.dependencies.auth_deps import get_current_user, require_admin
+from app.api.config.settings import settings
 from app.api.controllers.content_module.content_dto.content_dto import (
     AuthorOut,
     CommentOut,
@@ -41,6 +37,7 @@ from app.database.content_module.content_repo import (
     SqlAlchemyTrackRepository,
 )
 from app.database.shared.db_factory import get_session
+from app.database.shared.supabase_client import create_supabase_admin_client
 from app.domain.auth_module.auth_model import User as AuthUser
 from app.domain.content_module.content_exceptions import (
     CommentNotFound,
@@ -81,6 +78,7 @@ from app.services.content_module.tracks.get_with_modules import GetTrackWithModu
 from app.services.content_module.tracks.list_with_progress import (
     ListTracksWithProgress,
 )
+from app.services.user_module.image_validation import detect_image_mime
 
 # ── Dependency helpers ─────────────────────────────────────────────────────────
 

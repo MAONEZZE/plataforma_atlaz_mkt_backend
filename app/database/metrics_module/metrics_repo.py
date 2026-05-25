@@ -1,4 +1,3 @@
-# Merged from: contexts/metrics/infrastructure/models.py + contexts/metrics/infrastructure/repositories.py
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
