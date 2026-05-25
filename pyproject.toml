@@ -119,3 +119,4 @@ forbidden_modules = [
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "--cov=app --cov-report=term-missing --cov-fail-under=0"
+cache_dir = ".cache/pytest"
