@@ -43,6 +43,7 @@ include = ["app*", "scripts*"]
 [tool.ruff]
 target-version = "py312"
 line-length = 99
+cache-dir = ".cache/ruff"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
@@ -60,6 +61,7 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["app/database/migrations/", "scripts/"]
+cache_dir = ".cache/mypy"
 
 [[tool.mypy.overrides]]
 module = ["jose.*", "supabase.*", "slowapi.*", "testcontainers.*", "sentry_sdk.*"]

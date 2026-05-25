@@ -85,7 +85,7 @@ REPLACEMENTS = [
     ("class Create", "class Create"),
     ("class Edit", "class Edit"),
     ("class List", "class List"),
-    ("class ListComProgresso", "class ListWithProgress"),
+    ("class ListWithProgress", "class ListWithProgress"),
     ("class GetWithModules", "class GetWithModules"),
     ("class ListCommunity", "class ListCommunity"),
     ("class CreateMetric", "class CreateMetric"),

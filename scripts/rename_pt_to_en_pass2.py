@@ -76,7 +76,7 @@ REPLACEMENTS = [
     ("list[Comment]", "list[Comment]"),
     ("-> Comment", "-> Comment"),
     ("class StudentLesson", "class StudentLesson"),
-    ("AlunoLesson(", "StudentLesson("),
+    ("StudentLesson(", "StudentLesson("),
 
     # Infrastructure repo class names - content
     ("class SqlAlchemyTrackRepository", "class SqlAlchemyTrackRepository"),
