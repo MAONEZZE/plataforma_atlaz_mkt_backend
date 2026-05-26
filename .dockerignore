@@ -25,7 +25,3 @@ scripts/
 .idea/
 *.DS_Store
 
-# Docker itself
-Dockerfile
-.dockerignore
-docker-entrypoint.sh
