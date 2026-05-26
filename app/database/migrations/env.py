@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from dotenv import load_dotenv
@@ -7,17 +8,15 @@ load_dotenv()
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.database.shared.sqlalchemy_base import Base
 
-# Alembic Config object
 config = context.config
 
 if config.config_file_name:
     fileConfig(config.config_file_name)
 
-# Import all ORM models here so autogenerate finds them.
 import app.database.auth_module.auth_repo  # noqa: F401
 import app.database.content_module.content_repo  # noqa: F401
 import app.database.metrics_module.metrics_repo  # noqa: F401
@@ -26,13 +25,11 @@ import app.database.user_module.user_repo  # noqa: F401
 target_metadata = Base.metadata
 
 DATABASE_URL = os.environ["DATABASE_URL"]
-# Convert async URL to sync for alembic
-SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
 
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=SYNC_DATABASE_URL,
+        url=DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -54,14 +51,14 @@ def do_run_migrations(connection):  # type: ignore[no-untyped-def]
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
-    connectable = create_engine(SYNC_DATABASE_URL)
-    with connectable.connect() as connection:
-        do_run_migrations(connection)
-    connectable.dispose()
+async def run_migrations_online() -> None:
+    engine = create_async_engine(DATABASE_URL)
+    async with engine.begin() as connection:
+        await connection.run_sync(do_run_migrations)
+    await engine.dispose()
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())
