@@ -101,6 +101,7 @@ pyasn1_modules==0.4.2
 pycairo==1.25.1
 pycparser==3.0
 pycups==2.0.1
+pydantic[email]
 pydantic==2.13.4
 pydantic-settings==2.14.1
 pydantic_core==2.46.4
