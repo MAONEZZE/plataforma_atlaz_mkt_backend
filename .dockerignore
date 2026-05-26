@@ -1,0 +1,31 @@
+# Version control
+.git/
+.gitignore
+
+# Python artifacts
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.cache/
+.ruff_cache/
+.mypy_cache/
+
+# Tests & docs (not needed at runtime)
+tests/
+docs/
+scripts/
+
+# Local secrets
+.env
+.env.*
+
+# Editor / OS
+.vscode/
+.idea/
+*.DS_Store
+
+# Docker itself
+Dockerfile
+.dockerignore
+docker-entrypoint.sh
