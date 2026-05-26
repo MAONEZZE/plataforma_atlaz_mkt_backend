@@ -21,6 +21,7 @@ dependencies = [
     "sentry-sdk[fastapi]>=2.6",
     "slowapi>=0.1.9",
     "typer>=0.12",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
