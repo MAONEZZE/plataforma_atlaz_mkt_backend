@@ -4,7 +4,6 @@ annotated-types==0.7.0
 anyio==4.13.0
 ast_serialize==0.5.0
 asyncpg==0.31.0
--e git+https://github.com/MAONEZZE/plataforma_atlaz_mkt_backend.git@ef2aa7ac6b2b0772fe2045079b3d5a98b1a486b7#egg=atlaz_backend
 black==26.5.1
 cachetools==6.2.6
 certifi==2026.5.20
