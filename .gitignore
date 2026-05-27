@@ -7,3 +7,4 @@ __pycache__/
 .ruff_cache/
 alembic/.ruff_cache/
 docs/
+graphify-out/

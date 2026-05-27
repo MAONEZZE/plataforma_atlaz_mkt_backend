@@ -7,3 +7,15 @@ class UserNotFound(DomainError):
 
 class InvalidPhoto(DomainError):
     pass
+
+
+class EmailAlreadyRegistered(DomainError):
+    pass
+
+
+class SupabaseAdminError(DomainError):
+    pass
+
+
+class UserTriggerSyncFailed(DomainError):
+    pass

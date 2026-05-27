@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 @dataclass(frozen=True)
@@ -38,6 +38,15 @@ class PatchMeBody(BaseModel):
     description: str | None = None
 
 
+class CreateClientBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    email: EmailStr
+    password: str
+    phone: str | None = None
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,3 +64,19 @@ class UserResponse(BaseModel):
 
 class PhotoUrlResponse(BaseModel):
     photo_url: str
+
+
+class ClientSummaryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    email: str
+    phone: str | None
+
+
+class ListClientsResponse(BaseModel):
+    items: list[ClientSummaryResponse]
+    page: int
+    page_size: int
+    total: int

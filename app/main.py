@@ -36,6 +36,9 @@ from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
 from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
     router as metrics_router,
 )
+from app.api.controllers.user_module.user_routes.admin_router import (
+    admin_router as admin_clients_router,
+)
 from app.api.controllers.user_module.user_routes.user_router import router as users_router
 from app.domain.shared.base_exceptions import AppException
 
@@ -144,6 +147,7 @@ async def health() -> dict[str, str]:
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(community_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
+app.include_router(admin_clients_router, prefix="/api/v1")
 app.include_router(content_router, prefix="/api/v1")
 app.include_router(admin_content_router, prefix="/api/v1")
 app.include_router(comments_router, prefix="/api/v1")

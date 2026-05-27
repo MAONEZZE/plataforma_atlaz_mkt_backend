@@ -1,8 +1,9 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, String, Text, update
+from sqlalchemy import Boolean, DateTime, String, Text, func, update
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import Mapped, mapped_column
@@ -34,6 +35,27 @@ class SqlAlchemyUserRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def upsert_new(self, user: User) -> None:
+        """Insert a new user row, no-op if id already exists (trigger may
+        have already created it). Required for environments where the
+        auth.users → ATZ_HUB.users trigger is absent or disabled."""
+        stmt = insert(UserModel).values(
+            id=user.id,
+            name=user.name,
+            email=user.email,
+            telefone=user.phone,
+            linkedin_url=user.linkedin_url,
+            instagram_username=user.instagram_username,
+            description=user.description,
+            photo_url=user.photo_url,
+            role=user.role,
+            inactive=user.inactive,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+        )
+        stmt = stmt.on_conflict_do_nothing(index_elements=["id"])
+        await self._session.execute(stmt)
+
     async def get_by_id(self, user_id: UUID) -> User | None:
         result = await self._session.execute(
             select(UserModel).where(UserModel.id == user_id)
@@ -60,6 +82,27 @@ class SqlAlchemyUserRepository:
         )
         user.updated_at = now
         return user
+
+    async def list_clients(
+        self, page: int, page_size: int
+    ) -> tuple[list[User], int]:
+        offset = (page - 1) * page_size
+        base_filter = (UserModel.role == "cliente") & (UserModel.inactive.is_(False))
+
+        rows = await self._session.execute(
+            select(UserModel)
+            .where(base_filter)
+            .order_by(UserModel.created_at.desc())
+            .limit(page_size)
+            .offset(offset)
+        )
+        items = [self._to_entity(m) for m in rows.scalars().all()]
+
+        total_res = await self._session.execute(
+            select(func.count()).select_from(UserModel).where(base_filter)
+        )
+        total = int(total_res.scalar_one())
+        return items, total
 
     @staticmethod
     def _to_entity(model: UserModel) -> User:

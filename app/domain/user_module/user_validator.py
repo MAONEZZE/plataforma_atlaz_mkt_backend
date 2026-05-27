@@ -36,3 +36,16 @@ class Telefone:
     def __post_init__(self) -> None:
         if self.value and not self._PATTERN.match(self.value):
             raise DomainError("Telefone inválido. Use formato +XXXXXXXXXXX.")
+
+
+@dataclass(frozen=True)
+class Password:
+    value: str
+
+    _PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"^(?=.*[A-Z])(?=.*\d).{8,}$")
+
+    def __post_init__(self) -> None:
+        if not self._PATTERN.match(self.value):
+            raise DomainError(
+                "Senha deve ter ≥ 8 caracteres, ao menos 1 maiúscula e 1 número."
+            )
