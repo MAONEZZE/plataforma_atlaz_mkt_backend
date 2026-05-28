@@ -36,6 +36,18 @@ from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
 from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
     router as metrics_router,
 )
+from app.api.controllers.product_module.product_routes.admin_router import (
+    admin_router as admin_products_router,
+)
+from app.api.controllers.product_module.product_routes.product_router import (
+    router as products_router,
+)
+from app.api.controllers.stage_module.stage_routes.admin_router import (
+    admin_router as admin_stages_router,
+)
+from app.api.controllers.stage_module.stage_routes.stage_router import (
+    router as stages_router,
+)
 from app.api.controllers.user_module.user_routes.admin_router import (
     admin_router as admin_clients_router,
 )
@@ -153,3 +165,7 @@ app.include_router(admin_content_router, prefix="/api/v1")
 app.include_router(comments_router, prefix="/api/v1")
 app.include_router(metrics_router, prefix="/api/v1")
 app.include_router(admin_metrics_router, prefix="/api/v1")
+app.include_router(stages_router, prefix="/api/v1")
+app.include_router(admin_stages_router, prefix="/api/v1")
+app.include_router(products_router, prefix="/api/v1")
+app.include_router(admin_products_router, prefix="/api/v1")

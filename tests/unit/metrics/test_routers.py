@@ -59,9 +59,9 @@ def _metrica_dto(user_id: UUID | None = None) -> MetricDTO:
         id=uuid4(),
         user_id=user_id or uuid4(),
         week_start=date(2026, 5, 11),
-        calls_scheduled=10,
+        meetings_held=10,
         calls_made=8,
-        meetings_scheduled=3,
+        sales=3,
         referrals=1,
         created_at=now,
         updated_at=now,
@@ -108,9 +108,9 @@ def test_criar_metrica_201(client: TestClient) -> None:
             "/api/v1/metricas",
             json={
                 "week_start": "2026-05-11",
-                "calls_scheduled": 10,
+                "meetings_held": 10,
                 "calls_made": 8,
-                "meetings_scheduled": 3,
+                "sales": 3,
                 "referrals": 1,
             },
         )
@@ -130,9 +130,9 @@ def test_criar_metrica_409_duplicate(client: TestClient) -> None:
             "/api/v1/metricas",
             json={
                 "week_start": "2026-05-11",
-                "calls_scheduled": 0,
+                "meetings_held": 0,
                 "calls_made": 0,
-                "meetings_scheduled": 0,
+                "sales": 0,
                 "referrals": 0,
             },
         )
@@ -152,9 +152,9 @@ def test_criar_metrica_422_fora_da_janela(client: TestClient) -> None:
             "/api/v1/metricas",
             json={
                 "week_start": "2026-01-05",
-                "calls_scheduled": 0,
+                "meetings_held": 0,
                 "calls_made": 0,
-                "meetings_scheduled": 0,
+                "sales": 0,
                 "referrals": 0,
             },
         )
@@ -173,9 +173,9 @@ def test_criar_metrica_422_semana_futura(client: TestClient) -> None:
             "/api/v1/metricas",
             json={
                 "week_start": "2026-06-01",
-                "calls_scheduled": 0,
+                "meetings_held": 0,
                 "calls_made": 0,
-                "meetings_scheduled": 0,
+                "sales": 0,
                 "referrals": 0,
             },
         )
@@ -193,9 +193,9 @@ def test_criar_metrica_403_para_outro_usuario(client: TestClient) -> None:
             json={
                 "user_id": str(uuid4()),  # different user
                 "week_start": "2026-05-11",
-                "calls_scheduled": 0,
+                "meetings_held": 0,
                 "calls_made": 0,
-                "meetings_scheduled": 0,
+                "sales": 0,
                 "referrals": 0,
             },
         )
@@ -213,7 +213,7 @@ def test_atualizar_metrica_200(client: TestClient) -> None:
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"calls_scheduled": 20})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"meetings_held": 20})
         assert r.status_code == 200
     finally:
         app.dependency_overrides.clear()
@@ -225,7 +225,7 @@ def test_atualizar_metrica_404(client: TestClient) -> None:
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"calls_scheduled": 5})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"meetings_held": 5})
         assert r.status_code == 404
     finally:
         app.dependency_overrides.clear()
@@ -237,7 +237,7 @@ def test_atualizar_metrica_403_wrong_owner(client: TestClient) -> None:
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"calls_scheduled": 5})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"meetings_held": 5})
         assert r.status_code == 403
     finally:
         app.dependency_overrides.clear()
@@ -249,9 +249,9 @@ def test_obter_resumo_200(client: TestClient) -> None:
     user = _cliente()
     dto = DashboardSummaryDTO(
         month="2026-05",
-        calls_scheduled=DeltaDTO(value=120, delta_pct=20.0),
+        meetings_held=DeltaDTO(value=120, delta_pct=20.0),
         calls_made=DeltaDTO(value=95, delta_pct=None),
-        meetings_scheduled=DeltaDTO(value=28, delta_pct=40.0),
+        sales=DeltaDTO(value=28, delta_pct=40.0),
         referrals=DeltaDTO(value=12, delta_pct=None),
     )
     uc = _mock_uc(execute_return=dto)
@@ -263,6 +263,7 @@ def test_obter_resumo_200(client: TestClient) -> None:
         body = r.json()
         assert body["month"] == "2026-05"
         assert body["calls_made"]["delta_pct"] is None
+        assert body["meetings_held"]["value"] == 120
     finally:
         app.dependency_overrides.clear()
 
@@ -280,9 +281,9 @@ def test_obter_series_200(client: TestClient) -> None:
         series=[
             WeeklySeriesDTO(
                 week=date(2026, 5, 11),
-                calls_scheduled=10,
+                meetings_held=10,
                 calls_made=8,
-                meetings_scheduled=3,
+                sales=3,
                 referrals=1,
             )
         ]
@@ -304,9 +305,9 @@ def test_admin_dashboard_200(client: TestClient) -> None:
     admin = _admin()
     dto = AdminConsolidatedDTO(
         aggregates=AdminAggregatesDTO(
-            calls_scheduled_total=100,
+            meetings_held_total=100,
             calls_made_total=80,
-            meetings_scheduled_total=20,
+            sales_total=20,
             referrals_total=5,
             users_with_metric_in_month=3,
             users_without_metric_in_month=2,
@@ -316,9 +317,9 @@ def test_admin_dashboard_200(client: TestClient) -> None:
                 user_id=uuid4(),
                 name="Alice",
                 photo_url=None,
-                calls_scheduled=100,
+                meetings_held=100,
                 calls_made=80,
-                meetings_scheduled=20,
+                sales=20,
                 referrals=5,
                 last_metric_at=date(2026, 5, 4),
             )

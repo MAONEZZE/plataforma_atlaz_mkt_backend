@@ -45,6 +45,7 @@ class CreateClientBody(BaseModel):
     email: EmailStr
     password: str
     phone: str | None = None
+    product_id: UUID | None = None
 
 
 class UserResponse(BaseModel):
@@ -59,6 +60,7 @@ class UserResponse(BaseModel):
     description: str | None
     photo_url: str | None
     role: str
+    product_id: UUID | None = None
     created_at: datetime
 
 

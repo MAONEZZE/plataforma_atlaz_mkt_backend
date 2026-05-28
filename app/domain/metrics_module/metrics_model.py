@@ -8,9 +8,9 @@ class WeeklyMetric:
     id: UUID
     user_id: UUID
     week_start: date
-    calls_scheduled: int
+    meetings_held: int
     calls_made: int
-    meetings_scheduled: int
+    sales: int
     referrals: int
     created_at: datetime
     updated_at: datetime
@@ -23,8 +23,8 @@ class UserMonthlyMetrics:
     user_id: UUID
     name: str
     photo_url: str | None
-    calls_scheduled: int
+    meetings_held: int
     calls_made: int
-    meetings_scheduled: int
+    sales: int
     referrals: int
     last_metric_at: date | None

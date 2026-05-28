@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 import structlog
 
+from app.domain.product_module.product_exceptions import ProductNotFound
+from app.domain.product_module.product_repo_interface import ProductRepository
 from app.domain.shared.utils import now_sp
 from app.domain.user_module.user_exceptions import UserTriggerSyncFailed
 from app.domain.user_module.user_model import User
@@ -18,6 +21,7 @@ class CreateClientInput:
     email: str
     password: str
     phone: str | None = None
+    product_id: UUID | None = None
 
 
 class CreateClient:
@@ -31,14 +35,21 @@ class CreateClient:
         self,
         repo: UserRepository,
         gateway: SupabaseAdminUserGateway,
+        product_repo: ProductRepository | None = None,
     ) -> None:
         self._repo = repo
         self._gateway = gateway
+        self._product_repo = product_repo
 
     async def execute(self, inp: CreateClientInput) -> User:
         Password(inp.password)
         if inp.phone is not None:
             Telefone(inp.phone)
+
+        if inp.product_id is not None and self._product_repo is not None:
+            product = await self._product_repo.get_by_id(inp.product_id)
+            if product is None:
+                raise ProductNotFound(f"Product {inp.product_id} not found.")
 
         user_id = self._gateway.create_user(
             email=inp.email,
@@ -59,6 +70,7 @@ class CreateClient:
             photo_url=None,
             role="cliente",
             inactive=False,
+            product_id=inp.product_id,
             created_at=now,
             updated_at=now,
         )
@@ -70,6 +82,12 @@ class CreateClient:
             raise UserTriggerSyncFailed(
                 "Cliente criado em auth.users mas falha ao gravar em ATZ_HUB.users."
             ) from None
+
+        if inp.product_id is not None:
+            try:
+                await self._repo.assign_product(user_id, inp.product_id)
+            except Exception:
+                logger.warning("product_assign_failed_after_create", auth_user_id=str(user_id))
 
         if inp.phone is not None:
             try:

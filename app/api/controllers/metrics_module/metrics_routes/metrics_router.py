@@ -92,9 +92,9 @@ async def list_metrics(
                 id=m.id,
                 user_id=m.user_id,
                 week_start=m.week_start,
-                calls_scheduled=m.calls_scheduled,
+                meetings_held=m.meetings_held,
                 calls_made=m.calls_made,
-                meetings_scheduled=m.meetings_scheduled,
+                sales=m.sales,
                 referrals=m.referrals,
                 created_at=m.created_at,
                 updated_at=m.updated_at,
@@ -126,9 +126,9 @@ async def create_metric(
         dto = await use_case.execute(
             user_id=target_id,
             week_start=body.week_start,
-            calls_scheduled=body.calls_scheduled,
+            meetings_held=body.meetings_held,
             calls_made=body.calls_made,
-            meetings_scheduled=body.meetings_scheduled,
+            sales=body.sales,
             referrals=body.referrals,
             is_admin=is_admin,
         )
@@ -143,9 +143,9 @@ async def create_metric(
         id=dto.id,
         user_id=dto.user_id,
         week_start=dto.week_start,
-        calls_scheduled=dto.calls_scheduled,
+        meetings_held=dto.meetings_held,
         calls_made=dto.calls_made,
-        meetings_scheduled=dto.meetings_scheduled,
+        sales=dto.sales,
         referrals=dto.referrals,
         created_at=dto.created_at,
         updated_at=dto.updated_at,
@@ -164,9 +164,9 @@ async def update_metric(
             metric_id=metrica_id,
             requesting_user_id=user.id,
             is_admin=user.role == "admin",
-            calls_scheduled=body.calls_scheduled,
+            meetings_held=body.meetings_held,
             calls_made=body.calls_made,
-            meetings_scheduled=body.meetings_scheduled,
+            sales=body.sales,
             referrals=body.referrals,
         )
     except MetricNotFound as exc:
@@ -180,9 +180,9 @@ async def update_metric(
         id=dto.id,
         user_id=dto.user_id,
         week_start=dto.week_start,
-        calls_scheduled=dto.calls_scheduled,
+        meetings_held=dto.meetings_held,
         calls_made=dto.calls_made,
-        meetings_scheduled=dto.meetings_scheduled,
+        sales=dto.sales,
         referrals=dto.referrals,
         created_at=dto.created_at,
         updated_at=dto.updated_at,
@@ -200,14 +200,14 @@ async def get_dashboard_summary_endpoint(
     dto = await use_case.execute(user_id=target_id, month=mes)
     return DashboardSummaryOut(
         month=dto.month,
-        calls_scheduled=DeltaOut(
-            value=dto.calls_scheduled.value, delta_pct=dto.calls_scheduled.delta_pct
+        meetings_held=DeltaOut(
+            value=dto.meetings_held.value, delta_pct=dto.meetings_held.delta_pct
         ),
         calls_made=DeltaOut(
             value=dto.calls_made.value, delta_pct=dto.calls_made.delta_pct
         ),
-        meetings_scheduled=DeltaOut(
-            value=dto.meetings_scheduled.value, delta_pct=dto.meetings_scheduled.delta_pct
+        sales=DeltaOut(
+            value=dto.sales.value, delta_pct=dto.sales.delta_pct
         ),
         referrals=DeltaOut(value=dto.referrals.value, delta_pct=dto.referrals.delta_pct),
     )
@@ -226,9 +226,9 @@ async def get_dashboard_series_endpoint(
         series=[
             WeeklySeriesOut(
                 week=s.week,
-                calls_scheduled=s.calls_scheduled,
+                meetings_held=s.meetings_held,
                 calls_made=s.calls_made,
-                meetings_scheduled=s.meetings_scheduled,
+                sales=s.sales,
                 referrals=s.referrals,
             )
             for s in dto.series
@@ -248,9 +248,9 @@ async def admin_dashboard(
     dto = await use_case.execute(month=mes, search=busca, page=page, page_size=page_size)
     return AdminConsolidatedOut(
         aggregates=AdminAggregatesOut(
-            calls_scheduled_total=dto.aggregates.calls_scheduled_total,
+            meetings_held_total=dto.aggregates.meetings_held_total,
             calls_made_total=dto.aggregates.calls_made_total,
-            meetings_scheduled_total=dto.aggregates.meetings_scheduled_total,
+            sales_total=dto.aggregates.sales_total,
             referrals_total=dto.aggregates.referrals_total,
             users_with_metric_in_month=dto.aggregates.users_with_metric_in_month,
             users_without_metric_in_month=dto.aggregates.users_without_metric_in_month,
@@ -260,9 +260,9 @@ async def admin_dashboard(
                 user_id=i.user_id,
                 name=i.name,
                 photo_url=i.photo_url,
-                calls_scheduled=i.calls_scheduled,
+                meetings_held=i.meetings_held,
                 calls_made=i.calls_made,
-                meetings_scheduled=i.meetings_scheduled,
+                sales=i.sales,
                 referrals=i.referrals,
                 last_metric_at=i.last_metric_at,
             )

@@ -11,9 +11,9 @@ class MetricDTO:
     id: UUID
     user_id: UUID
     week_start: date
-    calls_scheduled: int
+    meetings_held: int
     calls_made: int
-    meetings_scheduled: int
+    sales: int
     referrals: int
     created_at: datetime
     updated_at: datetime
@@ -28,18 +28,18 @@ class DeltaDTO:
 @dataclass
 class DashboardSummaryDTO:
     month: str
-    calls_scheduled: DeltaDTO
+    meetings_held: DeltaDTO
     calls_made: DeltaDTO
-    meetings_scheduled: DeltaDTO
+    sales: DeltaDTO
     referrals: DeltaDTO
 
 
 @dataclass
 class WeeklySeriesDTO:
     week: date
-    calls_scheduled: int
+    meetings_held: int
     calls_made: int
-    meetings_scheduled: int
+    sales: int
     referrals: int
 
 
@@ -53,18 +53,18 @@ class UserMonthlyMetricsDTO:
     user_id: UUID
     name: str
     photo_url: str | None
-    calls_scheduled: int
+    meetings_held: int
     calls_made: int
-    meetings_scheduled: int
+    sales: int
     referrals: int
     last_metric_at: date | None
 
 
 @dataclass
 class AdminAggregatesDTO:
-    calls_scheduled_total: int
+    meetings_held_total: int
     calls_made_total: int
-    meetings_scheduled_total: int
+    sales_total: int
     referrals_total: int
     users_with_metric_in_month: int
     users_without_metric_in_month: int
@@ -84,16 +84,16 @@ class AdminConsolidatedDTO:
 class MetricIn(BaseModel):
     user_id: UUID | None = None
     week_start: date
-    calls_scheduled: int = Field(ge=0)
+    meetings_held: int = Field(ge=0)
     calls_made: int = Field(ge=0)
-    meetings_scheduled: int = Field(ge=0)
+    sales: int = Field(ge=0)
     referrals: int = Field(ge=0)
 
 
 class MetricPatchIn(BaseModel):
-    calls_scheduled: int | None = Field(default=None, ge=0)
+    meetings_held: int | None = Field(default=None, ge=0)
     calls_made: int | None = Field(default=None, ge=0)
-    meetings_scheduled: int | None = Field(default=None, ge=0)
+    sales: int | None = Field(default=None, ge=0)
     referrals: int | None = Field(default=None, ge=0)
 
 
@@ -101,9 +101,9 @@ class MetricOut(BaseModel):
     id: UUID
     user_id: UUID
     week_start: date
-    calls_scheduled: int
+    meetings_held: int
     calls_made: int
-    meetings_scheduled: int
+    sales: int
     referrals: int
     created_at: datetime
     updated_at: datetime
@@ -123,17 +123,17 @@ class DeltaOut(BaseModel):
 
 class DashboardSummaryOut(BaseModel):
     month: str
-    calls_scheduled: DeltaOut
+    meetings_held: DeltaOut
     calls_made: DeltaOut
-    meetings_scheduled: DeltaOut
+    sales: DeltaOut
     referrals: DeltaOut
 
 
 class WeeklySeriesOut(BaseModel):
     week: date
-    calls_scheduled: int
+    meetings_held: int
     calls_made: int
-    meetings_scheduled: int
+    sales: int
     referrals: int
 
 
@@ -145,17 +145,17 @@ class UserMonthlyMetricsOut(BaseModel):
     user_id: UUID
     name: str
     photo_url: str | None
-    calls_scheduled: int
+    meetings_held: int
     calls_made: int
-    meetings_scheduled: int
+    sales: int
     referrals: int
     last_metric_at: date | None
 
 
 class AdminAggregatesOut(BaseModel):
-    calls_scheduled_total: int
+    meetings_held_total: int
     calls_made_total: int
-    meetings_scheduled_total: int
+    sales_total: int
     referrals_total: int
     users_with_metric_in_month: int
     users_without_metric_in_month: int

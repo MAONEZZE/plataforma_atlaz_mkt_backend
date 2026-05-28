@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, String, Text, func, update
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func, update
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +27,11 @@ class UserModel(Base):
     photo_url: Mapped[str | None] = mapped_column(String, nullable=True)
     role: Mapped[str] = mapped_column(String, nullable=False)
     inactive: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    product_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("ATZ_HUB.products.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
@@ -104,6 +109,13 @@ class SqlAlchemyUserRepository:
         total = int(total_res.scalar_one())
         return items, total
 
+    async def assign_product(self, user_id: UUID, product_id: UUID | None) -> None:
+        await self._session.execute(
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(product_id=product_id, updated_at=now_sp())
+        )
+
     @staticmethod
     def _to_entity(model: UserModel) -> User:
         return User(
@@ -117,6 +129,7 @@ class SqlAlchemyUserRepository:
             photo_url=model.photo_url,
             role=model.role,
             inactive=model.inactive,
+            product_id=model.product_id,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )

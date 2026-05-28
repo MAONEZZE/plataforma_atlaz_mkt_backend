@@ -35,9 +35,9 @@ class GetDashboardSeries:
         series = [
             WeeklySeriesDTO(
                 week=d,
-                calls_scheduled=by_week[d].calls_scheduled if d in by_week else 0,
+                meetings_held=by_week[d].meetings_held if d in by_week else 0,
                 calls_made=by_week[d].calls_made if d in by_week else 0,
-                meetings_scheduled=by_week[d].meetings_scheduled if d in by_week else 0,
+                sales=by_week[d].sales if d in by_week else 0,
                 referrals=by_week[d].referrals if d in by_week else 0,
             )
             for d in dates

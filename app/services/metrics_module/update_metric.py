@@ -23,9 +23,9 @@ class UpdateMetric:
         metric_id: UUID,
         requesting_user_id: UUID,
         is_admin: bool,
-        calls_scheduled: int | None = None,
+        meetings_held: int | None = None,
         calls_made: int | None = None,
-        meetings_scheduled: int | None = None,
+        sales: int | None = None,
         referrals: int | None = None,
         today: date | None = None,
     ) -> MetricDTO:
@@ -42,12 +42,12 @@ class UpdateMetric:
 
         updated = replace(
             metric,
-            calls_scheduled=(
-                calls_scheduled if calls_scheduled is not None else metric.calls_scheduled
+            meetings_held=(
+                meetings_held if meetings_held is not None else metric.meetings_held
             ),
             calls_made=(calls_made if calls_made is not None else metric.calls_made),
-            meetings_scheduled=(
-                meetings_scheduled if meetings_scheduled is not None else metric.meetings_scheduled
+            sales=(
+                sales if sales is not None else metric.sales
             ),
             referrals=referrals if referrals is not None else metric.referrals,
             updated_at=now_sp(),

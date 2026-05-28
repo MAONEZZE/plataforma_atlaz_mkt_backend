@@ -39,9 +39,9 @@ def _make_metric(
         id=uuid4(),
         user_id=user_id or uuid4(),
         week_start=week_start,
-        calls_scheduled=10,
+        meetings_held=10,
         calls_made=8,
-        meetings_scheduled=3,
+        sales=3,
         referrals=1,
         created_at=now,
         updated_at=now,
@@ -69,9 +69,9 @@ async def test_create_metric_happy_path() -> None:
     result = await uc.execute(
         user_id=user_id,
         week_start=MONDAY,
-        calls_scheduled=10,
+        meetings_held=10,
         calls_made=8,
-        meetings_scheduled=3,
+        sales=3,
         referrals=1,
         is_admin=False,
         today=TODAY,
@@ -90,9 +90,9 @@ async def test_create_metric_normalizes_to_monday() -> None:
     result = await uc.execute(
         user_id=user_id,
         week_start=wednesday,
-        calls_scheduled=0,
+        meetings_held=0,
         calls_made=0,
-        meetings_scheduled=0,
+        sales=0,
         referrals=0,
         is_admin=False,
         today=TODAY,
@@ -109,9 +109,9 @@ async def test_create_metric_future_week_raises() -> None:
         await uc.execute(
             user_id=uuid4(),
             week_start=future,
-            calls_scheduled=0,
+            meetings_held=0,
             calls_made=0,
-            meetings_scheduled=0,
+            sales=0,
             referrals=0,
             is_admin=False,
             today=TODAY,
@@ -127,9 +127,9 @@ async def test_create_metric_outside_window_raises_for_client() -> None:
         await uc.execute(
             user_id=uuid4(),
             week_start=old_week,
-            calls_scheduled=0,
+            meetings_held=0,
             calls_made=0,
-            meetings_scheduled=0,
+            sales=0,
             referrals=0,
             is_admin=False,
             today=TODAY,
@@ -145,9 +145,9 @@ async def test_create_metric_outside_window_allowed_for_admin() -> None:
     result = await uc.execute(
         user_id=uuid4(),
         week_start=old_week,
-        calls_scheduled=5,
+        meetings_held=5,
         calls_made=5,
-        meetings_scheduled=1,
+        sales=1,
         referrals=0,
         is_admin=True,
         today=TODAY,
@@ -164,9 +164,9 @@ async def test_create_metric_duplicate_raises() -> None:
         await uc.execute(
             user_id=existing.user_id,
             week_start=MONDAY,
-            calls_scheduled=0,
+            meetings_held=0,
             calls_made=0,
-            meetings_scheduled=0,
+            sales=0,
             referrals=0,
             is_admin=False,
             today=TODAY,
@@ -179,17 +179,17 @@ async def test_create_metric_duplicate_raises() -> None:
 async def test_update_metric_happy_path() -> None:
     user_id = uuid4()
     metric = _make_metric(user_id=user_id)
-    updated = replace(metric, calls_scheduled=20)
+    updated = replace(metric, meetings_held=20)
     repo = _mock_repo(get_by_id=metric, update=updated)
     uc = UpdateMetric(repo)
     result = await uc.execute(
         metric_id=metric.id,
         requesting_user_id=user_id,
         is_admin=False,
-        calls_scheduled=20,
+        meetings_held=20,
         today=TODAY,
     )
-    assert result.calls_scheduled == 20
+    assert result.meetings_held == 20
 
 
 @pytest.mark.asyncio
@@ -240,17 +240,17 @@ async def test_update_metric_outside_window_allowed_for_admin() -> None:
     old_week = date(2026, 1, 5)
     user_id = uuid4()
     metric = _make_metric(user_id=user_id, week_start=old_week)
-    updated = replace(metric, calls_scheduled=99)
+    updated = replace(metric, meetings_held=99)
     repo = _mock_repo(get_by_id=metric, update=updated)
     uc = UpdateMetric(repo)
     result = await uc.execute(
         metric_id=metric.id,
         requesting_user_id=uuid4(),  # admin can edit anyone's
         is_admin=True,
-        calls_scheduled=99,
+        meetings_held=99,
         today=TODAY,
     )
-    assert result.calls_scheduled == 99
+    assert result.meetings_held == 99
 
 
 # ── ListMetrics ─────────────────────────────────────────────────────────────
@@ -277,11 +277,11 @@ async def test_summary_computes_delta() -> None:
 
     async def sum_by_month(uid: UUID, month: str) -> dict[str, int]:
         if month == "2026-05":
-            return {"calls_scheduled": 120, "calls_made": 95,
-                    "meetings_scheduled": 28, "referrals": 12}
+            return {"meetings_held": 120, "calls_made": 95,
+                    "sales": 28, "referrals": 12}
         # prev month 2026-04
-        return {"calls_scheduled": 100, "calls_made": 0,
-                "meetings_scheduled": 20, "referrals": 0}
+        return {"meetings_held": 100, "calls_made": 0,
+                "sales": 20, "referrals": 0}
 
     repo = AsyncMock()
     repo.sum_by_month.side_effect = sum_by_month
@@ -289,8 +289,8 @@ async def test_summary_computes_delta() -> None:
     result = await uc.execute(user_id=user_id, month="2026-05")
 
     assert result.month == "2026-05"
-    assert result.calls_scheduled.value == 120
-    assert result.calls_scheduled.delta_pct == 20.0  # (120-100)/100*100
+    assert result.meetings_held.value == 120
+    assert result.meetings_held.delta_pct == 20.0  # (120-100)/100*100
     # prev=0 → delta_pct=null
     assert result.calls_made.delta_pct is None
     assert result.referrals.delta_pct is None
@@ -300,9 +300,9 @@ async def test_summary_computes_delta() -> None:
 async def test_summary_defaults_month_to_current() -> None:
     repo = AsyncMock()
     repo.sum_by_month.return_value = {
-        "calls_scheduled": 0,
+        "meetings_held": 0,
         "calls_made": 0,
-        "meetings_scheduled": 0,
+        "sales": 0,
         "referrals": 0,
     }
     uc = GetDashboardSummary(repo)
@@ -324,7 +324,7 @@ async def test_series_fills_gaps_with_zeros() -> None:
     assert isinstance(result, DashboardSeriesDTO)
     assert len(result.series) == 4
     for item in result.series:
-        assert item.calls_scheduled == 0
+        assert item.meetings_held == 0
         assert item.calls_made == 0
 
 
@@ -357,8 +357,8 @@ async def test_series_includes_data_when_available() -> None:
     week = date(2026, 5, 11)
     metric = WeeklyMetric(
         id=uuid4(), user_id=user_id, week_start=week,
-        calls_scheduled=5, calls_made=4,
-        meetings_scheduled=2, referrals=1,
+        meetings_held=5, calls_made=4,
+        sales=2, referrals=1,
         created_at=now, updated_at=now,
     )
     repo = _mock_repo(get_by_weeks=[metric])
@@ -367,7 +367,7 @@ async def test_series_includes_data_when_available() -> None:
         user_id=user_id, semanas=4, today=date(2026, 5, 14)
     )
     may11_entry = next(s for s in result.series if s.week == week)
-    assert may11_entry.calls_scheduled == 5
+    assert may11_entry.meetings_held == 5
     assert may11_entry.referrals == 1
 
 
@@ -378,14 +378,14 @@ async def test_admin_consolidated_aggregates_correctly() -> None:
     items = [
         UserMonthlyMetrics(
             user_id=uuid4(), name="Alice", photo_url=None,
-            calls_scheduled=100, calls_made=80,
-            meetings_scheduled=25, referrals=5,
+            meetings_held=100, calls_made=80,
+            sales=25, referrals=5,
             last_metric_at=date(2026, 5, 4),
         ),
         UserMonthlyMetrics(
             user_id=uuid4(), name="Bob", photo_url=None,
-            calls_scheduled=0, calls_made=0,
-            meetings_scheduled=0, referrals=0,
+            meetings_held=0, calls_made=0,
+            sales=0, referrals=0,
             last_metric_at=None,
         ),
     ]
@@ -394,7 +394,7 @@ async def test_admin_consolidated_aggregates_correctly() -> None:
     result = await uc.execute(month="2026-05", search=None, page=1, page_size=20)
 
     assert isinstance(result, AdminConsolidatedDTO)
-    assert result.aggregates.calls_scheduled_total == 100
+    assert result.aggregates.meetings_held_total == 100
     assert result.aggregates.users_with_metric_in_month == 1
     assert result.aggregates.users_without_metric_in_month == 1
     assert result.total == 2
@@ -405,14 +405,14 @@ async def test_admin_consolidated_filters_by_search() -> None:
     items = [
         UserMonthlyMetrics(
             user_id=uuid4(), name="Alice", photo_url=None,
-            calls_scheduled=10, calls_made=8,
-            meetings_scheduled=2, referrals=1,
+            meetings_held=10, calls_made=8,
+            sales=2, referrals=1,
             last_metric_at=date(2026, 5, 4),
         ),
         UserMonthlyMetrics(
             user_id=uuid4(), name="Carlos", photo_url=None,
-            calls_scheduled=5, calls_made=4,
-            meetings_scheduled=1, referrals=0,
+            meetings_held=5, calls_made=4,
+            sales=1, referrals=0,
             last_metric_at=date(2026, 5, 4),
         ),
     ]
@@ -429,8 +429,8 @@ async def test_admin_consolidated_paginates() -> None:
     items = [
         UserMonthlyMetrics(
             user_id=uuid4(), name=f"User{i}", photo_url=None,
-            calls_scheduled=i, calls_made=0,
-            meetings_scheduled=0, referrals=0,
+            meetings_held=i, calls_made=0,
+            sales=0, referrals=0,
             last_metric_at=None,
         )
         for i in range(25)
