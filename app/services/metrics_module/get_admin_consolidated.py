@@ -35,9 +35,9 @@ class GetAdminConsolidated:
         total = len(all_items)
 
         aggregates = AdminAggregatesDTO(
-            calls_scheduled_total=sum(i.calls_scheduled for i in all_items),
+            meetings_held_total=sum(i.meetings_held for i in all_items),
             calls_made_total=sum(i.calls_made for i in all_items),
-            meetings_scheduled_total=sum(i.meetings_scheduled for i in all_items),
+            sales_total=sum(i.sales for i in all_items),
             referrals_total=sum(i.referrals for i in all_items),
             users_with_metric_in_month=sum(
                 1 for i in all_items if i.last_metric_at is not None
@@ -55,9 +55,9 @@ class GetAdminConsolidated:
                     user_id=i.user_id,
                     name=i.name,
                     photo_url=i.photo_url,
-                    calls_scheduled=i.calls_scheduled,
+                    meetings_held=i.meetings_held,
                     calls_made=i.calls_made,
-                    meetings_scheduled=i.meetings_scheduled,
+                    sales=i.sales,
                     referrals=i.referrals,
                     last_metric_at=i.last_metric_at,
                 )

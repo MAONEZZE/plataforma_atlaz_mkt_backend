@@ -36,9 +36,9 @@ class WeeklyMetricModel(Base):
         nullable=False,
     )
     week_start: Mapped[date] = mapped_column(Date, nullable=False)
-    calls_scheduled: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    meetings_held: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     calls_made: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    meetings_scheduled: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    sales: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     referrals: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
@@ -71,9 +71,9 @@ def _from_model(m: WeeklyMetricModel) -> WeeklyMetric:
         id=m.id,
         user_id=m.user_id,
         week_start=m.week_start,
-        calls_scheduled=m.calls_scheduled,
+        meetings_held=m.meetings_held,
         calls_made=m.calls_made,
-        meetings_scheduled=m.meetings_scheduled,
+        sales=m.sales,
         referrals=m.referrals,
         created_at=m.created_at,
         updated_at=m.updated_at,
@@ -89,9 +89,9 @@ class SqlAlchemyMetricRepository:
             id=metric.id,
             user_id=metric.user_id,
             week_start=metric.week_start,
-            calls_scheduled=metric.calls_scheduled,
+            meetings_held=metric.meetings_held,
             calls_made=metric.calls_made,
-            meetings_scheduled=metric.meetings_scheduled,
+            sales=metric.sales,
             referrals=metric.referrals,
             created_at=metric.created_at,
             updated_at=metric.updated_at,
@@ -152,9 +152,9 @@ class SqlAlchemyMetricRepository:
             update(WeeklyMetricModel)
             .where(WeeklyMetricModel.id == metric.id)
             .values(
-                calls_scheduled=metric.calls_scheduled,
+                meetings_held=metric.meetings_held,
                 calls_made=metric.calls_made,
-                meetings_scheduled=metric.meetings_scheduled,
+                sales=metric.sales,
                 referrals=metric.referrals,
                 updated_at=metric.updated_at,
             )
@@ -177,9 +177,9 @@ class SqlAlchemyMetricRepository:
         start, end = _month_range(year, mo)
         result = await self._session.execute(
             select(
-                func.coalesce(func.sum(WeeklyMetricModel.calls_scheduled), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.meetings_held), 0),
                 func.coalesce(func.sum(WeeklyMetricModel.calls_made), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.meetings_scheduled), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.sales), 0),
                 func.coalesce(func.sum(WeeklyMetricModel.referrals), 0),
             ).where(
                 WeeklyMetricModel.user_id == user_id,
@@ -189,9 +189,9 @@ class SqlAlchemyMetricRepository:
         )
         row = result.one()
         return {
-            "calls_scheduled": int(row[0]),
+            "meetings_held": int(row[0]),
             "calls_made": int(row[1]),
-            "meetings_scheduled": int(row[2]),
+            "sales": int(row[2]),
             "referrals": int(row[3]),
         }
 
@@ -203,9 +203,9 @@ class SqlAlchemyMetricRepository:
                 UserMetricModel.id,
                 UserMetricModel.name,
                 UserMetricModel.photo_url,
-                func.coalesce(func.sum(WeeklyMetricModel.calls_scheduled), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.meetings_held), 0),
                 func.coalesce(func.sum(WeeklyMetricModel.calls_made), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.meetings_scheduled), 0),
+                func.coalesce(func.sum(WeeklyMetricModel.sales), 0),
                 func.coalesce(func.sum(WeeklyMetricModel.referrals), 0),
                 func.max(WeeklyMetricModel.week_start),
             )
@@ -234,9 +234,9 @@ class SqlAlchemyMetricRepository:
                 user_id=row[0],
                 name=row[1],
                 photo_url=row[2],
-                calls_scheduled=int(row[3]),
+                meetings_held=int(row[3]),
                 calls_made=int(row[4]),
-                meetings_scheduled=int(row[5]),
+                sales=int(row[5]),
                 referrals=int(row[6]),
                 last_metric_at=row[7],
             )

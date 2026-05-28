@@ -8,6 +8,7 @@ from app.api.controllers.user_module.user_dto.user_dto import (
     ListClientsResponse,
     UserResponse,
 )
+from app.database.product_module.product_repo import SqlAlchemyProductRepository
 from app.database.shared.db_factory import get_session
 from app.database.shared.supabase_client import create_supabase_admin_client
 from app.database.user_module.user_repo import SqlAlchemyUserRepository
@@ -38,6 +39,7 @@ def _create_client(session: AsyncSession = Depends(get_session)) -> CreateClient
     return CreateClient(
         repo=SqlAlchemyUserRepository(session),
         gateway=gateway,
+        product_repo=SqlAlchemyProductRepository(session),
     )
 
 
@@ -60,6 +62,7 @@ async def create_client(
         email=body.email,
         password=body.password,
         phone=body.phone,
+        product_id=body.product_id,
     )
     try:
         user = await use_case.execute(inp)
@@ -82,6 +85,7 @@ async def create_client(
         description=user.description,
         photo_url=user.photo_url,
         role=user.role,
+        product_id=user.product_id,
         created_at=user.created_at,
     )
 

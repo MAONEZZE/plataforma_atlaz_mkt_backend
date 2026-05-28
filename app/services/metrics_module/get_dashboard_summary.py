@@ -42,8 +42,8 @@ class GetDashboardSummary:
 
         return DashboardSummaryDTO(
             month=month,
-            calls_scheduled=_delta(atual["calls_scheduled"], anterior["calls_scheduled"]),
+            meetings_held=_delta(atual["meetings_held"], anterior["meetings_held"]),
             calls_made=_delta(atual["calls_made"], anterior["calls_made"]),
-            meetings_scheduled=_delta(atual["meetings_scheduled"], anterior["meetings_scheduled"]),
+            sales=_delta(atual["sales"], anterior["sales"]),
             referrals=_delta(atual["referrals"], anterior["referrals"]),
         )

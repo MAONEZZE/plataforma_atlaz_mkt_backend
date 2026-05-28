@@ -17,3 +17,4 @@ class User:
     inactive: bool
     created_at: datetime
     updated_at: datetime
+    product_id: UUID | None = None
