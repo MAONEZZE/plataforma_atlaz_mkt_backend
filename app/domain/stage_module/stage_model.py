@@ -7,6 +7,7 @@ from uuid import UUID
 class Stage:
     id: UUID
     text: str
+    stage_title: str | None
     created_at: datetime
 
 

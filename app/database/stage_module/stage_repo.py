@@ -19,6 +19,7 @@ class StageModel(Base):
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     text: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    stage_title: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
@@ -41,7 +42,7 @@ class UserStageModel(Base):
 
 
 def _stage_from(m: StageModel) -> Stage:
-    return Stage(id=m.id, text=m.text, created_at=m.created_at)
+    return Stage(id=m.id, text=m.text, stage_title=m.stage_title, created_at=m.created_at)
 
 
 def _user_stage_from(m: UserStageModel) -> UserStage:
@@ -53,7 +54,7 @@ class SqlAlchemyStageRepository:
         self._session = session
 
     async def create(self, stage: Stage) -> Stage:
-        model = StageModel(id=stage.id, text=stage.text, created_at=stage.created_at)
+        model = StageModel(id=stage.id, text=stage.text, stage_title=stage.stage_title, created_at=stage.created_at)
         self._session.add(model)
         await self._session.flush()
         return stage
@@ -62,7 +63,7 @@ class SqlAlchemyStageRepository:
         await self._session.execute(
             sa.update(StageModel)
             .where(StageModel.id == stage.id)
-            .values(text=stage.text)
+            .values(text=stage.text, stage_title=stage.stage_title)
         )
         return stage
 
