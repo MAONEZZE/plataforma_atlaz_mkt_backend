@@ -6,13 +6,13 @@ from pydantic import BaseModel
 
 class StageIn(BaseModel):
     text: str
-    stage_title: str | None = None
+    title: str | None = None
 
 
 class StageOut(BaseModel):
     id: UUID
     text: str
-    stage_title: str | None
+    title: str | None
     created_at: datetime
 
 

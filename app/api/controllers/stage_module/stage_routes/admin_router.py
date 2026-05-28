@@ -54,8 +54,8 @@ async def create_stage(
     _admin: AuthUser = Depends(require_admin),
     use_case: CreateStage = Depends(_create_stage),
 ) -> StageOut:
-    stage = await use_case.execute(text=body.text, stage_title=body.stage_title)
-    return StageOut(id=stage.id, text=stage.text, stage_title=stage.stage_title, created_at=stage.created_at)
+    stage = await use_case.execute(text=body.text, title=body.title)
+    return StageOut(id=stage.id, text=stage.text, title=stage.title, created_at=stage.created_at)
 
 
 @admin_router.get("/stages", response_model=list[StageOut])
@@ -64,7 +64,7 @@ async def list_stages(
     use_case: ListStages = Depends(_list_stages),
 ) -> list[StageOut]:
     stages = await use_case.execute()
-    return [StageOut(id=s.id, text=s.text, stage_title=s.stage_title, created_at=s.created_at) for s in stages]
+    return [StageOut(id=s.id, text=s.text, title=s.title, created_at=s.created_at) for s in stages]
 
 
 @admin_router.patch("/stages/{stage_id}", response_model=StageOut)
@@ -75,10 +75,10 @@ async def update_stage(
     use_case: UpdateStage = Depends(_update_stage),
 ) -> StageOut:
     try:
-        stage = await use_case.execute(stage_id=stage_id, text=body.text, stage_title=body.stage_title)
+        stage = await use_case.execute(stage_id=stage_id, text=body.text, title=body.title)
     except StageNotFound as exc:
         raise AppException("STAGE_NOT_FOUND", str(exc), 404) from exc
-    return StageOut(id=stage.id, text=stage.text, stage_title=stage.stage_title, created_at=stage.created_at)
+    return StageOut(id=stage.id, text=stage.text, title=stage.title, created_at=stage.created_at)
 
 
 @admin_router.delete("/stages/{stage_id}", status_code=status.HTTP_204_NO_CONTENT)
