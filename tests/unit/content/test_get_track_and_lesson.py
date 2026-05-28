@@ -76,7 +76,7 @@ def _make_module(track_id: UUID, order: int = 0) -> Module:
 def _make_lesson(module_id: UUID, order: int = 0) -> Lesson:
     return Lesson(
         id=uuid4(), module_id=module_id, title="A", description=None,
-        drive_file_id="x", duration_minutes=None, order=order, created_at=datetime.now(tz=UTC)
+        drive_file_id="x", duration_minutes=None, order=order, is_doc=False, created_at=datetime.now(tz=UTC)
     )
 
 
@@ -216,13 +216,14 @@ def test_lesson_model_exposes_en_attributes() -> None:
     now = datetime.now(tz=UTC)
     m = LessonModel(
         id=uuid4(), module_id=uuid4(), title="L", description=None,
-        drive_file_id="abc", duration_minutes=30, order=0, created_at=now,
+        drive_file_id="abc", duration_minutes=30, order=0, is_doc=False, created_at=now,
     )
     assert m.title == "L"
     assert m.duration_minutes == 30
     lesson = _lesson_from_model(m)
     assert lesson.title == "L"
     assert lesson.duration_minutes == 30
+    assert lesson.is_doc is False
 
 
 def test_comment_model_exposes_en_attributes() -> None:

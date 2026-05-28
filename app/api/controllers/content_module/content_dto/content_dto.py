@@ -24,6 +24,7 @@ class LessonSummaryDTO:
     duration_minutes: int | None
     order: int
     completed: bool
+    is_doc: bool
 
 
 @dataclass
@@ -60,6 +61,7 @@ class LessonDetailDTO:
     drive_file_id: str
     duration_minutes: int | None
     completed: bool
+    is_doc: bool
     track: TrackSummaryDTO
     next_lesson: LessonSummaryDTO | None
 
@@ -104,6 +106,7 @@ class LessonSummaryOut(BaseModel):
     duration_minutes: int | None
     order: int
     completed: bool
+    is_doc: bool
 
 
 class ModuleWithLessonsOut(BaseModel):
@@ -144,6 +147,7 @@ class LessonDetailOut(BaseModel):
     drive_file_id: str
     duration_minutes: int | None
     completed: bool
+    is_doc: bool
     track: TrackSummaryOut
     next_lesson: LessonSummaryOut | None
 
@@ -188,17 +192,21 @@ class CreateLessonIn(BaseModel):
     module_id: UUID
     title: str
     description: str | None = None
-    drive_url: str
+    drive_url: str | None = None
+    document_url: str | None = None
     duration_minutes: int | None = None
     order: int = 0
+    is_doc: bool = False
 
 
 class UpdateLessonIn(BaseModel):
     title: str | None = None
     description: str | None = None
     drive_url: str | None = None
+    document_url: str | None = None
     duration_minutes: int | None = None
     order: int | None = None
+    is_doc: bool | None = None
 
 
 class TrackAdminOut(BaseModel):
@@ -232,6 +240,7 @@ class LessonAdminOut(BaseModel):
     drive_file_id: str
     duration_minutes: int | None
     order: int
+    is_doc: bool
     created_at: datetime
 
 

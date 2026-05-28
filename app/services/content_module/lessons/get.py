@@ -55,6 +55,7 @@ class GetLesson:
             drive_file_id=lesson.drive_file_id,
             duration_minutes=lesson.duration_minutes,
             completed=lesson.id in completeds,
+            is_doc=lesson.is_doc,
             track=TrackSummaryDTO(id=track.id, title=track.title),
             next_lesson=(
                 LessonSummaryDTO(
@@ -63,6 +64,7 @@ class GetLesson:
                     duration_minutes=next_lesson.duration_minutes,
                     order=next_lesson.order,
                     completed=next_lesson.id in completeds,
+                    is_doc=next_lesson.is_doc,
                 )
                 if next_lesson
                 else None

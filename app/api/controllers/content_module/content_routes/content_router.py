@@ -262,6 +262,7 @@ async def get_track(
                         duration_minutes=a.duration_minutes,
                         order=a.order,
                         completed=a.completed,
+                        is_doc=a.is_doc,
                     )
                     for a in m.lessons
                 ],
@@ -291,6 +292,7 @@ async def get_lesson_endpoint(
         drive_file_id=dto.drive_file_id,
         duration_minutes=dto.duration_minutes,
         completed=dto.completed,
+        is_doc=dto.is_doc,
         track=TrackSummaryOut(id=dto.track.id, title=dto.track.title),
         next_lesson=(
             LessonSummaryOut(
@@ -299,6 +301,7 @@ async def get_lesson_endpoint(
                 duration_minutes=dto.next_lesson.duration_minutes,
                 order=dto.next_lesson.order,
                 completed=dto.next_lesson.completed,
+                is_doc=dto.next_lesson.is_doc,
             )
             if dto.next_lesson
             else None
@@ -403,12 +406,24 @@ class CoverUrlOut(BaseModel):
     cover_url: str
 
 
+class DocumentUrlOut(BaseModel):
+    document_url: str
+
+
 _COVER_EXT_MAP: dict[str, str] = {
     "image/jpeg": "jpg",
     "image/png": "png",
     "image/webp": "webp",
 }
 _COVER_MAX_SIZE = 5 * 1024 * 1024
+
+_DOCUMENT_EXT_MAP: dict[str, str] = {
+    "application/pdf": "pdf",
+    "text/plain": "txt",
+    "application/msword": "doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+}
+_DOCUMENT_MAX_SIZE = 50 * 1024 * 1024
 
 
 @admin_router.post("/tracks/cover", response_model=CoverUrlOut)
@@ -442,6 +457,35 @@ async def upload_track_cover(
     )
     cover_url = client.storage.from_(settings.SUPABASE_BUCKET).get_public_url(path)
     return CoverUrlOut(cover_url=cover_url)
+
+
+@admin_router.post("/lessons/document", response_model=DocumentUrlOut)
+async def upload_lesson_document(
+    document: UploadFile = File(...),
+    _: AuthUser = Depends(require_admin),
+) -> DocumentUrlOut:
+    content_type = document.content_type or ""
+    if content_type not in _DOCUMENT_EXT_MAP:
+        raise AppException(
+            "VALIDATION_ERROR",
+            "Tipo de documento não suportado. Use PDF, TXT, DOC ou DOCX.",
+            400,
+        )
+
+    data = await document.read()
+    if len(data) > _DOCUMENT_MAX_SIZE:
+        raise AppException("VALIDATION_ERROR", "Documento deve ter no máximo 50 MB.", 400)
+
+    ext = _DOCUMENT_EXT_MAP[content_type]
+    path = f"lessons/{uuid4()}.{ext}"
+    client = create_supabase_admin_client()
+    client.storage.from_(settings.SUPABASE_BUCKET).upload(
+        path,
+        data,
+        file_options={"content-type": content_type, "upsert": "true"},
+    )
+    document_url = client.storage.from_(settings.SUPABASE_BUCKET).get_public_url(path)
+    return DocumentUrlOut(document_url=document_url)
 
 
 @admin_router.post("/modules", response_model=ModuleAdminOut, status_code=status.HTTP_201_CREATED)
@@ -516,11 +560,15 @@ async def create_lesson(
             body.title,
             body.description,
             body.drive_url,
+            body.document_url,
             body.duration_minutes,
             body.order,
+            body.is_doc,
         )
     except InvalidDriveUrl as exc:
         raise AppException("DRIVE_URL_INVALID", str(exc), 400) from exc
+    except ValueError as exc:
+        raise AppException("VALIDATION_ERROR", str(exc), 400) from exc
     return LessonAdminOut(
         id=lesson.id,
         module_id=lesson.module_id,
@@ -529,6 +577,7 @@ async def create_lesson(
         drive_file_id=lesson.drive_file_id,
         duration_minutes=lesson.duration_minutes,
         order=lesson.order,
+        is_doc=lesson.is_doc,
         created_at=lesson.created_at,
     )
 
@@ -546,8 +595,10 @@ async def update_lesson(
             body.title,
             body.description,
             body.drive_url,
+            body.document_url,
             body.duration_minutes,
             body.order,
+            body.is_doc,
         )
     except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
@@ -561,6 +612,7 @@ async def update_lesson(
         drive_file_id=lesson.drive_file_id,
         duration_minutes=lesson.duration_minutes,
         order=lesson.order,
+        is_doc=lesson.is_doc,
         created_at=lesson.created_at,
     )
 

@@ -57,6 +57,7 @@ class GetTrackWithModules:
                             duration_minutes=a.duration_minutes,
                             order=a.order,
                             completed=a.id in completeds,
+                            is_doc=a.is_doc,
                         )
                         for a in lessons
                     ],

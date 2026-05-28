@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint, delete, select, update
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint, delete, select, update
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,6 +60,7 @@ class LessonModel(Base):
     drive_file_id: Mapped[str] = mapped_column(Text, nullable=False)
     duration_minutes: Mapped[int | None] = mapped_column("duracao_minutos", Integer, nullable=True)
     order: Mapped[int] = mapped_column("ordem", Integer, nullable=False, default=0)
+    is_doc: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
@@ -145,6 +146,7 @@ def _lesson_from_model(m: LessonModel) -> Lesson:
         drive_file_id=m.drive_file_id,
         duration_minutes=m.duration_minutes,
         order=m.order,
+        is_doc=m.is_doc,
         created_at=m.created_at,
     )
 
@@ -294,6 +296,7 @@ class SqlAlchemyLessonRepository:
             drive_file_id=lesson.drive_file_id,
             duration_minutes=lesson.duration_minutes,
             order=lesson.order,
+            is_doc=lesson.is_doc,
             created_at=lesson.created_at,
         )
         self._session.add(model)
@@ -310,6 +313,7 @@ class SqlAlchemyLessonRepository:
                 drive_file_id=lesson.drive_file_id,
                 duration_minutes=lesson.duration_minutes,
                 order=lesson.order,
+                is_doc=lesson.is_doc,
             )
         )
         return lesson

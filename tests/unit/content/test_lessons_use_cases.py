@@ -48,7 +48,7 @@ class FakeStudentLessonRepo:
         return {lesson_id for uid, lesson_id in self._completeds if uid == user_id}
 
 
-def _make_lesson(drive_file_id: str = "abc123") -> Lesson:
+def _make_lesson(drive_file_id: str = "abc123", is_doc: bool = False) -> Lesson:
     return Lesson(
         id=uuid4(),
         module_id=uuid4(),
@@ -57,6 +57,7 @@ def _make_lesson(drive_file_id: str = "abc123") -> Lesson:
         drive_file_id=drive_file_id,
         duration_minutes=None,
         order=0,
+        is_doc=is_doc,
         created_at=datetime.now(tz=UTC),
     )
 
@@ -67,7 +68,7 @@ async def test_create_lesson_extracts_drive_id() -> None:
     repo = FakeLessonRepo()
     use_case = CreateLesson(repo)
     lesson = await use_case.execute(
-        uuid4(), "Title", None, "https://drive.google.com/file/d/abc123/view", None, 0
+        uuid4(), "Title", None, "https://drive.google.com/file/d/abc123/view", None, None, 0, False
     )
     assert lesson.drive_file_id == "abc123"
 
@@ -76,7 +77,7 @@ async def test_create_lesson_invalid_drive_url_raises() -> None:
     repo = FakeLessonRepo()
     use_case = CreateLesson(repo)
     with pytest.raises(InvalidDriveUrl):
-        await use_case.execute(uuid4(), "T", None, "https://example.com/bad", None, 0)
+        await use_case.execute(uuid4(), "T", None, "https://example.com/bad", None, None, 0, False)
 
 
 # ── UpdateLesson ──────────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ async def test_update_lesson_not_found_raises() -> None:
     repo = FakeLessonRepo()
     use_case = UpdateLesson(repo)
     with pytest.raises(LessonNotFound):
-        await use_case.execute(uuid4(), None, None, None, None, None)
+        await use_case.execute(uuid4(), None, None, None, None, None, None, None)
 
 
 async def test_update_lesson_updates_drive_url() -> None:
@@ -93,7 +94,7 @@ async def test_update_lesson_updates_drive_url() -> None:
     repo = FakeLessonRepo([lesson])
     use_case = UpdateLesson(repo)
     updated = await use_case.execute(
-        lesson.id, None, None, "https://drive.google.com/file/d/newid/view", None, None
+        lesson.id, None, None, "https://drive.google.com/file/d/newid/view", None, None, None, None
     )
     assert updated.drive_file_id == "newid"
 

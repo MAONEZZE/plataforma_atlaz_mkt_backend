@@ -31,6 +31,7 @@ class Lesson:
     drive_file_id: str
     duration_minutes: int | None
     order: int
+    is_doc: bool
     created_at: datetime
 
 

@@ -85,15 +85,14 @@ async def delete_product(
         raise AppException("PRODUCT_IN_USE", str(exc), 409) from exc
 
 
-@admin_router.patch("/clients/{user_id}/product", status_code=status.HTTP_200_OK)
+@admin_router.patch("/clients/{user_id}/product", status_code=status.HTTP_204_NO_CONTENT)
 async def assign_product_to_client(
     user_id: UUID,
     body: AssignProductBody,
     _admin: AuthUser = Depends(require_admin),
     use_case: AssignProductToClient = Depends(_assign_product),
-) -> dict:
+) -> None:
     try:
         await use_case.execute(user_id=user_id, product_id=body.product_id)
     except ProductNotFound as exc:
         raise AppException("PRODUCT_NOT_FOUND", str(exc), 404) from exc
-    return {"ok": True}
