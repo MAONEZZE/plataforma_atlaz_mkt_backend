@@ -9,4 +9,5 @@ class Product:
     id: UUID
     name: str
     value: Decimal
+    description: str | None
     created_at: datetime

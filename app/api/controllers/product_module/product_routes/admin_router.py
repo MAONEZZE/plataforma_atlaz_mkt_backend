@@ -53,8 +53,8 @@ async def create_product(
     _admin: AuthUser = Depends(require_admin),
     use_case: CreateProduct = Depends(_create_product),
 ) -> ProductOut:
-    product = await use_case.execute(name=body.name, value=body.value)
-    return ProductOut(id=product.id, name=product.name, value=product.value, created_at=product.created_at)
+    product = await use_case.execute(name=body.name, value=body.value, description=body.description)
+    return ProductOut(id=product.id, name=product.name, value=product.value, description=product.description, created_at=product.created_at)
 
 
 @admin_router.patch("/products/{product_id}", response_model=ProductOut)
@@ -65,10 +65,10 @@ async def update_product(
     use_case: UpdateProduct = Depends(_update_product),
 ) -> ProductOut:
     try:
-        product = await use_case.execute(product_id=product_id, name=body.name, value=body.value)
+        product = await use_case.execute(product_id=product_id, name=body.name, value=body.value, description=body.description)
     except ProductNotFound as exc:
         raise AppException("PRODUCT_NOT_FOUND", str(exc), 404) from exc
-    return ProductOut(id=product.id, name=product.name, value=product.value, created_at=product.created_at)
+    return ProductOut(id=product.id, name=product.name, value=product.value, description=product.description, created_at=product.created_at)
 
 
 @admin_router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

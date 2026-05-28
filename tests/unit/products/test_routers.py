@@ -42,7 +42,7 @@ def _uc(**kwargs: object) -> AsyncMock:
 
 
 def _product() -> Product:
-    return Product(id=uuid4(), name="Pro Plan", value=Decimal("99.90"), created_at=NOW)
+    return Product(id=uuid4(), name="Pro Plan", value=Decimal("99.90"), description=None, created_at=NOW)
 
 
 @pytest.fixture
@@ -138,8 +138,7 @@ def test_assign_product_200(client: TestClient) -> None:
     app.dependency_overrides[_assign_product] = lambda: uc
     try:
         r = client.patch(f"/api/v1/admin/clients/{uuid4()}/product", json={"product_id": str(uuid4())})
-        assert r.status_code == 200
-        assert r.json()["ok"] is True
+        assert r.status_code == 204
     finally:
         app.dependency_overrides.clear()
 

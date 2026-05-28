@@ -16,6 +16,7 @@ class UpdateProduct:
         product_id: UUID,
         name: str | None = None,
         value: Decimal | None = None,
+        description: str | None = None,
     ) -> Product:
         product = await self._repo.get_by_id(product_id)
         if product is None:
@@ -24,5 +25,6 @@ class UpdateProduct:
             product,
             name=name if name is not None else product.name,
             value=value if value is not None else product.value,
+            description=description if description is not None else product.description,
         )
         return await self._repo.update(updated)

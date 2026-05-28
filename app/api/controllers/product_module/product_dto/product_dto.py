@@ -8,17 +8,20 @@ from pydantic import BaseModel, Field
 class ProductIn(BaseModel):
     name: str
     value: Decimal = Field(ge=0)
+    description: str | None = None
 
 
 class ProductPatchIn(BaseModel):
     name: str | None = None
     value: Decimal | None = Field(default=None, ge=0)
+    description: str | None = None
 
 
 class ProductOut(BaseModel):
     id: UUID
     name: str
     value: Decimal
+    description: str | None
     created_at: datetime
 
 

@@ -17,7 +17,7 @@ NOW = datetime.now(tz=timezone.utc)
 
 
 def _product(name: str = "Pro Plan", value: Decimal = Decimal("99.90")) -> Product:
-    return Product(id=uuid4(), name=name, value=value, created_at=NOW)
+    return Product(id=uuid4(), name=name, value=value, description=None, created_at=NOW)
 
 
 def _repo(**kwargs: object) -> AsyncMock:
@@ -42,7 +42,7 @@ async def test_create_product() -> None:
 @pytest.mark.asyncio
 async def test_update_product_happy_path() -> None:
     product = _product()
-    updated = Product(id=product.id, name="New Name", value=Decimal("149.00"), created_at=NOW)
+    updated = Product(id=product.id, name="New Name", value=Decimal("149.00"), description=None, created_at=NOW)
     repo = _repo(get_by_id=product, update=updated)
     result = await UpdateProduct(repo).execute(product_id=product.id, name="New Name", value=Decimal("149.00"))
     assert result.name == "New Name"

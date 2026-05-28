@@ -20,11 +20,12 @@ class ProductModel(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     name: Mapped[str] = mapped_column(sa.Text, nullable=False)
     value: Mapped[Decimal] = mapped_column(sa.Numeric(12, 2), nullable=False)
+    description: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
 def _from_model(m: ProductModel) -> Product:
-    return Product(id=m.id, name=m.name, value=m.value, created_at=m.created_at)
+    return Product(id=m.id, name=m.name, value=m.value, description=m.description, created_at=m.created_at)
 
 
 class SqlAlchemyProductRepository:
@@ -36,6 +37,7 @@ class SqlAlchemyProductRepository:
             id=product.id,
             name=product.name,
             value=product.value,
+            description=product.description,
             created_at=product.created_at,
         )
         self._session.add(model)
@@ -46,7 +48,7 @@ class SqlAlchemyProductRepository:
         await self._session.execute(
             sa.update(ProductModel)
             .where(ProductModel.id == product.id)
-            .values(name=product.name, value=product.value)
+            .values(name=product.name, value=product.value, description=product.description)
         )
         return product
 
