@@ -11,7 +11,6 @@ from app.api.controllers.product_module.product_routes.admin_router import (
     _assign_product,
     _create_product,
     _delete_product,
-    _list_products as _admin_list_products,
     _update_product,
 )
 from app.api.controllers.product_module.product_routes.product_router import (
@@ -73,21 +72,6 @@ def test_create_product_403_for_cliente(client: TestClient) -> None:
     try:
         r = client.post("/api/v1/admin/products", json={"name": "x", "value": "1.00"})
         assert r.status_code == 403
-    finally:
-        app.dependency_overrides.clear()
-
-
-# ── GET /admin/products ────────────────────────────────────────────────────────
-
-def test_list_admin_products_200(client: TestClient) -> None:
-    admin = _admin()
-    uc = _uc(execute_return=[_product(), _product()])
-    app.dependency_overrides[require_admin] = lambda: admin
-    app.dependency_overrides[_admin_list_products] = lambda: uc
-    try:
-        r = client.get("/api/v1/admin/products")
-        assert r.status_code == 200
-        assert len(r.json()) == 2
     finally:
         app.dependency_overrides.clear()
 

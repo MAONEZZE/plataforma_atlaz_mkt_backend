@@ -19,7 +19,6 @@ from app.domain.shared.base_exceptions import AppException
 from app.services.product_module.assign_product_to_client import AssignProductToClient
 from app.services.product_module.create_product import CreateProduct
 from app.services.product_module.delete_product import DeleteProduct
-from app.services.product_module.list_products import ListProducts
 from app.services.product_module.update_product import UpdateProduct
 
 admin_router = APIRouter(prefix="/admin", tags=["admin-products"])
@@ -31,10 +30,6 @@ def _product_repo(session: AsyncSession) -> SqlAlchemyProductRepository:
 
 def _create_product(session: AsyncSession = Depends(get_session)) -> CreateProduct:
     return CreateProduct(_product_repo(session))
-
-
-def _list_products(session: AsyncSession = Depends(get_session)) -> ListProducts:
-    return ListProducts(_product_repo(session))
 
 
 def _update_product(session: AsyncSession = Depends(get_session)) -> UpdateProduct:
@@ -60,15 +55,6 @@ async def create_product(
 ) -> ProductOut:
     product = await use_case.execute(name=body.name, value=body.value)
     return ProductOut(id=product.id, name=product.name, value=product.value, created_at=product.created_at)
-
-
-@admin_router.get("/products", response_model=list[ProductOut])
-async def list_products(
-    _admin: AuthUser = Depends(require_admin),
-    use_case: ListProducts = Depends(_list_products),
-) -> list[ProductOut]:
-    products = await use_case.execute()
-    return [ProductOut(id=p.id, name=p.name, value=p.value, created_at=p.created_at) for p in products]
 
 
 @admin_router.patch("/products/{product_id}", response_model=ProductOut)
