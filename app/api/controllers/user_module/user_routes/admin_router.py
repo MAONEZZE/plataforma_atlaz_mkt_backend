@@ -86,6 +86,7 @@ async def create_client(
         photo_url=user.photo_url,
         role=user.role,
         product_id=user.product_id,
+        product_name=user.product_name,
         created_at=user.created_at,
     )
 

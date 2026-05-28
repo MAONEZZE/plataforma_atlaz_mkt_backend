@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.database.product_module.product_repo import ProductModel
 from app.database.shared.sqlalchemy_base import Base
 from app.domain.shared.utils import now_sp
 from app.domain.user_module.user_model import User
@@ -63,12 +64,15 @@ class SqlAlchemyUserRepository:
 
     async def get_by_id(self, user_id: UUID) -> User | None:
         result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
+            select(UserModel, ProductModel.name)
+            .outerjoin(ProductModel, UserModel.product_id == ProductModel.id)
+            .where(UserModel.id == user_id)
         )
-        model = result.scalar_one_or_none()
-        if model is None:
+        row = result.one_or_none()
+        if row is None:
             return None
-        return self._to_entity(model)
+        model, product_name = row
+        return self._to_entity(model, product_name)
 
     async def update(self, user: User) -> User:
         now = now_sp()
@@ -95,13 +99,14 @@ class SqlAlchemyUserRepository:
         base_filter = (UserModel.role == "cliente") & (UserModel.inactive.is_(False))
 
         rows = await self._session.execute(
-            select(UserModel)
+            select(UserModel, ProductModel.name)
+            .outerjoin(ProductModel, UserModel.product_id == ProductModel.id)
             .where(base_filter)
             .order_by(UserModel.created_at.desc())
             .limit(page_size)
             .offset(offset)
         )
-        items = [self._to_entity(m) for m in rows.scalars().all()]
+        items = [self._to_entity(m, p_name) for m, p_name in rows.all()]
 
         total_res = await self._session.execute(
             select(func.count()).select_from(UserModel).where(base_filter)
@@ -117,7 +122,7 @@ class SqlAlchemyUserRepository:
         )
 
     @staticmethod
-    def _to_entity(model: UserModel) -> User:
+    def _to_entity(model: UserModel, product_name: str | None = None) -> User:
         return User(
             id=model.id,
             name=model.name,
@@ -130,6 +135,7 @@ class SqlAlchemyUserRepository:
             role=model.role,
             inactive=model.inactive,
             product_id=model.product_id,
+            product_name=product_name,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )

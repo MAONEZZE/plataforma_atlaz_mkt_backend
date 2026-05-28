@@ -18,3 +18,4 @@ class User:
     created_at: datetime
     updated_at: datetime
     product_id: UUID | None = None
+    product_name: str | None = None

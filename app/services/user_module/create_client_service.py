@@ -46,10 +46,12 @@ class CreateClient:
         if inp.phone is not None:
             Telefone(inp.phone)
 
+        product_name: str | None = None
         if inp.product_id is not None and self._product_repo is not None:
             product = await self._product_repo.get_by_id(inp.product_id)
             if product is None:
                 raise ProductNotFound(f"Product {inp.product_id} not found.")
+            product_name = product.name
 
         user_id = self._gateway.create_user(
             email=inp.email,
@@ -71,6 +73,7 @@ class CreateClient:
             role="cliente",
             inactive=False,
             product_id=inp.product_id,
+            product_name=product_name,
             created_at=now,
             updated_at=now,
         )

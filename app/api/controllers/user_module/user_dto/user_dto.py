@@ -61,6 +61,7 @@ class UserResponse(BaseModel):
     photo_url: str | None
     role: str
     product_id: UUID | None = None
+    product_name: str | None = None
     created_at: datetime
 
 
@@ -75,6 +76,8 @@ class ClientSummaryResponse(BaseModel):
     name: str
     email: str
     phone: str | None
+    product_id: UUID | None = None
+    product_name: str | None = None
 
 
 class ListClientsResponse(BaseModel):

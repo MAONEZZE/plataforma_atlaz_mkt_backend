@@ -58,6 +58,8 @@ async def get_me(
         description=user.description,
         photo_url=user.photo_url,
         role=user.role,
+        product_id=user.product_id,
+        product_name=user.product_name,
         created_at=user.created_at,
     )
 
@@ -91,6 +93,8 @@ async def patch_me(
         description=user.description,
         photo_url=user.photo_url,
         role=user.role,
+        product_id=user.product_id,
+        product_name=user.product_name,
         created_at=user.created_at,
     )
 
