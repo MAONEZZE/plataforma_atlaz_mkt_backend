@@ -21,6 +21,8 @@ class UserStageOut(BaseModel):
     stage_id: UUID
     done: bool
     updated_at: datetime
+    title: str | None = None
+    text: str | None = None
 
 
 class SetDoneIn(BaseModel):

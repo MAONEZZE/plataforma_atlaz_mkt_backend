@@ -20,6 +20,7 @@ class ListCommunity:
                     linkedin_url=m.linkedin_url,
                     instagram_username=m.instagram_username,
                     description=m.description,
+                    product_name=m.product_name,
                 )
                 for m in members
             ],

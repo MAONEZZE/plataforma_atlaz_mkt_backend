@@ -37,6 +37,7 @@ async def list_community(
                 linkedin_url=item.linkedin_url,
                 instagram_username=item.instagram_username,
                 description=item.description,
+                product_name=item.product_name,
             )
             for item in result.items
         ],

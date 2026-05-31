@@ -21,10 +21,11 @@ class SqlAlchemyCommunityRepository:
         offset = (page - 1) * page_size
         rows_result = await self._session.execute(
             text(
-                "SELECT id, name, photo_url, linkedin_url, instagram_username, description "
-                'FROM "ATZ_HUB".users '
-                "WHERE role = 'cliente' AND inactive = false "
-                "ORDER BY name ASC "
+                "SELECT u.id, u.name, u.photo_url, u.linkedin_url, u.instagram_username, u.description, p.name as product_name "
+                'FROM "ATZ_HUB".users u '
+                'LEFT JOIN "ATZ_HUB".products p ON u.product_id = p.id '
+                "WHERE u.role = 'cliente' AND u.inactive = false "
+                "ORDER BY u.name ASC "
                 "LIMIT :limit OFFSET :offset"
             ).bindparams(limit=page_size, offset=offset)
         )
@@ -42,6 +43,7 @@ class SqlAlchemyCommunityRepository:
                     else None
                 ),
                 description=str(row["description"]) if row["description"] is not None else None,
+                product_name=str(row["product_name"]) if row["product_name"] is not None else None,
             )
             for row in rows_result.mappings()
         ]

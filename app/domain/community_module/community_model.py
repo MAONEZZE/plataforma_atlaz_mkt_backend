@@ -10,3 +10,4 @@ class CommunityMember:
     linkedin_url: str | None
     instagram_username: str | None
     description: str | None
+    product_name: str | None

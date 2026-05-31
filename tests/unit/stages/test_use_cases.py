@@ -18,7 +18,7 @@ NOW = datetime.now(tz=timezone.utc)
 
 
 def _stage(text: str = "Step 1") -> Stage:
-    return Stage(id=uuid4(), text=text, created_at=NOW)
+    return Stage(id=uuid4(), text=text, created_at=NOW, title=None)
 
 
 def _user_stage(done: bool = False) -> UserStage:
@@ -47,7 +47,7 @@ async def test_create_stage() -> None:
 @pytest.mark.asyncio
 async def test_update_stage_happy_path() -> None:
     stage = _stage("old")
-    updated = Stage(id=stage.id, text="new", created_at=stage.created_at)
+    updated = Stage(id=stage.id, text="new", created_at=stage.created_at, title=None)
     repo = _repo(get_by_id=stage, update=updated)
     result = await UpdateStage(repo).execute(stage_id=stage.id, text="new")
     assert result.text == "new"
@@ -86,7 +86,7 @@ async def test_list_stages() -> None:
 @pytest.mark.asyncio
 async def test_list_user_stages() -> None:
     user_id = uuid4()
-    items = [_user_stage(), _user_stage(done=True)]
+    items = [(_user_stage(), _stage()), (_user_stage(done=True), _stage("Step 2"))]
     repo = _repo(list_for_user=items)
     result = await ListUserStages(repo).execute(user_id=user_id)
     assert len(result) == 2

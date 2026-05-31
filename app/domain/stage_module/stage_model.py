@@ -7,8 +7,8 @@ from uuid import UUID
 class Stage:
     id: UUID
     text: str
-    title: str | None
     created_at: datetime
+    title: str | None = None
 
 
 @dataclass

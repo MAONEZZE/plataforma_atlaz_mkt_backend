@@ -69,6 +69,13 @@ class PhotoUrlResponse(BaseModel):
     photo_url: str
 
 
+class ClientStageResponse(BaseModel):
+    stage_id: UUID
+    title: str | None
+    text: str
+    done: bool
+
+
 class ClientSummaryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -78,6 +85,7 @@ class ClientSummaryResponse(BaseModel):
     phone: str | None
     product_id: UUID | None = None
     product_name: str | None = None
+    stages: list[ClientStageResponse] = []
 
 
 class ListClientsResponse(BaseModel):

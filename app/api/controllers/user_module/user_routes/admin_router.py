@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.config.dependencies.auth_deps import require_admin
 from app.api.controllers.user_module.user_dto.user_dto import (
+    ClientStageResponse,
     ClientSummaryResponse,
     CreateClientBody,
     ListClientsResponse,
@@ -11,6 +12,7 @@ from app.api.controllers.user_module.user_dto.user_dto import (
 from app.database.product_module.product_repo import SqlAlchemyProductRepository
 from app.database.shared.db_factory import get_session
 from app.database.shared.supabase_client import create_supabase_admin_client
+from app.database.stage_module.stage_repo import SqlAlchemyStageRepository
 from app.database.user_module.user_repo import SqlAlchemyUserRepository
 from app.domain.auth_module.auth_model import User as AuthUser
 from app.domain.shared.base_exceptions import AppException, DomainError
@@ -45,6 +47,10 @@ def _create_client(session: AsyncSession = Depends(get_session)) -> CreateClient
 
 def _list_clients(session: AsyncSession = Depends(get_session)) -> ListClients:
     return ListClients(repo=SqlAlchemyUserRepository(session))
+
+
+def _stage_repo(session: AsyncSession = Depends(get_session)) -> SqlAlchemyStageRepository:
+    return SqlAlchemyStageRepository(session)
 
 
 @admin_router.post(
@@ -97,12 +103,31 @@ async def list_clients(
     page_size: int = Query(50, ge=1, le=100),
     _admin: AuthUser = Depends(require_admin),
     use_case: ListClients = Depends(_list_clients),
+    stage_repo: SqlAlchemyStageRepository = Depends(_stage_repo),
 ) -> ListClientsResponse:
     items, total = await use_case.execute(
         ListClientsInput(page=page, page_size=page_size)
     )
+    user_ids = [u.id for u in items]
+    stage_rows = await stage_repo.list_for_users(user_ids) if user_ids else []
+    stages_by_user: dict = {}
+    for user_id, stage, done in stage_rows:
+        stages_by_user.setdefault(user_id, []).append(
+            ClientStageResponse(stage_id=stage.id, title=stage.title, text=stage.text, done=done)
+        )
     return ListClientsResponse(
-        items=[ClientSummaryResponse.model_validate(u) for u in items],
+        items=[
+            ClientSummaryResponse(
+                id=u.id,
+                name=u.name,
+                email=u.email,
+                phone=u.phone,
+                product_id=u.product_id,
+                product_name=u.product_name,
+                stages=stages_by_user.get(u.id, []),
+            )
+            for u in items
+        ],
         page=page,
         page_size=page_size,
         total=total,

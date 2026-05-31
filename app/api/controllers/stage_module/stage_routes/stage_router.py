@@ -36,12 +36,14 @@ async def list_my_stages(
     items = await use_case.execute(user.id)
     return [
         UserStageOut(
-            user_id=s.user_id,
-            stage_id=s.stage_id,
-            done=s.done,
-            updated_at=s.updated_at,
+            user_id=us.user_id,
+            stage_id=us.stage_id,
+            done=us.done,
+            updated_at=us.updated_at,
+            title=stage.title,
+            text=stage.text,
         )
-        for s in items
+        for us, stage in items
     ]
 
 

@@ -44,7 +44,7 @@ def _uc(**kwargs: object) -> AsyncMock:
 
 
 def _stage() -> Stage:
-    return Stage(id=uuid4(), text="Step 1", created_at=NOW)
+    return Stage(id=uuid4(), text="Step 1", created_at=NOW, title=None)
 
 
 def _user_stage(user_id: object = None) -> UserStage:
@@ -183,7 +183,7 @@ def test_detach_stage_204(client: TestClient) -> None:
 
 def test_list_my_stages_200(client: TestClient) -> None:
     user = _cliente()
-    uc = _uc(execute_return=[_user_stage(user.id)])
+    uc = _uc(execute_return=[(_user_stage(user.id), _stage())])
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[_list_user_stages] = lambda: uc
     try:

@@ -85,11 +85,24 @@ class SqlAlchemyStageRepository:
         )
         return [_stage_from(m) for m in result.scalars()]
 
-    async def list_for_user(self, user_id: UUID) -> list[UserStage]:
+    async def list_for_user(self, user_id: UUID) -> list[tuple[UserStage, Stage]]:
         result = await self._session.execute(
-            sa.select(UserStageModel).where(UserStageModel.user_id == user_id)
+            sa.select(UserStageModel, StageModel)
+            .join(StageModel, UserStageModel.stage_id == StageModel.id)
+            .where(UserStageModel.user_id == user_id)
+            .order_by(StageModel.created_at)
         )
-        return [_user_stage_from(m) for m in result.scalars()]
+        return [(_user_stage_from(us), _stage_from(s)) for us, s in result.all()]
+
+    async def list_for_users(self, user_ids: list[UUID]) -> list[tuple[UUID, Stage, bool]]:
+        if not user_ids:
+            return []
+        result = await self._session.execute(
+            sa.select(UserStageModel, StageModel)
+            .join(StageModel, UserStageModel.stage_id == StageModel.id)
+            .where(UserStageModel.user_id.in_(user_ids))
+        )
+        return [(us.user_id, _stage_from(s), us.done) for us, s in result.all()]
 
     async def attach_to_user(self, user_id: UUID, stage_id: UUID) -> UserStage:
         existing = await self._session.execute(

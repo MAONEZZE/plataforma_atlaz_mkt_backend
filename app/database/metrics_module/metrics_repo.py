@@ -157,7 +157,8 @@ class SqlAlchemyMetricRepository:
                 sales=metric.sales,
                 referrals=metric.referrals,
                 updated_at=metric.updated_at,
-            )
+            ),
+            execution_options={"synchronize_session": False},
         )
         return metric
 
