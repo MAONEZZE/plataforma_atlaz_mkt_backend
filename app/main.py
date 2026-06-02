@@ -18,6 +18,9 @@ from app.api.config.middlewares.middlewares import (
 from app.api.config.rate_limiter import limiter
 from app.api.config.settings import settings
 from app.api.controllers.auth_module.auth_routes.auth_router import router as auth_router
+from app.api.controllers.community_module.community_routes.admin_router import (
+    admin_router as admin_community_router,
+)
 from app.api.controllers.community_module.community_routes.community_router import (
     router as community_router,
 )
@@ -158,6 +161,7 @@ async def health() -> dict[str, str]:
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(community_router, prefix="/api/v1")
+app.include_router(admin_community_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(admin_clients_router, prefix="/api/v1")
 app.include_router(content_router, prefix="/api/v1")

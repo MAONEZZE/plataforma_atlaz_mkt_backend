@@ -448,7 +448,7 @@ async def upload_track_cover(
         )
 
     ext = _COVER_EXT_MAP[content_type]
-    path = f"tracks/{uuid4()}.{ext}"
+    path = f"pictures/tracks/{uuid4()}.{ext}"
     client = create_supabase_admin_client()
     client.storage.from_(settings.SUPABASE_BUCKET).upload(
         path,
@@ -477,7 +477,7 @@ async def upload_lesson_document(
         raise AppException("VALIDATION_ERROR", "Documento deve ter no máximo 50 MB.", 400)
 
     ext = _DOCUMENT_EXT_MAP[content_type]
-    path = f"lessons/{uuid4()}.{ext}"
+    path = f"lessons/docs/{uuid4()}.{ext}"
     client = create_supabase_admin_client()
     client.storage.from_(settings.SUPABASE_BUCKET).upload(
         path,

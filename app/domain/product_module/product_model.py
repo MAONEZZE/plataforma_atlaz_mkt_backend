@@ -10,4 +10,5 @@ class Product:
     name: str
     value: Decimal
     description: str | None
+    cover_photo: str | None
     created_at: datetime

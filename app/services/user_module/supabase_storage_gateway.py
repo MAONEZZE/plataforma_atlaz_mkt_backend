@@ -17,7 +17,7 @@ class SupabaseStorageGateway:
         content_type: str,
         extension: str,
     ) -> str:
-        path = f"{user_id}.{extension}"
+        path = f"pictures/profile/{user_id}.{extension}"
         self._client.storage.from_(self._bucket).upload(
             path,
             data,

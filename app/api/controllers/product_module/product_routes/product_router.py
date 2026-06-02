@@ -29,7 +29,7 @@ async def list_products(
     use_case: ListProducts = Depends(_list_products),
 ) -> list[ProductOut]:
     products = await use_case.execute()
-    return [ProductOut(id=p.id, name=p.name, value=p.value, description=p.description, created_at=p.created_at) for p in products]
+    return [ProductOut(id=p.id, name=p.name, description=p.description, cover_photo=p.cover_photo, created_at=p.created_at) for p in products]
 
 
 @router.get("/products/{product_id}", response_model=ProductOut)
@@ -41,4 +41,4 @@ async def get_product(
     product = await SqlAlchemyProductRepository(session).get_by_id(product_id)
     if product is None:
         raise AppException("PRODUCT_NOT_FOUND", f"Product {product_id} not found.", 404)
-    return ProductOut(id=product.id, name=product.name, value=product.value, description=product.description, created_at=product.created_at)
+    return ProductOut(id=product.id, name=product.name, description=product.description, cover_photo=product.cover_photo, created_at=product.created_at)

@@ -42,7 +42,7 @@ def _uc(**kwargs: object) -> AsyncMock:
 
 
 def _product() -> Product:
-    return Product(id=uuid4(), name="Pro Plan", value=Decimal("99.90"), description=None, created_at=NOW)
+    return Product(id=uuid4(), name="Pro Plan", value=Decimal("99.90"), description=None, cover_photo=None, created_at=NOW)
 
 
 @pytest.fixture
