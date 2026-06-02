@@ -9,7 +9,6 @@ from app.database.product_module.product_repo import SqlAlchemyProductRepository
 from app.database.shared.db_factory import get_session
 from app.domain.auth_module.auth_model import User as AuthUser
 from app.domain.shared.base_exceptions import AppException
-from app.domain.product_module.product_exceptions import ProductNotFound
 from app.services.product_module.list_products import ListProducts
 
 router = APIRouter(tags=["products"])

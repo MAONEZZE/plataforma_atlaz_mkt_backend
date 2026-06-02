@@ -121,6 +121,13 @@ class SqlAlchemyUserRepository:
             .values(product_id=product_id, updated_at=now_sp())
         )
 
+    async def deactivate(self, user_id: UUID) -> None:
+        await self._session.execute(
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(inactive=True, updated_at=now_sp())
+        )
+
     @staticmethod
     def _to_entity(model: UserModel, product_name: str | None = None) -> User:
         return User(

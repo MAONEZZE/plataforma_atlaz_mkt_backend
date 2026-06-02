@@ -71,7 +71,8 @@ class FakeCommentRepo:
 def _make_lesson() -> Lesson:
     return Lesson(
         id=uuid4(), module_id=uuid4(), title="Lesson", description=None,
-        drive_file_id="x", duration_minutes=None, order=0, created_at=datetime.now(tz=UTC)
+        drive_file_id="x", duration_minutes=None, order=0, created_at=datetime.now(tz=UTC),
+        is_doc=False,
     )
 
 

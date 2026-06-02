@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.config.logging import configure_logging
 from app.api.config.middlewares.middlewares import (
+    RequestLogMiddleware,
     SecurityHeadersMiddleware,
     StructlogContextMiddleware,
 )
@@ -113,6 +114,9 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # ── Structlog context reset per request ───────────────────────────────────────
 app.add_middleware(StructlogContextMiddleware)
+
+# ── Request body logger ────────────────────────────────────────────────────────
+app.add_middleware(RequestLogMiddleware)
 
 
 # ── Exception handlers ─────────────────────────────────────────────────────────

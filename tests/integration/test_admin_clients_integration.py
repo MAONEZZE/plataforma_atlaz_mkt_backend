@@ -16,6 +16,7 @@ from app.api.config.dependencies.auth_deps import get_current_user, require_admi
 from app.api.controllers.user_module.user_routes.admin_router import (
     _create_client,
     _list_clients,
+    _stage_repo,
     admin_router,
 )
 from app.domain.auth_module.auth_model import User as AuthUser
@@ -51,6 +52,11 @@ class _FakeGateway:
         if self._exc is not None:
             raise self._exc
         return self._user_id
+
+
+class _FakeStageRepo:
+    async def list_for_users(self, user_ids: list) -> list:
+        return []
 
 
 class _FakeRepo:
@@ -129,6 +135,7 @@ def _client(
         _app.dependency_overrides[_create_client] = lambda: use_case
     if list_uc is not None:
         _app.dependency_overrides[_list_clients] = lambda: list_uc
+        _app.dependency_overrides[_stage_repo] = lambda: _FakeStageRepo()
     return TestClient(_app, raise_server_exceptions=False)
 
 
@@ -159,10 +166,12 @@ def test_create_client_returns_201_and_user_response_shape() -> None:
         assert data["id"] == str(uid)
         assert data["name"] == "Maria"
         assert data["email"] == "maria@test.com"
-        assert data["phone"] == "+5511999999999"
-        assert data["role"] == "cliente"
-        assert "created_at" in data
+        assert data["product_id"] is None
+        assert data["product_name"] is None
         assert "password" not in resp.text
+        assert "phone" not in data
+        assert "role" not in data
+        assert "created_at" not in data
         assert gateway.last_kwargs is not None
         assert gateway.last_kwargs["role"] == "cliente"
     finally:
@@ -180,7 +189,7 @@ def test_create_client_without_phone_returns_201() -> None:
             json={"name": "Maria", "email": "maria@test.com", "password": "Senha@123"},
         )
         assert resp.status_code == 201
-        assert resp.json()["phone"] is None
+        assert "phone" not in resp.json()
     finally:
         _clear()
 
@@ -352,7 +361,7 @@ def test_list_clients_returns_200_with_paginated_shape() -> None:
         names = {item["name"] for item in data["items"]}
         assert names == {"Maria", "Joao"}
         for item in data["items"]:
-            assert set(item.keys()) == {"id", "name", "email", "phone"}
+            assert set(item.keys()) == {"id", "name", "email", "phone", "description", "product_id", "product_name", "stages"}
     finally:
         _clear()
 

@@ -69,6 +69,7 @@ def _make_member(
         linkedin_url=linkedin_url,
         instagram_username=instagram_username,
         description=description,
+        product_name=None,
     )
 
 

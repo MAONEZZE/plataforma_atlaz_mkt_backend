@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.domain.product_module.product_exceptions import ProductInUse, ProductNotFound
+from app.domain.product_module.product_exceptions import ProductNotFound
 from app.domain.product_module.product_repo_interface import ProductRepository
 
 

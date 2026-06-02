@@ -1,13 +1,17 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.config.dependencies.auth_deps import require_admin
 from app.api.controllers.user_module.user_dto.user_dto import (
+    AdminClientCreatedResponse,
+    AdminClientUpdatedResponse,
     ClientStageResponse,
     ClientSummaryResponse,
     CreateClientBody,
     ListClientsResponse,
-    UserResponse,
+    UpdateClientBody,
 )
 from app.database.product_module.product_repo import SqlAlchemyProductRepository
 from app.database.shared.db_factory import get_session
@@ -15,16 +19,19 @@ from app.database.shared.supabase_client import create_supabase_admin_client
 from app.database.stage_module.stage_repo import SqlAlchemyStageRepository
 from app.database.user_module.user_repo import SqlAlchemyUserRepository
 from app.domain.auth_module.auth_model import User as AuthUser
+from app.domain.product_module.product_exceptions import ProductNotFound
 from app.domain.shared.base_exceptions import AppException, DomainError
 from app.domain.user_module.user_exceptions import (
     EmailAlreadyRegistered,
     SupabaseAdminError,
+    UserNotFound,
     UserTriggerSyncFailed,
 )
 from app.services.user_module.create_client_service import (
     CreateClient,
     CreateClientInput,
 )
+from app.services.user_module.delete_client_service import DeleteClient, DeleteClientInput
 from app.services.user_module.list_clients_service import (
     ListClients,
     ListClientsInput,
@@ -32,6 +39,7 @@ from app.services.user_module.list_clients_service import (
 from app.services.user_module.supabase_admin_gateway import (
     SupabaseAdminUserGatewayImpl,
 )
+from app.services.user_module.update_client_service import UpdateClient, UpdateClientInput
 
 admin_router = APIRouter(prefix="/admin", tags=["admin-clients"])
 
@@ -42,11 +50,25 @@ def _create_client(session: AsyncSession = Depends(get_session)) -> CreateClient
         repo=SqlAlchemyUserRepository(session),
         gateway=gateway,
         product_repo=SqlAlchemyProductRepository(session),
+        stage_repo=SqlAlchemyStageRepository(session),
     )
 
 
 def _list_clients(session: AsyncSession = Depends(get_session)) -> ListClients:
     return ListClients(repo=SqlAlchemyUserRepository(session))
+
+
+def _update_client(session: AsyncSession = Depends(get_session)) -> UpdateClient:
+    return UpdateClient(
+        repo=SqlAlchemyUserRepository(session),
+        product_repo=SqlAlchemyProductRepository(session),
+        stage_repo=SqlAlchemyStageRepository(session),
+    )
+
+
+def _delete_client(session: AsyncSession = Depends(get_session)) -> DeleteClient:
+    gateway = SupabaseAdminUserGatewayImpl(create_supabase_admin_client())
+    return DeleteClient(repo=SqlAlchemyUserRepository(session), gateway=gateway)
 
 
 def _stage_repo(session: AsyncSession = Depends(get_session)) -> SqlAlchemyStageRepository:
@@ -55,20 +77,22 @@ def _stage_repo(session: AsyncSession = Depends(get_session)) -> SqlAlchemyStage
 
 @admin_router.post(
     "/clients",
-    response_model=UserResponse,
+    response_model=AdminClientCreatedResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_client(
     body: CreateClientBody,
     _admin: AuthUser = Depends(require_admin),
     use_case: CreateClient = Depends(_create_client),
-) -> UserResponse:
+) -> AdminClientCreatedResponse:
     inp = CreateClientInput(
         name=body.name,
         email=body.email,
         password=body.password,
         phone=body.phone,
+        description=body.description,
         product_id=body.product_id,
+        stage_ids=tuple(body.stage_ids),
     )
     try:
         user = await use_case.execute(inp)
@@ -78,22 +102,17 @@ async def create_client(
         raise AppException("INTERNAL_ERROR", str(exc), 500) from exc
     except SupabaseAdminError as exc:
         raise AppException("INTERNAL_ERROR", str(exc), 502) from exc
+    except ProductNotFound as exc:
+        raise AppException("PRODUCT_NOT_FOUND", str(exc), 404) from exc
     except DomainError as exc:
         raise AppException("VALIDATION_ERROR", str(exc), 400) from exc
 
-    return UserResponse(
+    return AdminClientCreatedResponse(
         id=user.id,
         name=user.name,
         email=user.email,
-        phone=user.phone,
-        linkedin_url=user.linkedin_url,
-        instagram_username=user.instagram_username,
-        description=user.description,
-        photo_url=user.photo_url,
-        role=user.role,
         product_id=user.product_id,
         product_name=user.product_name,
-        created_at=user.created_at,
     )
 
 
@@ -122,6 +141,7 @@ async def list_clients(
                 name=u.name,
                 email=u.email,
                 phone=u.phone,
+                description=u.description,
                 product_id=u.product_id,
                 product_name=u.product_name,
                 stages=stages_by_user.get(u.id, []),
@@ -132,3 +152,53 @@ async def list_clients(
         page_size=page_size,
         total=total,
     )
+
+
+@admin_router.patch("/clients/{client_id}", response_model=AdminClientUpdatedResponse)
+async def update_client(
+    client_id: UUID,
+    body: UpdateClientBody,
+    _admin: AuthUser = Depends(require_admin),
+    use_case: UpdateClient = Depends(_update_client),
+) -> AdminClientUpdatedResponse:
+    inp = UpdateClientInput(
+        client_id=client_id,
+        name=body.name,
+        phone=body.phone,
+        description=body.description,
+        product_id=body.product_id if "product_id" in body.model_fields_set else None,
+        set_product="product_id" in body.model_fields_set,
+        stage_ids=tuple(body.stage_ids) if body.stage_ids is not None else None,
+    )
+    try:
+        user = await use_case.execute(inp)
+    except UserNotFound as exc:
+        raise AppException("CLIENT_NOT_FOUND", str(exc), 404) from exc
+    except ProductNotFound as exc:
+        raise AppException("PRODUCT_NOT_FOUND", str(exc), 404) from exc
+    except DomainError as exc:
+        raise AppException("VALIDATION_ERROR", str(exc), 400) from exc
+
+    return AdminClientUpdatedResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        phone=user.phone,
+        description=user.description,
+        product_id=user.product_id,
+        product_name=user.product_name,
+    )
+
+
+@admin_router.delete("/clients/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_client(
+    client_id: UUID,
+    _admin: AuthUser = Depends(require_admin),
+    use_case: DeleteClient = Depends(_delete_client),
+) -> None:
+    try:
+        await use_case.execute(DeleteClientInput(client_id=client_id))
+    except UserNotFound as exc:
+        raise AppException("CLIENT_NOT_FOUND", str(exc), 404) from exc
+    except SupabaseAdminError as exc:
+        raise AppException("INTERNAL_ERROR", str(exc), 502) from exc

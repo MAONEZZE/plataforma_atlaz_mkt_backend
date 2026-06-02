@@ -45,7 +45,19 @@ class CreateClientBody(BaseModel):
     email: EmailStr
     password: str
     phone: str | None = None
+    description: str | None = None
     product_id: UUID | None = None
+    stage_ids: list[UUID] = []
+
+
+class UpdateClientBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = None
+    phone: str | None = None
+    description: str | None = None
+    product_id: UUID | None = None
+    stage_ids: list[UUID] | None = None
 
 
 class UserResponse(BaseModel):
@@ -69,6 +81,24 @@ class PhotoUrlResponse(BaseModel):
     photo_url: str
 
 
+class AdminClientCreatedResponse(BaseModel):
+    id: UUID
+    name: str
+    email: str
+    product_id: UUID | None = None
+    product_name: str | None = None
+
+
+class AdminClientUpdatedResponse(BaseModel):
+    id: UUID
+    name: str
+    email: str
+    phone: str | None
+    description: str | None
+    product_id: UUID | None = None
+    product_name: str | None = None
+
+
 class ClientStageResponse(BaseModel):
     stage_id: UUID
     title: str | None
@@ -83,6 +113,7 @@ class ClientSummaryResponse(BaseModel):
     name: str
     email: str
     phone: str | None
+    description: str | None
     product_id: UUID | None = None
     product_name: str | None = None
     stages: list[ClientStageResponse] = []

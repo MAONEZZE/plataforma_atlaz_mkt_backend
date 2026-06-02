@@ -6,6 +6,8 @@ import structlog
 from app.domain.product_module.product_exceptions import ProductNotFound
 from app.domain.product_module.product_repo_interface import ProductRepository
 from app.domain.shared.utils import now_sp
+from app.domain.stage_module.stage_exceptions import StageAlreadyAttached, StageNotFound
+from app.domain.stage_module.stage_repo_interface import StageRepository
 from app.domain.user_module.user_exceptions import UserTriggerSyncFailed
 from app.domain.user_module.user_model import User
 from app.domain.user_module.user_repo_interface import UserRepository
@@ -21,7 +23,9 @@ class CreateClientInput:
     email: str
     password: str
     phone: str | None = None
+    description: str | None = None
     product_id: UUID | None = None
+    stage_ids: tuple[UUID, ...] = ()
 
 
 class CreateClient:
@@ -36,10 +40,12 @@ class CreateClient:
         repo: UserRepository,
         gateway: SupabaseAdminUserGateway,
         product_repo: ProductRepository | None = None,
+        stage_repo: StageRepository | None = None,
     ) -> None:
         self._repo = repo
         self._gateway = gateway
         self._product_repo = product_repo
+        self._stage_repo = stage_repo
 
     async def execute(self, inp: CreateClientInput) -> User:
         Password(inp.password)
@@ -68,7 +74,7 @@ class CreateClient:
             phone=inp.phone,
             linkedin_url=None,
             instagram_username=None,
-            description=None,
+            description=inp.description,
             photo_url=None,
             role="cliente",
             inactive=False,
@@ -92,13 +98,22 @@ class CreateClient:
             except Exception:
                 logger.warning("product_assign_failed_after_create", auth_user_id=str(user_id))
 
-        if inp.phone is not None:
+        if inp.phone is not None or inp.description is not None:
             try:
                 await self._repo.update(user)
             except Exception:
                 logger.warning(
-                    "phone_update_failed_after_create",
+                    "profile_update_failed_after_create",
                     auth_user_id=str(user_id),
                 )
+
+        if inp.stage_ids and self._stage_repo is not None:
+            for stage_id in inp.stage_ids:
+                try:
+                    await self._stage_repo.attach_to_user(user_id, stage_id)
+                except StageAlreadyAttached:
+                    pass
+                except StageNotFound:
+                    logger.warning("stage_not_found_during_create", stage_id=str(stage_id))
 
         return user

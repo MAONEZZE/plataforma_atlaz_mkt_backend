@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.shared.sqlalchemy_base import Base
-from app.domain.product_module.product_exceptions import ProductInUse, ProductNotFound
+from app.domain.product_module.product_exceptions import ProductInUse
 from app.domain.product_module.product_model import Product
 
 

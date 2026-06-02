@@ -35,6 +35,7 @@ def _make_member(
         linkedin_url=linkedin_url,
         instagram_username=instagram_username,
         description=description,
+        product_name=None,
     )
 
 
@@ -86,6 +87,7 @@ async def test_use_case_maps_all_fields() -> None:
         linkedin_url="https://linkedin.com/in/carlos",
         instagram_username="carlos.ig",
         description=None,
+        product_name=None,
     )
     repo = _FakeRepo([member], total=1)
     result = await ListCommunity(repo).execute(page=1, page_size=24)
@@ -106,6 +108,7 @@ def test_response_schema_fields() -> None:
         linkedin_url=None,
         instagram_username=None,
         description=None,
+        product_name=None,
     )
     data = json.loads(schema.model_dump_json())
     assert "name" in data
@@ -122,6 +125,7 @@ def test_list_response_schema_fields() -> None:
                 linkedin_url=None,
                 instagram_username=None,
                 description=None,
+                product_name=None,
             )
         ],
         page=1,

@@ -176,11 +176,13 @@ async def test_list_tracks_progress_partial() -> None:
     module = Module(id=uuid4(), track_id=track.id, title="M1", description=None, order=0)
     lesson1 = Lesson(
         id=uuid4(), module_id=module.id, title="L1", description=None,
-        drive_file_id="x", duration_minutes=None, order=0, created_at=datetime.now(tz=UTC)
+        drive_file_id="x", duration_minutes=None, order=0, created_at=datetime.now(tz=UTC),
+        is_doc=False,
     )
     lesson2 = Lesson(
         id=uuid4(), module_id=module.id, title="L2", description=None,
-        drive_file_id="y", duration_minutes=None, order=1, created_at=datetime.now(tz=UTC)
+        drive_file_id="y", duration_minutes=None, order=1, created_at=datetime.now(tz=UTC),
+        is_doc=False,
     )
 
     track_repo = FakeTrackRepo([track])

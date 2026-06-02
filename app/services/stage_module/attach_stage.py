@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.domain.stage_module.stage_exceptions import StageAlreadyAttached, StageNotFound
+from app.domain.stage_module.stage_exceptions import StageNotFound
 from app.domain.stage_module.stage_model import UserStage
 from app.domain.stage_module.stage_repo_interface import StageRepository
 

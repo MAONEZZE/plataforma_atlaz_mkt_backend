@@ -87,7 +87,7 @@ def _base_lesson(lesson_id: UUID | None = None, module_id: UUID | None = None) -
     return Lesson(
         id=lesson_id or uuid4(), module_id=module_id or uuid4(), title="A",
         description=None, drive_file_id="abc", duration_minutes=None,
-        order=0, created_at=datetime.now(tz=UTC)
+        order=0, created_at=datetime.now(tz=UTC), is_doc=False,
     )
 
 
@@ -167,7 +167,7 @@ def test_get_lesson_returns_200(client: TestClient) -> None:
         id=lesson_id, module_id=uuid4(), title="A", description=None,
         drive_file_id="abc", duration_minutes=None, completed=False,
         track=TrackSummaryDTO(id=uuid4(), title="T"),
-        next_lesson=None,
+        next_lesson=None, is_doc=False,
     )
     uc = _mock_uc(execute_return=dto)
     app.dependency_overrides[get_current_user] = lambda: user

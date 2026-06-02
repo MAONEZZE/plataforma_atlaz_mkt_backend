@@ -12,6 +12,7 @@ from app.domain.user_module.user_exceptions import (
 
 class SupabaseAdminUserGateway(Protocol):
     def create_user(self, email: str, password: str, name: str, role: str) -> UUID: ...
+    def delete_user(self, user_id: UUID) -> None: ...
 
 
 class SupabaseAdminUserGatewayImpl:
@@ -37,6 +38,12 @@ class SupabaseAdminUserGatewayImpl:
         if user is None:
             raise SupabaseAdminError("Resposta inesperada da API do Supabase.")
         return UUID(str(user.id))
+
+    def delete_user(self, user_id: UUID) -> None:
+        try:
+            self._client.auth.admin.delete_user(str(user_id))
+        except AuthApiError as exc:
+            raise SupabaseAdminError(str(exc)) from exc
 
 
 def _is_email_exists(exc: AuthApiError) -> bool:
