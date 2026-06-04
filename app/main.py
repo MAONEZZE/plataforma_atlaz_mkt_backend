@@ -100,7 +100,16 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
     )
 
 
-# ── CORS ───────────────────────────────────────────────────────────────────────
+# ── Request body logger ────────────────────────────────────────────────────────
+app.add_middleware(RequestLogMiddleware)
+
+# ── Structlog context reset per request ───────────────────────────────────────
+app.add_middleware(StructlogContextMiddleware)
+
+# ── Security headers ───────────────────────────────────────────────────────────
+app.add_middleware(SecurityHeadersMiddleware)
+
+# ── CORS — must be outermost so headers are always present even on 500 ─────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.FRONTEND_URL],
@@ -108,15 +117,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ── Security headers ───────────────────────────────────────────────────────────
-app.add_middleware(SecurityHeadersMiddleware)
-
-# ── Structlog context reset per request ───────────────────────────────────────
-app.add_middleware(StructlogContextMiddleware)
-
-# ── Request body logger ────────────────────────────────────────────────────────
-app.add_middleware(RequestLogMiddleware)
 
 
 # ── Exception handlers ─────────────────────────────────────────────────────────

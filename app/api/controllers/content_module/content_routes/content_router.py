@@ -1,3 +1,5 @@
+import asyncio
+from functools import partial
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
@@ -479,10 +481,15 @@ async def upload_lesson_document(
     ext = _DOCUMENT_EXT_MAP[content_type]
     path = f"lessons/docs/{uuid4()}.{ext}"
     client = create_supabase_admin_client()
-    client.storage.from_(settings.SUPABASE_BUCKET).upload(
-        path,
-        data,
-        file_options={"content-type": content_type, "upsert": "true"},
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(
+        None,
+        partial(
+            client.storage.from_(settings.SUPABASE_BUCKET).upload,
+            path,
+            data,
+            file_options={"content-type": content_type, "upsert": "true"},
+        ),
     )
     document_url = client.storage.from_(settings.SUPABASE_BUCKET).get_public_url(path)
     return DocumentUrlOut(document_url=document_url)
