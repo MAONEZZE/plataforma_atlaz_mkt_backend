@@ -31,13 +31,18 @@ class StructlogContextMiddleware(BaseHTTPMiddleware):
 
 class RequestLogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Any) -> Response:
-        body_bytes = await request.body()
         body_obj: Any = None
-        if body_bytes:
+        content_type = request.headers.get("content-type", "")
+        if "multipart/form-data" not in content_type and "application/octet-stream" not in content_type:
             try:
-                body_obj = json.loads(body_bytes)
+                body_bytes = await request.body()
+                if body_bytes:
+                    try:
+                        body_obj = json.loads(body_bytes)
+                    except Exception:
+                        body_obj = body_bytes.decode(errors="replace")
             except Exception:
-                body_obj = body_bytes.decode(errors="replace")
+                pass
 
         timestamp = datetime.now(timezone.utc).isoformat()
         endpoint = f"{request.method} {request.url.path}"
