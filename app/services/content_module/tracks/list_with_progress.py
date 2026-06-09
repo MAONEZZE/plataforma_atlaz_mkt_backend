@@ -44,6 +44,7 @@ class ListTracksWithProgress:
                     title=track.title,
                     description=track.description,
                     cover_url=track.cover_url,
+                    order=track.order,
                     total_lessons=total,
                     lessons_completed=completeds_count,
                     progress_pct=pct,

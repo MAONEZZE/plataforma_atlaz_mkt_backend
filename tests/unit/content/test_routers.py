@@ -105,7 +105,7 @@ def test_list_tracks_returns_200(client: TestClient) -> None:
     track_id = uuid4()
     dto = TrackProgressDTO(
         id=track_id, title="T", description=None, cover_url=None,
-        total_lessons=5, lessons_completed=2, progress_pct=40.0
+        order=0, total_lessons=5, lessons_completed=2, progress_pct=40.0
     )
     uc = _mock_uc(execute_return=[dto])
     app.dependency_overrides[get_current_user] = lambda: user
@@ -130,7 +130,7 @@ def test_get_track_returns_200(client: TestClient) -> None:
     track_id = uuid4()
     dto = TrackWithModulesDTO(
         id=track_id, title="T", description=None, cover_url=None,
-        progress_pct=0.0,
+        order=0, progress_pct=0.0,
         modules=[
             ModuleWithLessonsDTO(id=uuid4(), title="M", description=None, order=0, lessons=[])
         ],

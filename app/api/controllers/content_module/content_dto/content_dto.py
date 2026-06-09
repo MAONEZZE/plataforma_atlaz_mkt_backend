@@ -12,6 +12,7 @@ class TrackProgressDTO:
     title: str
     description: str | None
     cover_url: str | None
+    order: int
     total_lessons: int
     lessons_completed: int
     progress_pct: float
@@ -42,6 +43,7 @@ class TrackWithModulesDTO:
     title: str
     description: str | None
     cover_url: str | None
+    order: int
     progress_pct: float
     modules: list[ModuleWithLessonsDTO]
 
@@ -93,6 +95,7 @@ class TrackProgressOut(BaseModel):
     title: str
     description: str | None
     cover_url: str | None
+    order: int
     total_lessons: int
     lessons_completed: int
     progress_pct: float
@@ -133,6 +136,7 @@ class TrackWithModulesOut(BaseModel):
     title: str
     description: str | None
     cover_url: str | None
+    order: int
     progress_pct: float
     modules: list[ModuleWithLessonsOut]
 

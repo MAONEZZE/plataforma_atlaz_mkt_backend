@@ -71,6 +71,7 @@ class GetTrackWithModules:
             title=track.title,
             description=track.description,
             cover_url=track.cover_url,
+            order=track.order,
             progress_pct=pct,
             modules=modules_dto,
         )

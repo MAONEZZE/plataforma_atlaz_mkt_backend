@@ -227,6 +227,7 @@ async def list_tracks(
             title=d.title,
             description=d.description,
             cover_url=d.cover_url,
+            order=d.order,
             total_lessons=d.total_lessons,
             lessons_completed=d.lessons_completed,
             progress_pct=d.progress_pct,
@@ -250,6 +251,7 @@ async def get_track(
         title=dto.title,
         description=dto.description,
         cover_url=dto.cover_url,
+        order=dto.order,
         progress_pct=dto.progress_pct,
         modules=[
             ModuleWithLessonsOut(
