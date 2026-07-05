@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.config.dependencies.auth_deps import require_admin
 from app.api.controllers.user_module.user_dto.user_dto import (
     AdminClientCreatedResponse,
+    AdminClientDetailResponse,
     AdminClientUpdatedResponse,
     ClientStageResponse,
     ClientSummaryResponse,
@@ -32,6 +33,7 @@ from app.services.user_module.create_client_service import (
     CreateClientInput,
 )
 from app.services.user_module.delete_client_service import DeleteClient, DeleteClientInput
+from app.services.user_module.get_client_service import GetClient
 from app.services.user_module.list_clients_service import (
     ListClients,
     ListClientsInput,
@@ -73,6 +75,10 @@ def _delete_client(session: AsyncSession = Depends(get_session)) -> DeleteClient
 
 def _stage_repo(session: AsyncSession = Depends(get_session)) -> SqlAlchemyStageRepository:
     return SqlAlchemyStageRepository(session)
+
+
+def _get_client(session: AsyncSession = Depends(get_session)) -> GetClient:
+    return GetClient(repo=SqlAlchemyUserRepository(session))
 
 
 @admin_router.post(
@@ -151,6 +157,40 @@ async def list_clients(
         page=page,
         page_size=page_size,
         total=total,
+    )
+
+
+@admin_router.get("/clients/{client_id}", response_model=AdminClientDetailResponse)
+async def get_client(
+    client_id: UUID,
+    _admin: AuthUser = Depends(require_admin),
+    use_case: GetClient = Depends(_get_client),
+    stage_repo: SqlAlchemyStageRepository = Depends(_stage_repo),
+) -> AdminClientDetailResponse:
+    try:
+        user = await use_case.execute(client_id)
+    except UserNotFound as exc:
+        raise AppException("CLIENT_NOT_FOUND", str(exc), 404) from exc
+
+    stage_rows = await stage_repo.list_for_user(user.id)
+    stages = [
+        ClientStageResponse(stage_id=stage.id, title=stage.title, text=stage.text, done=us.done)
+        for us, stage in stage_rows
+    ]
+    return AdminClientDetailResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        phone=user.phone,
+        linkedin_url=user.linkedin_url,
+        instagram_username=user.instagram_username,
+        description=user.description,
+        photo_url=user.photo_url,
+        role=user.role,
+        product_id=user.product_id,
+        product_name=user.product_name,
+        created_at=user.created_at,
+        stages=stages,
     )
 
 

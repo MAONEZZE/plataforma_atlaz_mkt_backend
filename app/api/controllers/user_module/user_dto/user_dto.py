@@ -124,3 +124,21 @@ class ListClientsResponse(BaseModel):
     page: int
     page_size: int
     total: int
+
+
+class AdminClientDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    email: str
+    phone: str | None
+    linkedin_url: str | None
+    instagram_username: str | None
+    description: str | None
+    photo_url: str | None
+    role: str
+    product_id: UUID | None = None
+    product_name: str | None = None
+    created_at: datetime
+    stages: list[ClientStageResponse] = []

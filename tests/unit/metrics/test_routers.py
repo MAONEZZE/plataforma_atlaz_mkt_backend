@@ -1,50 +1,38 @@
-"""HTTP-layer tests using FastAPI TestClient with dependency overrides."""
 from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.api.config.dependencies.auth_deps import get_current_user, require_admin
-from app.api.controllers.metrics_module.metrics_dto.metrics_dto import (
-    AdminAggregatesDTO,
-    AdminConsolidatedDTO,
-    DashboardSeriesDTO,
-    DashboardSummaryDTO,
-    DeltaDTO,
-    MetricDTO,
-    UserMonthlyMetricsDTO,
-    WeeklySeriesDTO,
-)
+from app.api.controllers.metrics_module.metrics_dto.metrics_dto import SheetDTO
 from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
-    get_admin_consolidated,
     get_create_metric,
-    get_dashboard_series,
-    get_dashboard_summary,
+    get_delete_entry,
+    get_delete_metric,
     get_list_metrics,
+    get_sheet,
     get_update_metric,
+    get_upsert_entry,
 )
 from app.domain.auth_module.auth_model import User
-from app.domain.metrics_module.metrics_exceptions import (
-    DuplicateMetric,
-    FutureWeekNotAllowed,
-    MetricNotFound,
-    MetricNotOwnedByUser,
-    MetricOutOfWindow,
-)
+from app.domain.metrics_module.metrics_exceptions import MetricNotFound, MetricNotOwnedByUser
+from app.domain.metrics_module.metrics_model import Metric, MetricEntry
 from app.main import app
 
-
-def _cliente(user_id: UUID | None = None) -> User:
-    return User(id=user_id or uuid4(), email="u@test.com", role="cliente", inactive=False)
+NOW = datetime.now(tz=UTC)
 
 
-def _admin(user_id: UUID | None = None) -> User:
-    return User(id=user_id or uuid4(), email="a@test.com", role="admin", inactive=False)
+def _admin() -> User:
+    return User(id=uuid4(), email="a@test.com", role="admin", inactive=False)
 
 
-def _mock_uc(**kwargs: object) -> AsyncMock:
+def _cliente() -> User:
+    return User(id=uuid4(), email="c@test.com", role="cliente", inactive=False)
+
+
+def _uc(**kwargs: object) -> AsyncMock:
     m = AsyncMock()
     if "execute_return" in kwargs:
         m.execute.return_value = kwargs["execute_return"]
@@ -53,19 +41,26 @@ def _mock_uc(**kwargs: object) -> AsyncMock:
     return m
 
 
-def _metrica_dto(user_id: UUID | None = None) -> MetricDTO:
-    now = datetime.now(tz=UTC)
-    return MetricDTO(
+def _metric(user_id=None) -> Metric:
+    return Metric(
         id=uuid4(),
         user_id=user_id or uuid4(),
-        week_start=date(2026, 5, 11),
-        meetings_held=10,
-        calls_made=8,
-        sales=3,
-        referrals=1,
-        created_at=now,
-        updated_at=now,
+        name="Calls",
+        unit="qtd",
+        order=0,
+        created_at=NOW,
+        updated_at=NOW,
     )
+
+
+def _entry(value: int = 5) -> MetricEntry:
+    return MetricEntry(
+        id=uuid4(), metric_id=uuid4(), day=date(2026, 5, 3), value=value, created_at=NOW, updated_at=NOW
+    )
+
+
+def _sheet() -> SheetDTO:
+    return SheetDTO(month="2026-05", columns=[_metric()], days=[date(2026, 5, 1)], entries={})
 
 
 @pytest.fixture
@@ -75,278 +70,175 @@ def client() -> TestClient:
 
 # ── GET /metricas ──────────────────────────────────────────────────────────────
 
-def test_listar_metricas_200(client: TestClient) -> None:
+def test_list_metrics_200(client: TestClient) -> None:
     user = _cliente()
-    from app.domain.shared.dtos import PagedResponse
-    paged = PagedResponse(items=[_metrica_dto(user.id)], page=1, page_size=20, total=1)
-    uc = _mock_uc(execute_return=paged)
+    uc = _uc(execute_return=[_metric(user.id), _metric(user.id)])
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_list_metrics] = lambda: uc
     try:
         r = client.get("/api/v1/metricas")
         assert r.status_code == 200
-        assert r.json()["total"] == 1
+        assert len(r.json()) == 2
     finally:
         app.dependency_overrides.clear()
 
 
-def test_listar_metricas_requires_auth(client: TestClient) -> None:
+def test_list_metrics_401(client: TestClient) -> None:
     r = client.get("/api/v1/metricas")
     assert r.status_code == 401
 
 
 # ── POST /metricas ─────────────────────────────────────────────────────────────
 
-def test_criar_metrica_201(client: TestClient) -> None:
+def test_create_metric_201(client: TestClient) -> None:
     user = _cliente()
-    dto = _metrica_dto(user.id)
-    uc = _mock_uc(execute_return=dto)
+    uc = _uc(execute_return=_metric(user.id))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_create_metric] = lambda: uc
     try:
-        r = client.post(
-            "/api/v1/metricas",
-            json={
-                "week_start": "2026-05-11",
-                "meetings_held": 10,
-                "calls_made": 8,
-                "sales": 3,
-                "referrals": 1,
-            },
-        )
+        r = client.post("/api/v1/metricas", json={"name": "Calls"})
         assert r.status_code == 201
-        assert r.json()["week_start"] == "2026-05-11"
+        assert r.json()["name"] == "Calls"
     finally:
         app.dependency_overrides.clear()
 
 
-def test_criar_metrica_409_duplicate(client: TestClient) -> None:
-    user = _cliente()
-    uc = _mock_uc(execute_raises=DuplicateMetric("dup"))
-    app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_create_metric] = lambda: uc
-    try:
-        r = client.post(
-            "/api/v1/metricas",
-            json={
-                "week_start": "2026-05-11",
-                "meetings_held": 0,
-                "calls_made": 0,
-                "sales": 0,
-                "referrals": 0,
-            },
-        )
-        assert r.status_code == 409
-        assert r.json()["error"]["code"] == "METRICA_DUPLICADA"
-    finally:
-        app.dependency_overrides.clear()
-
-
-def test_criar_metrica_422_fora_da_janela(client: TestClient) -> None:
-    user = _cliente()
-    uc = _mock_uc(execute_raises=MetricOutOfWindow("janela"))
-    app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_create_metric] = lambda: uc
-    try:
-        r = client.post(
-            "/api/v1/metricas",
-            json={
-                "week_start": "2026-01-05",
-                "meetings_held": 0,
-                "calls_made": 0,
-                "sales": 0,
-                "referrals": 0,
-            },
-        )
-        assert r.status_code == 422
-    finally:
-        app.dependency_overrides.clear()
-
-
-def test_criar_metrica_422_semana_futura(client: TestClient) -> None:
-    user = _cliente()
-    uc = _mock_uc(execute_raises=FutureWeekNotAllowed("futura"))
-    app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_create_metric] = lambda: uc
-    try:
-        r = client.post(
-            "/api/v1/metricas",
-            json={
-                "week_start": "2026-06-01",
-                "meetings_held": 0,
-                "calls_made": 0,
-                "sales": 0,
-                "referrals": 0,
-            },
-        )
-        assert r.status_code == 422
-    finally:
-        app.dependency_overrides.clear()
-
-
-def test_criar_metrica_403_para_outro_usuario(client: TestClient) -> None:
+def test_create_metric_422_empty_name(client: TestClient) -> None:
     user = _cliente()
     app.dependency_overrides[get_current_user] = lambda: user
     try:
-        r = client.post(
-            "/api/v1/metricas",
-            json={
-                "user_id": str(uuid4()),  # different user
-                "week_start": "2026-05-11",
-                "meetings_held": 0,
-                "calls_made": 0,
-                "sales": 0,
-                "referrals": 0,
-            },
-        )
-        assert r.status_code == 403
+        r = client.post("/api/v1/metricas", json={"name": ""})
+        assert r.status_code == 400
     finally:
         app.dependency_overrides.clear()
 
 
-# ── PATCH /metricas/{id} ───────────────────────────────────────────────────────
+# ── PATCH /metricas/{id} ─────────────────────────────────────────────────────
 
-def test_atualizar_metrica_200(client: TestClient) -> None:
+def test_update_metric_200(client: TestClient) -> None:
     user = _cliente()
-    dto = _metrica_dto(user.id)
-    uc = _mock_uc(execute_return=dto)
+    uc = _uc(execute_return=_metric(user.id))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"meetings_held": 20})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"name": "New"})
         assert r.status_code == 200
     finally:
         app.dependency_overrides.clear()
 
 
-def test_atualizar_metrica_404(client: TestClient) -> None:
+def test_update_metric_404(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=MetricNotFound("nope"))
+    uc = _uc(execute_raises=MetricNotFound("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"meetings_held": 5})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"name": "x"})
         assert r.status_code == 404
     finally:
         app.dependency_overrides.clear()
 
 
-def test_atualizar_metrica_403_wrong_owner(client: TestClient) -> None:
+def test_update_metric_403_not_owned(client: TestClient) -> None:
     user = _cliente()
-    uc = _mock_uc(execute_raises=MetricNotOwnedByUser("not yours"))
+    uc = _uc(execute_raises=MetricNotOwnedByUser("nope"))
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_update_metric] = lambda: uc
     try:
-        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"meetings_held": 5})
+        r = client.patch(f"/api/v1/metricas/{uuid4()}", json={"name": "x"})
         assert r.status_code == 403
     finally:
         app.dependency_overrides.clear()
 
 
-# ── GET /dashboard/resumo ──────────────────────────────────────────────────────
+# ── DELETE /metricas/{id} ────────────────────────────────────────────────────
 
-def test_obter_resumo_200(client: TestClient) -> None:
+def test_delete_metric_204(client: TestClient) -> None:
     user = _cliente()
-    dto = DashboardSummaryDTO(
-        month="2026-05",
-        meetings_held=DeltaDTO(value=120, delta_pct=20.0),
-        calls_made=DeltaDTO(value=95, delta_pct=None),
-        sales=DeltaDTO(value=28, delta_pct=40.0),
-        referrals=DeltaDTO(value=12, delta_pct=None),
-    )
-    uc = _mock_uc(execute_return=dto)
+    uc = _uc(execute_return=None)
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_dashboard_summary] = lambda: uc
+    app.dependency_overrides[get_delete_metric] = lambda: uc
     try:
-        r = client.get("/api/v1/dashboard/resumo")
-        assert r.status_code == 200
-        body = r.json()
-        assert body["month"] == "2026-05"
-        assert body["calls_made"]["delta_pct"] is None
-        assert body["meetings_held"]["value"] == 120
+        r = client.delete(f"/api/v1/metricas/{uuid4()}")
+        assert r.status_code == 204
     finally:
         app.dependency_overrides.clear()
 
 
-def test_obter_resumo_requires_auth(client: TestClient) -> None:
-    r = client.get("/api/v1/dashboard/resumo")
-    assert r.status_code == 401
+# ── GET /metricas/planilha ───────────────────────────────────────────────────
 
-
-# ── GET /dashboard/series ──────────────────────────────────────────────────────
-
-def test_obter_series_200(client: TestClient) -> None:
+def test_my_sheet_200(client: TestClient) -> None:
     user = _cliente()
-    dto = DashboardSeriesDTO(
-        series=[
-            WeeklySeriesDTO(
-                week=date(2026, 5, 11),
-                meetings_held=10,
-                calls_made=8,
-                sales=3,
-                referrals=1,
-            )
-        ]
-    )
-    uc = _mock_uc(execute_return=dto)
+    uc = _uc(execute_return=_sheet())
     app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_dashboard_series] = lambda: uc
+    app.dependency_overrides[get_sheet] = lambda: uc
     try:
-        r = client.get("/api/v1/dashboard/series?semanas=1")
+        r = client.get("/api/v1/metricas/planilha?mes=2026-05")
         assert r.status_code == 200
-        assert len(r.json()["series"]) == 1
+        assert r.json()["month"] == "2026-05"
     finally:
         app.dependency_overrides.clear()
 
 
-# ── GET /admin/dashboard ───────────────────────────────────────────────────────
+# ── PUT /metricas/{id}/valores/{dia} ─────────────────────────────────────────
 
-def test_admin_dashboard_200(client: TestClient) -> None:
+def test_upsert_entry_200(client: TestClient) -> None:
+    user = _cliente()
+    uc = _uc(execute_return=_entry(9))
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_upsert_entry] = lambda: uc
+    try:
+        r = client.put(f"/api/v1/metricas/{uuid4()}/valores/2026-05-03", json={"value": 9})
+        assert r.status_code == 200
+        assert r.json()["value"] == 9
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_upsert_entry_403_not_owned(client: TestClient) -> None:
+    user = _cliente()
+    uc = _uc(execute_raises=MetricNotOwnedByUser("nope"))
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_upsert_entry] = lambda: uc
+    try:
+        r = client.put(f"/api/v1/metricas/{uuid4()}/valores/2026-05-03", json={"value": 1})
+        assert r.status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_delete_entry_204(client: TestClient) -> None:
+    user = _cliente()
+    uc = _uc(execute_return=None)
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_delete_entry] = lambda: uc
+    try:
+        r = client.delete(f"/api/v1/metricas/{uuid4()}/valores/2026-05-03")
+        assert r.status_code == 204
+    finally:
+        app.dependency_overrides.clear()
+
+
+# ── GET /admin/clients/{id}/metricas/planilha ────────────────────────────────
+
+def test_admin_client_sheet_200(client: TestClient) -> None:
     admin = _admin()
-    dto = AdminConsolidatedDTO(
-        aggregates=AdminAggregatesDTO(
-            meetings_held_total=100,
-            calls_made_total=80,
-            sales_total=20,
-            referrals_total=5,
-            users_with_metric_in_month=3,
-            users_without_metric_in_month=2,
-        ),
-        items=[
-            UserMonthlyMetricsDTO(
-                user_id=uuid4(),
-                name="Alice",
-                photo_url=None,
-                meetings_held=100,
-                calls_made=80,
-                sales=20,
-                referrals=5,
-                last_metric_at=date(2026, 5, 4),
-            )
-        ],
-        page=1,
-        page_size=20,
-        total=1,
-    )
-    uc = _mock_uc(execute_return=dto)
-    app.dependency_overrides[get_current_user] = lambda: admin
+    uc = _uc(execute_return=_sheet())
     app.dependency_overrides[require_admin] = lambda: admin
-    app.dependency_overrides[get_admin_consolidated] = lambda: uc
+    app.dependency_overrides[get_sheet] = lambda: uc
     try:
-        r = client.get("/api/v1/admin/dashboard")
+        r = client.get(f"/api/v1/admin/clients/{uuid4()}/metricas/planilha?mes=2026-05")
         assert r.status_code == 200
-        body = r.json()
-        assert body["aggregates"]["users_with_metric_in_month"] == 3
-        assert body["items"][0]["name"] == "Alice"
+        assert r.json()["month"] == "2026-05"
     finally:
         app.dependency_overrides.clear()
 
 
-def test_admin_dashboard_403_for_cliente(client: TestClient) -> None:
+def test_admin_client_sheet_403_for_cliente(client: TestClient) -> None:
     user = _cliente()
     app.dependency_overrides[get_current_user] = lambda: user
     try:
-        r = client.get("/api/v1/admin/dashboard")
+        r = client.get(f"/api/v1/admin/clients/{uuid4()}/metricas/planilha")
         assert r.status_code == 403
     finally:
         app.dependency_overrides.clear()

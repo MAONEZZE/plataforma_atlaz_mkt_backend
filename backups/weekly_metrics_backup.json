@@ -1,0 +1,68 @@
+[
+  {
+    "id": "52aed8df-dbe3-4ac9-8e2a-100841612c6d",
+    "user_id": "15433494-ad97-44f0-8e29-72897e0849c1",
+    "week_start": "2026-06-01",
+    "meetings_held": 0,
+    "calls_made": 0,
+    "sales": 0,
+    "referrals": 0,
+    "created_at": "2026-06-03 20:17:52.984149",
+    "updated_at": "2026-06-08 10:23:10.982456"
+  },
+  {
+    "id": "389f9009-bc01-4bc5-91f1-56a300175f34",
+    "user_id": "988947b7-5945-42eb-9d46-5b2393b5b340",
+    "week_start": "2026-06-01",
+    "meetings_held": 52,
+    "calls_made": 100,
+    "sales": 7,
+    "referrals": 99,
+    "created_at": "2026-06-05 13:08:00.993073",
+    "updated_at": "2026-06-05 13:08:00.993073"
+  },
+  {
+    "id": "d9f90725-bf76-4a99-b2f3-dd11209df580",
+    "user_id": "988947b7-5945-42eb-9d46-5b2393b5b340",
+    "week_start": "2026-05-25",
+    "meetings_held": 10,
+    "calls_made": 3,
+    "sales": 1,
+    "referrals": 22,
+    "created_at": "2026-06-05 13:08:22.495755",
+    "updated_at": "2026-06-05 13:08:22.495755"
+  },
+  {
+    "id": "fcc51fa7-050d-445c-8d14-4625026e95c9",
+    "user_id": "10288958-9ad2-4860-9661-a522bb4e2651",
+    "week_start": "2026-06-08",
+    "meetings_held": 1,
+    "calls_made": 1,
+    "sales": 0,
+    "referrals": 4,
+    "created_at": "2026-06-12 14:01:41.044594",
+    "updated_at": "2026-06-12 16:13:59.092246"
+  },
+  {
+    "id": "b5e2a36c-5bc2-40c2-a287-505ae3fb94e2",
+    "user_id": "ffb1aa18-0be6-408e-9f5c-65405f20fc19",
+    "week_start": "2026-06-08",
+    "meetings_held": 3,
+    "calls_made": 0,
+    "sales": 0,
+    "referrals": 0,
+    "created_at": "2026-06-12 14:31:40.203343",
+    "updated_at": "2026-06-12 14:31:40.203343"
+  },
+  {
+    "id": "8f7ca1ce-4f79-4dfb-baab-fb84601e62e9",
+    "user_id": "f7cb8528-0c6c-4e72-baa5-97650c51bd5f",
+    "week_start": "2026-06-15",
+    "meetings_held": 1,
+    "calls_made": 2,
+    "sales": 0,
+    "referrals": 0,
+    "created_at": "2026-06-18 14:00:10.704831",
+    "updated_at": "2026-06-18 14:00:10.704831"
+  }
+]

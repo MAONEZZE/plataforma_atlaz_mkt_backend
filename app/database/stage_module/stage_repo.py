@@ -10,7 +10,17 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database.shared.sqlalchemy_base import Base
 from app.domain.shared.utils import now_sp
 from app.domain.stage_module.stage_exceptions import StageAlreadyAttached, StageNotFound
-from app.domain.stage_module.stage_model import Stage, UserStage
+from app.domain.stage_module.stage_model import Stage, StageFolder, UserStage
+
+
+class StageFolderModel(Base):
+    __tablename__ = "stage_folders"
+    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    title: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    order: Mapped[int] = mapped_column("sort_order", sa.Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
 class StageModel(Base):
@@ -20,6 +30,12 @@ class StageModel(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     text: Mapped[str] = mapped_column(sa.Text, nullable=False)
     title: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    folder_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        sa.ForeignKey("ATZ_HUB.stage_folders.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    order: Mapped[int] = mapped_column("sort_order", sa.Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
@@ -42,7 +58,18 @@ class UserStageModel(Base):
 
 
 def _stage_from(m: StageModel) -> Stage:
-    return Stage(id=m.id, text=m.text, title=m.title, created_at=m.created_at)
+    return Stage(
+        id=m.id,
+        text=m.text,
+        title=m.title,
+        created_at=m.created_at,
+        folder_id=m.folder_id,
+        order=m.order,
+    )
+
+
+def _folder_from(m: StageFolderModel) -> StageFolder:
+    return StageFolder(id=m.id, title=m.title, order=m.order, created_at=m.created_at)
 
 
 def _user_stage_from(m: UserStageModel) -> UserStage:
@@ -54,7 +81,14 @@ class SqlAlchemyStageRepository:
         self._session = session
 
     async def create(self, stage: Stage) -> Stage:
-        model = StageModel(id=stage.id, text=stage.text, title=stage.title, created_at=stage.created_at)
+        model = StageModel(
+            id=stage.id,
+            text=stage.text,
+            title=stage.title,
+            folder_id=stage.folder_id,
+            order=stage.order,
+            created_at=stage.created_at,
+        )
         self._session.add(model)
         await self._session.flush()
         return stage
@@ -63,7 +97,12 @@ class SqlAlchemyStageRepository:
         await self._session.execute(
             sa.update(StageModel)
             .where(StageModel.id == stage.id)
-            .values(text=stage.text, title=stage.title)
+            .values(
+                text=stage.text,
+                title=stage.title,
+                folder_id=stage.folder_id,
+                order=stage.order,
+            )
         )
         return stage
 
@@ -81,7 +120,7 @@ class SqlAlchemyStageRepository:
 
     async def list_all(self) -> list[Stage]:
         result = await self._session.execute(
-            sa.select(StageModel).order_by(StageModel.created_at)
+            sa.select(StageModel).order_by(StageModel.order, StageModel.created_at)
         )
         return [_stage_from(m) for m in result.scalars()]
 
@@ -90,7 +129,7 @@ class SqlAlchemyStageRepository:
             sa.select(UserStageModel, StageModel)
             .join(StageModel, UserStageModel.stage_id == StageModel.id)
             .where(UserStageModel.user_id == user_id)
-            .order_by(StageModel.created_at)
+            .order_by(StageModel.order, StageModel.created_at)
         )
         return [(_user_stage_from(us), _stage_from(s)) for us, s in result.all()]
 
@@ -142,3 +181,42 @@ class SqlAlchemyStageRepository:
         if m is None:
             raise StageNotFound(f"UserStage not found for user {user_id}, stage {stage_id}.")
         return _user_stage_from(m)
+
+    # ── folders ──────────────────────────────────────────────────────────────
+
+    async def create_folder(self, folder: StageFolder) -> StageFolder:
+        model = StageFolderModel(
+            id=folder.id,
+            title=folder.title,
+            order=folder.order,
+            created_at=folder.created_at,
+        )
+        self._session.add(model)
+        await self._session.flush()
+        return folder
+
+    async def update_folder(self, folder: StageFolder) -> StageFolder:
+        await self._session.execute(
+            sa.update(StageFolderModel)
+            .where(StageFolderModel.id == folder.id)
+            .values(title=folder.title, order=folder.order)
+        )
+        return folder
+
+    async def delete_folder(self, folder_id: UUID) -> None:
+        await self._session.execute(
+            sa.delete(StageFolderModel).where(StageFolderModel.id == folder_id)
+        )
+
+    async def get_folder_by_id(self, folder_id: UUID) -> StageFolder | None:
+        result = await self._session.execute(
+            sa.select(StageFolderModel).where(StageFolderModel.id == folder_id)
+        )
+        m = result.scalar_one_or_none()
+        return _folder_from(m) if m else None
+
+    async def list_folders(self) -> list[StageFolder]:
+        result = await self._session.execute(
+            sa.select(StageFolderModel).order_by(StageFolderModel.order, StageFolderModel.created_at)
+        )
+        return [_folder_from(m) for m in result.scalars()]

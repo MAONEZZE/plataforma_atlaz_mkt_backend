@@ -7,3 +7,7 @@ class StageNotFound(DomainError):
 
 class StageAlreadyAttached(DomainError):
     pass
+
+
+class StageFolderNotFound(DomainError):
+    pass

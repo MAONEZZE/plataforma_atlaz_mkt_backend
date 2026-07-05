@@ -12,18 +12,18 @@ from app.api.controllers.product_module.product_dto.product_dto import (
     ProductOut,
     ProductPatchIn,
 )
-from app.database.shared.supabase_client import create_supabase_admin_client
-from app.domain.shared.base_exceptions import AppException
-from app.services.user_module.image_validation import detect_image_mime
 from app.database.product_module.product_repo import SqlAlchemyProductRepository
 from app.database.shared.db_factory import get_session
+from app.database.shared.supabase_client import create_supabase_admin_client
 from app.database.user_module.user_repo import SqlAlchemyUserRepository
 from app.domain.auth_module.auth_model import User as AuthUser
 from app.domain.product_module.product_exceptions import ProductInUse, ProductNotFound
+from app.domain.shared.base_exceptions import AppException
 from app.services.product_module.assign_product_to_client import AssignProductToClient
 from app.services.product_module.create_product import CreateProduct
 from app.services.product_module.delete_product import DeleteProduct
 from app.services.product_module.update_product import UpdateProduct
+from app.services.user_module.image_validation import detect_image_mime
 
 admin_router = APIRouter(prefix="/admin", tags=["admin-products"])
 

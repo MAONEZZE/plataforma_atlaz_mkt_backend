@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock
 from uuid import uuid4
@@ -21,7 +21,7 @@ from app.domain.product_module.product_exceptions import ProductInUse, ProductNo
 from app.domain.product_module.product_model import Product
 from app.main import app
 
-NOW = datetime.now(tz=timezone.utc)
+NOW = datetime.now(tz=UTC)
 
 
 def _admin() -> User:

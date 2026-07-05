@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock
 from uuid import uuid4
@@ -13,7 +13,7 @@ from app.services.product_module.delete_product import DeleteProduct
 from app.services.product_module.list_products import ListProducts
 from app.services.product_module.update_product import UpdateProduct
 
-NOW = datetime.now(tz=timezone.utc)
+NOW = datetime.now(tz=UTC)
 
 
 def _product(name: str = "Pro Plan", value: Decimal = Decimal("99.90")) -> Product:

@@ -4,27 +4,25 @@ from uuid import UUID
 
 
 @dataclass
-class WeeklyMetric:
+class Metric:
+    """A user-defined metric column in the spreadsheet."""
+
     id: UUID
     user_id: UUID
-    week_start: date
-    meetings_held: int
-    calls_made: int
-    sales: int
-    referrals: int
+    name: str
+    unit: str
+    order: int
     created_at: datetime
     updated_at: datetime
 
 
 @dataclass
-class UserMonthlyMetrics:
-    """Aggregated metrics for one user in one month — used by admin dashboard."""
+class MetricEntry:
+    """A single daily cell: the value of one metric on one day."""
 
-    user_id: UUID
-    name: str
-    photo_url: str | None
-    meetings_held: int
-    calls_made: int
-    sales: int
-    referrals: int
-    last_metric_at: date | None
+    id: UUID
+    metric_id: UUID
+    day: date
+    value: int
+    created_at: datetime
+    updated_at: datetime

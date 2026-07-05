@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -44,7 +44,7 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
             except Exception:
                 pass
 
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         endpoint = f"{request.method} {request.url.path}"
         line = f"{timestamp} {endpoint}: {json.dumps(body_obj, ensure_ascii=False)}\n"
 

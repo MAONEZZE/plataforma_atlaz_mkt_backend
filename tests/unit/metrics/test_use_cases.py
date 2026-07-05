@@ -1,54 +1,41 @@
-from dataclasses import replace
 from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
-from app.api.controllers.metrics_module.metrics_dto.metrics_dto import (
-    AdminConsolidatedDTO,
-    DashboardSeriesDTO,
-    DashboardSummaryDTO,
-    MetricDTO,
-)
-from app.domain.metrics_module.metrics_exceptions import (
-    DuplicateMetric,
-    FutureWeekNotAllowed,
-    MetricNotFound,
-    MetricNotOwnedByUser,
-    MetricOutOfWindow,
-)
-from app.domain.metrics_module.metrics_model import UserMonthlyMetrics, WeeklyMetric
+from app.domain.metrics_module.metrics_exceptions import MetricNotFound, MetricNotOwnedByUser
+from app.domain.metrics_module.metrics_model import Metric, MetricEntry
 from app.services.metrics_module.create_metric import CreateMetric
-from app.services.metrics_module.get_admin_consolidated import GetAdminConsolidated
-from app.services.metrics_module.get_dashboard_series import GetDashboardSeries
-from app.services.metrics_module.get_dashboard_summary import GetDashboardSummary
+from app.services.metrics_module.delete_entry import DeleteEntry
+from app.services.metrics_module.delete_metric import DeleteMetric
+from app.services.metrics_module.get_sheet import GetSheet
 from app.services.metrics_module.list_metrics import ListMetrics
 from app.services.metrics_module.update_metric import UpdateMetric
+from app.services.metrics_module.upsert_entry import UpsertEntry
 
-TODAY = date(2026, 5, 14)  # Wednesday
-MONDAY = date(2026, 5, 11)  # Monday of current week
+NOW = datetime.now(tz=UTC)
 
 
-def _make_metric(
-    user_id: UUID | None = None,
-    week_start: date = MONDAY,
-) -> WeeklyMetric:
-    now = datetime.now(tz=UTC)
-    return WeeklyMetric(
+def _metric(user_id=None, name="Calls", unit="qtd", order=0) -> Metric:
+    return Metric(
         id=uuid4(),
         user_id=user_id or uuid4(),
-        week_start=week_start,
-        meetings_held=10,
-        calls_made=8,
-        sales=3,
-        referrals=1,
-        created_at=now,
-        updated_at=now,
+        name=name,
+        unit=unit,
+        order=order,
+        created_at=NOW,
+        updated_at=NOW,
     )
 
 
-def _mock_repo(**kwargs: object) -> AsyncMock:
+def _entry(metric_id, day: date, value: int) -> MetricEntry:
+    return MetricEntry(
+        id=uuid4(), metric_id=metric_id, day=day, value=value, created_at=NOW, updated_at=NOW
+    )
+
+
+def _repo(**kwargs: object) -> AsyncMock:
     repo = AsyncMock()
     for attr, val in kwargs.items():
         if isinstance(val, Exception):
@@ -58,387 +45,155 @@ def _mock_repo(**kwargs: object) -> AsyncMock:
     return repo
 
 
-# ── CreateMetric ──────────────────────────────────────────────────────────────
+# ── CreateMetric ─────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_create_metric_happy_path() -> None:
+async def test_create_metric() -> None:
     user_id = uuid4()
-    metric = _make_metric(user_id=user_id)
-    repo = _mock_repo(get_by_user_and_week=None, create=metric)
-    uc = CreateMetric(repo)
-    result = await uc.execute(
-        user_id=user_id,
-        week_start=MONDAY,
-        meetings_held=10,
-        calls_made=8,
-        sales=3,
-        referrals=1,
-        is_admin=False,
-        today=TODAY,
-    )
-    assert isinstance(result, MetricDTO)
-    assert result.week_start == MONDAY
+    repo = _repo(create_metric=_metric(user_id, "Calls"))
+    await CreateMetric(repo).execute(user_id=user_id, name="Calls", unit="qtd")
+    created = repo.create_metric.call_args.args[0]
+    assert created.user_id == user_id
+    assert created.name == "Calls"
+    assert created.unit == "qtd"
 
 
-@pytest.mark.asyncio
-async def test_create_metric_normalizes_to_monday() -> None:
-    user_id = uuid4()
-    wednesday = date(2026, 5, 13)  # Wednesday → should normalize to Monday May 11
-    metric = _make_metric(user_id=user_id, week_start=MONDAY)
-    repo = _mock_repo(get_by_user_and_week=None, create=metric)
-    uc = CreateMetric(repo)
-    result = await uc.execute(
-        user_id=user_id,
-        week_start=wednesday,
-        meetings_held=0,
-        calls_made=0,
-        sales=0,
-        referrals=0,
-        is_admin=False,
-        today=TODAY,
-    )
-    assert result.week_start == MONDAY
-
-
-@pytest.mark.asyncio
-async def test_create_metric_future_week_raises() -> None:
-    future = date(2026, 5, 18)  # next Monday
-    repo = _mock_repo(get_by_user_and_week=None)
-    uc = CreateMetric(repo)
-    with pytest.raises(FutureWeekNotAllowed):
-        await uc.execute(
-            user_id=uuid4(),
-            week_start=future,
-            meetings_held=0,
-            calls_made=0,
-            sales=0,
-            referrals=0,
-            is_admin=False,
-            today=TODAY,
-        )
-
-
-@pytest.mark.asyncio
-async def test_create_metric_outside_window_raises_for_client() -> None:
-    old_week = date(2026, 4, 13)  # 31 days before TODAY=May 14 → outside 28-day window
-    repo = _mock_repo(get_by_user_and_week=None)
-    uc = CreateMetric(repo)
-    with pytest.raises(MetricOutOfWindow):
-        await uc.execute(
-            user_id=uuid4(),
-            week_start=old_week,
-            meetings_held=0,
-            calls_made=0,
-            sales=0,
-            referrals=0,
-            is_admin=False,
-            today=TODAY,
-        )
-
-
-@pytest.mark.asyncio
-async def test_create_metric_outside_window_allowed_for_admin() -> None:
-    old_week = date(2026, 1, 5)  # very old, admin can still create
-    metric = _make_metric(week_start=old_week)
-    repo = _mock_repo(get_by_user_and_week=None, create=metric)
-    uc = CreateMetric(repo)
-    result = await uc.execute(
-        user_id=uuid4(),
-        week_start=old_week,
-        meetings_held=5,
-        calls_made=5,
-        sales=1,
-        referrals=0,
-        is_admin=True,
-        today=TODAY,
-    )
-    assert isinstance(result, MetricDTO)
-
-
-@pytest.mark.asyncio
-async def test_create_metric_duplicate_raises() -> None:
-    existing = _make_metric()
-    repo = _mock_repo(get_by_user_and_week=existing)
-    uc = CreateMetric(repo)
-    with pytest.raises(DuplicateMetric):
-        await uc.execute(
-            user_id=existing.user_id,
-            week_start=MONDAY,
-            meetings_held=0,
-            calls_made=0,
-            sales=0,
-            referrals=0,
-            is_admin=False,
-            today=TODAY,
-        )
-
-
-# ── UpdateMetric ──────────────────────────────────────────────────────────
+# ── UpdateMetric ─────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_update_metric_happy_path() -> None:
     user_id = uuid4()
-    metric = _make_metric(user_id=user_id)
-    updated = replace(metric, meetings_held=20)
-    repo = _mock_repo(get_by_id=metric, update=updated)
-    uc = UpdateMetric(repo)
-    result = await uc.execute(
-        metric_id=metric.id,
-        requesting_user_id=user_id,
-        is_admin=False,
-        meetings_held=20,
-        today=TODAY,
+    metric = _metric(user_id, "old")
+    repo = _repo(get_metric_by_id=metric, update_metric=metric)
+    await UpdateMetric(repo).execute(
+        metric_id=metric.id, requesting_user_id=user_id, name="new", order=3
     )
-    assert result.meetings_held == 20
+    saved = repo.update_metric.call_args.args[0]
+    assert saved.name == "new"
+    assert saved.order == 3
 
 
 @pytest.mark.asyncio
-async def test_update_metric_not_found_raises() -> None:
-    repo = _mock_repo(get_by_id=None)
-    uc = UpdateMetric(repo)
+async def test_update_metric_not_found() -> None:
+    repo = _repo(get_metric_by_id=None)
     with pytest.raises(MetricNotFound):
-        await uc.execute(
-            metric_id=uuid4(),
-            requesting_user_id=uuid4(),
-            is_admin=False,
-            today=TODAY,
-        )
+        await UpdateMetric(repo).execute(metric_id=uuid4(), requesting_user_id=uuid4(), name="x")
 
 
 @pytest.mark.asyncio
-async def test_update_metric_wrong_owner_raises() -> None:
-    metric = _make_metric()
-    repo = _mock_repo(get_by_id=metric)
-    uc = UpdateMetric(repo)
+async def test_update_metric_not_owned() -> None:
+    metric = _metric(uuid4(), "x")
+    repo = _repo(get_metric_by_id=metric)
     with pytest.raises(MetricNotOwnedByUser):
-        await uc.execute(
-            metric_id=metric.id,
-            requesting_user_id=uuid4(),  # different user
-            is_admin=False,
-            today=TODAY,
+        await UpdateMetric(repo).execute(
+            metric_id=metric.id, requesting_user_id=uuid4(), name="y"
+        )
+
+
+# ── DeleteMetric ─────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_delete_metric_happy_path() -> None:
+    user_id = uuid4()
+    metric = _metric(user_id)
+    repo = _repo(get_metric_by_id=metric, delete_metric=None)
+    await DeleteMetric(repo).execute(metric_id=metric.id, requesting_user_id=user_id)
+    repo.delete_metric.assert_called_once_with(metric.id)
+
+
+@pytest.mark.asyncio
+async def test_delete_metric_not_owned() -> None:
+    metric = _metric(uuid4())
+    repo = _repo(get_metric_by_id=metric)
+    with pytest.raises(MetricNotOwnedByUser):
+        await DeleteMetric(repo).execute(metric_id=metric.id, requesting_user_id=uuid4())
+
+
+@pytest.mark.asyncio
+async def test_delete_metric_not_found() -> None:
+    repo = _repo(get_metric_by_id=None)
+    with pytest.raises(MetricNotFound):
+        await DeleteMetric(repo).execute(metric_id=uuid4(), requesting_user_id=uuid4())
+
+
+# ── ListMetrics ──────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_list_metrics() -> None:
+    user_id = uuid4()
+    repo = _repo(list_metrics=[_metric(user_id, "A"), _metric(user_id, "B")])
+    result = await ListMetrics(repo).execute(user_id=user_id)
+    assert len(result) == 2
+
+
+# ── UpsertEntry ──────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_upsert_entry_happy_path() -> None:
+    user_id = uuid4()
+    metric = _metric(user_id)
+    day = date(2026, 5, 10)
+    repo = _repo(get_metric_by_id=metric, upsert_entry=_entry(metric.id, day, 7))
+    result = await UpsertEntry(repo).execute(
+        metric_id=metric.id, requesting_user_id=user_id, day=day, value=7
+    )
+    assert result.value == 7
+    repo.upsert_entry.assert_called_once_with(metric.id, day, 7)
+
+
+@pytest.mark.asyncio
+async def test_upsert_entry_not_owned() -> None:
+    metric = _metric(uuid4())
+    repo = _repo(get_metric_by_id=metric)
+    with pytest.raises(MetricNotOwnedByUser):
+        await UpsertEntry(repo).execute(
+            metric_id=metric.id, requesting_user_id=uuid4(), day=date(2026, 5, 1), value=1
         )
 
 
 @pytest.mark.asyncio
-async def test_update_metric_outside_window_raises_for_client() -> None:
-    old_week = date(2026, 4, 12)  # outside 28-day window (33 days from May 14)
-    user_id = uuid4()
-    metric = _make_metric(user_id=user_id, week_start=old_week)
-    repo = _mock_repo(get_by_id=metric)
-    uc = UpdateMetric(repo)
-    with pytest.raises(MetricOutOfWindow):
-        await uc.execute(
-            metric_id=metric.id,
-            requesting_user_id=user_id,
-            is_admin=False,
-            today=TODAY,
+async def test_upsert_entry_metric_not_found() -> None:
+    repo = _repo(get_metric_by_id=None)
+    with pytest.raises(MetricNotFound):
+        await UpsertEntry(repo).execute(
+            metric_id=uuid4(), requesting_user_id=uuid4(), day=date(2026, 5, 1), value=1
         )
 
 
+# ── DeleteEntry ──────────────────────────────────────────────────────────────
+
 @pytest.mark.asyncio
-async def test_update_metric_outside_window_allowed_for_admin() -> None:
-    old_week = date(2026, 1, 5)
+async def test_delete_entry_happy_path() -> None:
     user_id = uuid4()
-    metric = _make_metric(user_id=user_id, week_start=old_week)
-    updated = replace(metric, meetings_held=99)
-    repo = _mock_repo(get_by_id=metric, update=updated)
-    uc = UpdateMetric(repo)
-    result = await uc.execute(
-        metric_id=metric.id,
-        requesting_user_id=uuid4(),  # admin can edit anyone's
-        is_admin=True,
-        meetings_held=99,
-        today=TODAY,
-    )
-    assert result.meetings_held == 99
+    metric = _metric(user_id)
+    day = date(2026, 5, 10)
+    repo = _repo(get_metric_by_id=metric, delete_entry=None)
+    await DeleteEntry(repo).execute(metric_id=metric.id, requesting_user_id=user_id, day=day)
+    repo.delete_entry.assert_called_once_with(metric.id, day)
 
 
-# ── ListMetrics ─────────────────────────────────────────────────────────────
+# ── GetSheet ─────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_list_metrics_returns_paged() -> None:
+async def test_get_sheet_builds_grid_and_days() -> None:
     user_id = uuid4()
-    metrics = [_make_metric(user_id=user_id) for _ in range(3)]
-    repo = _mock_repo(list_all=(metrics, 3))
-    uc = ListMetrics(repo)
-    result = await uc.execute(
-        user_id=user_id, month=None, page=1, page_size=20
-    )
-    assert result.total == 3
-    assert len(result.items) == 3
-    assert all(isinstance(i, MetricDTO) for i in result.items)
-
-
-# ── GetDashboardSummary ───────────────────────────────────────────────────────
-
-@pytest.mark.asyncio
-async def test_summary_computes_delta() -> None:
-    user_id = uuid4()
-
-    async def sum_by_month(uid: UUID, month: str) -> dict[str, int]:
-        if month == "2026-05":
-            return {"meetings_held": 120, "calls_made": 95,
-                    "sales": 28, "referrals": 12}
-        # prev month 2026-04
-        return {"meetings_held": 100, "calls_made": 0,
-                "sales": 20, "referrals": 0}
-
-    repo = AsyncMock()
-    repo.sum_by_month.side_effect = sum_by_month
-    uc = GetDashboardSummary(repo)
-    result = await uc.execute(user_id=user_id, month="2026-05")
-
-    assert result.month == "2026-05"
-    assert result.meetings_held.value == 120
-    assert result.meetings_held.delta_pct == 20.0  # (120-100)/100*100
-    # prev=0 → delta_pct=null
-    assert result.calls_made.delta_pct is None
-    assert result.referrals.delta_pct is None
-
-
-@pytest.mark.asyncio
-async def test_summary_defaults_month_to_current() -> None:
-    repo = AsyncMock()
-    repo.sum_by_month.return_value = {
-        "meetings_held": 0,
-        "calls_made": 0,
-        "sales": 0,
-        "referrals": 0,
-    }
-    uc = GetDashboardSummary(repo)
-    result = await uc.execute(user_id=uuid4())
-    assert isinstance(result, DashboardSummaryDTO)
-    assert repo.sum_by_month.call_count == 2  # current + previous month
-
-
-# ── GetDashboardSeries ──────────────────────────────────────────────────────
-
-@pytest.mark.asyncio
-async def test_series_fills_gaps_with_zeros() -> None:
-    user_id = uuid4()
-    repo = _mock_repo(get_by_weeks=[])
-    uc = GetDashboardSeries(repo)
-    result = await uc.execute(
-        user_id=user_id, semanas=4, today=date(2026, 5, 14)
-    )
-    assert isinstance(result, DashboardSeriesDTO)
-    assert len(result.series) == 4
-    for item in result.series:
-        assert item.meetings_held == 0
-        assert item.calls_made == 0
-
-
-@pytest.mark.asyncio
-async def test_series_correct_length() -> None:
-    repo = _mock_repo(get_by_weeks=[])
-    uc = GetDashboardSeries(repo)
-    result = await uc.execute(
-        user_id=uuid4(), semanas=12, today=date(2026, 5, 14)
-    )
-    assert len(result.series) == 12
-
-
-@pytest.mark.asyncio
-async def test_series_ascending_order() -> None:
-    repo = _mock_repo(get_by_weeks=[])
-    uc = GetDashboardSeries(repo)
-    result = await uc.execute(
-        user_id=uuid4(), semanas=4, today=date(2026, 5, 14)
-    )
-    dates = [s.week for s in result.series]
-    assert dates == sorted(dates)
-
-
-@pytest.mark.asyncio
-async def test_series_includes_data_when_available() -> None:
-    user_id = uuid4()
-    now = datetime.now(tz=UTC)
-    # May 11 is in the last 4 weeks of May 14
-    week = date(2026, 5, 11)
-    metric = WeeklyMetric(
-        id=uuid4(), user_id=user_id, week_start=week,
-        meetings_held=5, calls_made=4,
-        sales=2, referrals=1,
-        created_at=now, updated_at=now,
-    )
-    repo = _mock_repo(get_by_weeks=[metric])
-    uc = GetDashboardSeries(repo)
-    result = await uc.execute(
-        user_id=user_id, semanas=4, today=date(2026, 5, 14)
-    )
-    may11_entry = next(s for s in result.series if s.week == week)
-    assert may11_entry.meetings_held == 5
-    assert may11_entry.referrals == 1
-
-
-# ── GetAdminConsolidated ──────────────────────────────────────────────────────
-
-@pytest.mark.asyncio
-async def test_admin_consolidated_aggregates_correctly() -> None:
-    items = [
-        UserMonthlyMetrics(
-            user_id=uuid4(), name="Alice", photo_url=None,
-            meetings_held=100, calls_made=80,
-            sales=25, referrals=5,
-            last_metric_at=date(2026, 5, 4),
-        ),
-        UserMonthlyMetrics(
-            user_id=uuid4(), name="Bob", photo_url=None,
-            meetings_held=0, calls_made=0,
-            sales=0, referrals=0,
-            last_metric_at=None,
-        ),
+    m1 = _metric(user_id, "Calls")
+    m2 = _metric(user_id, "Sales")
+    entries = [
+        _entry(m1.id, date(2026, 5, 3), 5),
+        _entry(m1.id, date(2026, 5, 4), 8),
+        _entry(m2.id, date(2026, 5, 3), 1),
     ]
-    repo = _mock_repo(list_clients_with_metrics_month=items)
-    uc = GetAdminConsolidated(repo)
-    result = await uc.execute(month="2026-05", search=None, page=1, page_size=20)
+    repo = _repo(list_metrics=[m1, m2], list_entries=entries)
+    sheet = await GetSheet(repo).execute(user_id=user_id, month="2026-05")
 
-    assert isinstance(result, AdminConsolidatedDTO)
-    assert result.aggregates.meetings_held_total == 100
-    assert result.aggregates.users_with_metric_in_month == 1
-    assert result.aggregates.users_without_metric_in_month == 1
-    assert result.total == 2
-
-
-@pytest.mark.asyncio
-async def test_admin_consolidated_filters_by_search() -> None:
-    items = [
-        UserMonthlyMetrics(
-            user_id=uuid4(), name="Alice", photo_url=None,
-            meetings_held=10, calls_made=8,
-            sales=2, referrals=1,
-            last_metric_at=date(2026, 5, 4),
-        ),
-        UserMonthlyMetrics(
-            user_id=uuid4(), name="Carlos", photo_url=None,
-            meetings_held=5, calls_made=4,
-            sales=1, referrals=0,
-            last_metric_at=date(2026, 5, 4),
-        ),
-    ]
-    repo = _mock_repo(list_clients_with_metrics_month=items)
-    uc = GetAdminConsolidated(repo)
-    result = await uc.execute(month="2026-05", search="ali", page=1, page_size=20)
-
-    assert result.total == 1
-    assert result.items[0].name == "Alice"
-
-
-@pytest.mark.asyncio
-async def test_admin_consolidated_paginates() -> None:
-    items = [
-        UserMonthlyMetrics(
-            user_id=uuid4(), name=f"User{i}", photo_url=None,
-            meetings_held=i, calls_made=0,
-            sales=0, referrals=0,
-            last_metric_at=None,
-        )
-        for i in range(25)
-    ]
-    repo = _mock_repo(list_clients_with_metrics_month=items)
-    uc = GetAdminConsolidated(repo)
-    result = await uc.execute(month="2026-05", search=None, page=2, page_size=10)
-
-    assert result.total == 25
-    assert len(result.items) == 10
-    assert result.page == 2
+    assert sheet.month == "2026-05"
+    assert len(sheet.columns) == 2
+    assert len(sheet.days) == 31  # May has 31 days
+    assert sheet.entries[str(m1.id)]["2026-05-03"] == 5
+    assert sheet.entries[str(m1.id)]["2026-05-04"] == 8
+    assert sheet.entries[str(m2.id)]["2026-05-03"] == 1
+    args = repo.list_entries.call_args.args
+    passed = list(args) + list(repo.list_entries.call_args.kwargs.values())
+    assert date(2026, 5, 1) in passed
+    assert date(2026, 5, 31) in passed

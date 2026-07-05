@@ -1,33 +1,31 @@
-from datetime import date, datetime, timedelta
-from uuid import UUID
+from datetime import date, datetime
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    Boolean,
     Date,
     ForeignKey,
     Integer,
     String,
+    Text,
     UniqueConstraint,
-    and_,
-    func,
+    delete,
     select,
     update,
 )
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.shared.sqlalchemy_base import Base
-from app.domain.metrics_module.metrics_model import UserMonthlyMetrics, WeeklyMetric
+from app.domain.metrics_module.metrics_model import Metric, MetricEntry
+from app.domain.shared.utils import now_sp
 
 
-class WeeklyMetricModel(Base):
-    __tablename__ = "weekly_metrics"
-    __table_args__ = (
-        UniqueConstraint("user_id", "week_start"),
-        {"schema": "ATZ_HUB", "extend_existing": True},
-    )
+class MetricModel(Base):
+    __tablename__ = "metrics"
+    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     user_id: Mapped[UUID] = mapped_column(
@@ -35,46 +33,50 @@ class WeeklyMetricModel(Base):
         ForeignKey("ATZ_HUB.users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    week_start: Mapped[date] = mapped_column(Date, nullable=False)
-    meetings_held: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    calls_made: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    sales: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    referrals: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    unit: Mapped[str] = mapped_column(String, nullable=False, default="qtd")
+    order: Mapped[int] = mapped_column("sort_order", Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
-class UserMetricModel(Base):
-    """Read-only view of public.users fields used by the metrics context."""
-
-    __tablename__ = "users"
-    __table_args__ = {"schema": "ATZ_HUB", "extend_existing": True}
+class MetricEntryModel(Base):
+    __tablename__ = "metric_entries"
+    __table_args__ = (
+        UniqueConstraint("metric_id", "day"),
+        {"schema": "ATZ_HUB", "extend_existing": True},
+    )
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    photo_url: Mapped[str | None] = mapped_column(String, nullable=True)
-    role: Mapped[str] = mapped_column(String, nullable=False)
-    inactive: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    metric_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("ATZ_HUB.metrics.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    value: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
 
 
-def _month_range(year: int, month: int) -> tuple[date, date]:
-    start = date(year, month, 1)
-    if month == 12:
-        end = date(year + 1, 1, 1) - timedelta(days=1)
-    else:
-        end = date(year, month + 1, 1) - timedelta(days=1)
-    return start, end
-
-
-def _from_model(m: WeeklyMetricModel) -> WeeklyMetric:
-    return WeeklyMetric(
+def _metric_from(m: MetricModel) -> Metric:
+    return Metric(
         id=m.id,
         user_id=m.user_id,
-        week_start=m.week_start,
-        meetings_held=m.meetings_held,
-        calls_made=m.calls_made,
-        sales=m.sales,
-        referrals=m.referrals,
+        name=m.name,
+        unit=m.unit,
+        order=m.order,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+def _entry_from(m: MetricEntryModel) -> MetricEntry:
+    return MetricEntry(
+        id=m.id,
+        metric_id=m.metric_id,
+        day=m.day,
+        value=m.value,
         created_at=m.created_at,
         updated_at=m.updated_at,
     )
@@ -84,15 +86,15 @@ class SqlAlchemyMetricRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def create(self, metric: WeeklyMetric) -> WeeklyMetric:
-        model = WeeklyMetricModel(
+    # ── metric columns ─────────────────────────────────────────────────────
+
+    async def create_metric(self, metric: Metric) -> Metric:
+        model = MetricModel(
             id=metric.id,
             user_id=metric.user_id,
-            week_start=metric.week_start,
-            meetings_held=metric.meetings_held,
-            calls_made=metric.calls_made,
-            sales=metric.sales,
-            referrals=metric.referrals,
+            name=metric.name,
+            unit=metric.unit,
+            order=metric.order,
             created_at=metric.created_at,
             updated_at=metric.updated_at,
         )
@@ -100,146 +102,77 @@ class SqlAlchemyMetricRepository:
         await self._session.flush()
         return metric
 
-    async def get_by_id(self, metric_id: UUID) -> WeeklyMetric | None:
-        result = await self._session.execute(
-            select(WeeklyMetricModel).where(WeeklyMetricModel.id == metric_id)
-        )
-        m = result.scalar_one_or_none()
-        return _from_model(m) if m else None
-
-    async def get_by_user_and_week(
-        self, user_id: UUID, week_start: date
-    ) -> WeeklyMetric | None:
-        result = await self._session.execute(
-            select(WeeklyMetricModel).where(
-                WeeklyMetricModel.user_id == user_id,
-                WeeklyMetricModel.week_start == week_start,
-            )
-        )
-        m = result.scalar_one_or_none()
-        return _from_model(m) if m else None
-
-    async def list_all(
-        self, user_id: UUID, month: str | None, page: int, page_size: int
-    ) -> tuple[list[WeeklyMetric], int]:
-        conditions = [WeeklyMetricModel.user_id == user_id]
-        if month:
-            year, mo = int(month[:4]), int(month[5:7])
-            start, end = _month_range(year, mo)
-            conditions.extend(
-                [
-                    WeeklyMetricModel.week_start >= start,
-                    WeeklyMetricModel.week_start <= end,
-                ]
-            )
-
-        count_result = await self._session.execute(
-            select(func.count()).select_from(WeeklyMetricModel).where(*conditions)
-        )
-        total = count_result.scalar_one()
-
-        result = await self._session.execute(
-            select(WeeklyMetricModel)
-            .where(*conditions)
-            .order_by(WeeklyMetricModel.week_start.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-        )
-        return [_from_model(m) for m in result.scalars()], total
-
-    async def update(self, metric: WeeklyMetric) -> WeeklyMetric:
+    async def update_metric(self, metric: Metric) -> Metric:
         await self._session.execute(
-            update(WeeklyMetricModel)
-            .where(WeeklyMetricModel.id == metric.id)
+            update(MetricModel)
+            .where(MetricModel.id == metric.id)
             .values(
-                meetings_held=metric.meetings_held,
-                calls_made=metric.calls_made,
-                sales=metric.sales,
-                referrals=metric.referrals,
+                name=metric.name,
+                unit=metric.unit,
+                order=metric.order,
                 updated_at=metric.updated_at,
             ),
             execution_options={"synchronize_session": False},
         )
         return metric
 
-    async def get_by_weeks(self, user_id: UUID, weeks: list[date]) -> list[WeeklyMetric]:
-        if not weeks:
-            return []
+    async def delete_metric(self, metric_id: UUID) -> None:
+        await self._session.execute(delete(MetricModel).where(MetricModel.id == metric_id))
+
+    async def get_metric_by_id(self, metric_id: UUID) -> Metric | None:
         result = await self._session.execute(
-            select(WeeklyMetricModel).where(
-                WeeklyMetricModel.user_id == user_id,
-                WeeklyMetricModel.week_start.in_(weeks),
+            select(MetricModel).where(MetricModel.id == metric_id)
+        )
+        m = result.scalar_one_or_none()
+        return _metric_from(m) if m else None
+
+    async def list_metrics(self, user_id: UUID) -> list[Metric]:
+        result = await self._session.execute(
+            select(MetricModel)
+            .where(MetricModel.user_id == user_id)
+            .order_by(MetricModel.order, MetricModel.created_at)
+        )
+        return [_metric_from(m) for m in result.scalars()]
+
+    # ── daily cells ──────────────────────────────────────────────────────────
+
+    async def upsert_entry(self, metric_id: UUID, day: date, value: int) -> MetricEntry:
+        now = now_sp()
+        stmt = (
+            pg_insert(MetricEntryModel)
+            .values(
+                id=uuid4(),
+                metric_id=metric_id,
+                day=day,
+                value=value,
+                created_at=now,
+                updated_at=now,
+            )
+            .on_conflict_do_update(
+                index_elements=[MetricEntryModel.metric_id, MetricEntryModel.day],
+                set_={"value": value, "updated_at": now},
+            )
+            .returning(MetricEntryModel)
+        )
+        result = await self._session.execute(stmt)
+        return _entry_from(result.scalar_one())
+
+    async def delete_entry(self, metric_id: UUID, day: date) -> None:
+        await self._session.execute(
+            delete(MetricEntryModel).where(
+                MetricEntryModel.metric_id == metric_id,
+                MetricEntryModel.day == day,
             )
         )
-        return [_from_model(m) for m in result.scalars()]
 
-    async def sum_by_month(self, user_id: UUID, month: str) -> dict[str, int]:
-        year, mo = int(month[:4]), int(month[5:7])
-        start, end = _month_range(year, mo)
+    async def list_entries(self, user_id: UUID, start: date, end: date) -> list[MetricEntry]:
         result = await self._session.execute(
-            select(
-                func.coalesce(func.sum(WeeklyMetricModel.meetings_held), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.calls_made), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.sales), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.referrals), 0),
-            ).where(
-                WeeklyMetricModel.user_id == user_id,
-                WeeklyMetricModel.week_start >= start,
-                WeeklyMetricModel.week_start <= end,
-            )
-        )
-        row = result.one()
-        return {
-            "meetings_held": int(row[0]),
-            "calls_made": int(row[1]),
-            "sales": int(row[2]),
-            "referrals": int(row[3]),
-        }
-
-    async def list_clients_with_metrics_month(self, month: str) -> list[UserMonthlyMetrics]:
-        year, mo = int(month[:4]), int(month[5:7])
-        start, end = _month_range(year, mo)
-        result = await self._session.execute(
-            select(
-                UserMetricModel.id,
-                UserMetricModel.name,
-                UserMetricModel.photo_url,
-                func.coalesce(func.sum(WeeklyMetricModel.meetings_held), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.calls_made), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.sales), 0),
-                func.coalesce(func.sum(WeeklyMetricModel.referrals), 0),
-                func.max(WeeklyMetricModel.week_start),
-            )
-            .select_from(UserMetricModel)
-            .outerjoin(
-                WeeklyMetricModel,
-                and_(
-                    WeeklyMetricModel.user_id == UserMetricModel.id,
-                    WeeklyMetricModel.week_start >= start,
-                    WeeklyMetricModel.week_start <= end,
-                ),
-            )
+            select(MetricEntryModel)
+            .join(MetricModel, MetricEntryModel.metric_id == MetricModel.id)
             .where(
-                UserMetricModel.role == "cliente",
-                UserMetricModel.inactive.is_(False),
+                MetricModel.user_id == user_id,
+                MetricEntryModel.day >= start,
+                MetricEntryModel.day <= end,
             )
-            .group_by(
-                UserMetricModel.id,
-                UserMetricModel.name,
-                UserMetricModel.photo_url,
-            )
-            .order_by(UserMetricModel.name)
         )
-        return [
-            UserMonthlyMetrics(
-                user_id=row[0],
-                name=row[1],
-                photo_url=row[2],
-                meetings_held=int(row[3]),
-                calls_made=int(row[4]),
-                sales=int(row[5]),
-                referrals=int(row[6]),
-                last_metric_at=row[7],
-            )
-            for row in result.all()
-        ]
+        return [_entry_from(m) for m in result.scalars()]
