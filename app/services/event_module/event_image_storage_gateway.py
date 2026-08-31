@@ -2,10 +2,10 @@ from typing import Protocol
 from uuid import UUID
 
 
-class PhotoStorageGateway(Protocol):
+class EventImageStorageGateway(Protocol):
     async def upload(
         self,
-        user_id: UUID,
+        event_id: UUID,
         data: bytes,
         content_type: str,
         extension: str,

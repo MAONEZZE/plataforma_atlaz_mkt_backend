@@ -19,6 +19,7 @@ if config.config_file_name:
 
 import app.database.auth_module.auth_repo  # noqa: F401
 import app.database.content_module.content_repo  # noqa: F401
+import app.database.event_module.event_repo  # noqa: F401
 import app.database.metrics_module.metrics_repo  # noqa: F401
 import app.database.user_module.user_repo  # noqa: F401
 

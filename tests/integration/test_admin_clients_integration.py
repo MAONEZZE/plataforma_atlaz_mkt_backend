@@ -70,7 +70,7 @@ class _FakeRepo:
         self._upsert_raises = upsert_raises
         self._list_result = list_result or ([], 0)
         self.upsert_called_with: User | None = None
-        self.list_called_with: tuple[int, int] | None = None
+        self.list_called_with: tuple[int, int, str | None, str | None, str] | None = None
 
     async def get_by_id(self, user_id: UUID) -> User | None:
         raise AssertionError("service must not call get_by_id")
@@ -86,9 +86,14 @@ class _FakeRepo:
         return user
 
     async def list_clients(
-        self, page: int, page_size: int
+        self,
+        page: int,
+        page_size: int,
+        search: str | None = None,
+        sort: str | None = None,
+        order: str = "asc",
     ) -> tuple[list[User], int]:
-        self.list_called_with = (page, page_size)
+        self.list_called_with = (page, page_size, search, sort, order)
         return self._list_result
 
 
@@ -372,7 +377,7 @@ def test_list_clients_uses_query_defaults() -> None:
     try:
         resp = client.get("/api/v1/admin/clients")
         assert resp.status_code == 200
-        assert repo.list_called_with == (1, 50)
+        assert repo.list_called_with == (1, 50, None, None, "asc")
     finally:
         _clear()
 
@@ -404,6 +409,53 @@ def test_list_clients_rejects_page_zero() -> None:
     client = _client(list_uc=_list_use_case(repo))
     try:
         resp = client.get("/api/v1/admin/clients?page=0")
+        assert resp.status_code in (400, 422)
+        assert repo.list_called_with is None
+    finally:
+        _clear()
+
+
+# ── busca / ordenar / direcao ─────────────────────────────────────────────────
+
+
+def test_list_clients_forwards_busca() -> None:
+    repo = _FakeRepo(list_result=([], 0))
+    client = _client(list_uc=_list_use_case(repo))
+    try:
+        resp = client.get("/api/v1/admin/clients?busca=maria")
+        assert resp.status_code == 200
+        assert repo.list_called_with == (1, 50, "maria", None, "asc")
+    finally:
+        _clear()
+
+
+def test_list_clients_forwards_ordenar_and_direcao() -> None:
+    repo = _FakeRepo(list_result=([], 0))
+    client = _client(list_uc=_list_use_case(repo))
+    try:
+        resp = client.get("/api/v1/admin/clients?ordenar=name&direcao=desc")
+        assert resp.status_code == 200
+        assert repo.list_called_with == (1, 50, None, "name", "desc")
+    finally:
+        _clear()
+
+
+def test_list_clients_invalid_ordenar_returns_400_or_422() -> None:
+    repo = _FakeRepo()
+    client = _client(list_uc=_list_use_case(repo))
+    try:
+        resp = client.get("/api/v1/admin/clients?ordenar=xpto")
+        assert resp.status_code in (400, 422)
+        assert repo.list_called_with is None
+    finally:
+        _clear()
+
+
+def test_list_clients_invalid_direcao_returns_400_or_422() -> None:
+    repo = _FakeRepo()
+    client = _client(list_uc=_list_use_case(repo))
+    try:
+        resp = client.get("/api/v1/admin/clients?ordenar=name&direcao=invalida")
         assert resp.status_code in (400, 422)
         assert repo.list_called_with is None
     finally:

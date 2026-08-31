@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
 import pytest
@@ -157,8 +157,8 @@ _WEBP_BYTES = b"RIFF\x00\x00\x00\x00WEBP" + b"\x00" * 10
 _FAKE_BYTES = b"FAKEFAKEFAKE"
 
 
-def _storage(url: str = "https://cdn.example.com/photo.jpg") -> MagicMock:
-    mock = MagicMock()
+def _storage(url: str = "https://cdn.example.com/photo.jpg") -> AsyncMock:
+    mock = AsyncMock()
     mock.upload.return_value = url
     return mock
 

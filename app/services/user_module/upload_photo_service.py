@@ -34,7 +34,7 @@ class UploadPhoto:
             raise UserNotFound("Usuário não encontrado.")
 
         ext = _EXTENSION_MAP[inp.content_type]
-        photo_url = self._storage.upload(
+        photo_url = await self._storage.upload(
             user_id=inp.user_id,
             data=inp.data,
             content_type=inp.content_type,

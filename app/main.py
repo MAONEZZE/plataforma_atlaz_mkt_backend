@@ -9,6 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.config.logging import configure_logging
 from app.api.config.middlewares.middlewares import (
@@ -33,6 +34,12 @@ from app.api.controllers.content_module.content_routes.content_router import (
 )
 from app.api.controllers.content_module.content_routes.content_router import (
     router as content_router,
+)
+from app.api.controllers.event_module.event_routes.admin_router import (
+    admin_router as admin_events_router,
+)
+from app.api.controllers.event_module.event_routes.event_router import (
+    router as events_router,
 )
 from app.api.controllers.metrics_module.metrics_routes.metrics_router import (
     admin_router as admin_metrics_router,
@@ -76,9 +83,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="Atlaz Backend",
+    title="akeel Backend",
     version="0.1.0",
-    docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
+    docs_url="/docs" if settings.ENVIRONMENT != "prod" else "dev",
     redoc_url=None,
     lifespan=lifespan,
 )
@@ -88,7 +95,9 @@ app.state.limiter = limiter
 
 
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    # Sincrono de proposito: o SlowAPIMiddleware descarta handlers async
+    # (slowapi.middleware.sync_check_limits) e cairia no envelope padrao dele.
     return JSONResponse(
         status_code=429,
         content={
@@ -99,6 +108,9 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
         },
     )
 
+
+# ── Rate limit enforcement — sem este middleware os default_limits nao valem ───
+app.add_middleware(SlowAPIMiddleware)
 
 # ── Request body logger ────────────────────────────────────────────────────────
 app.add_middleware(RequestLogMiddleware)
@@ -112,7 +124,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # ── CORS — must be outermost so headers are always present even on 500 ─────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -177,3 +189,5 @@ app.include_router(stages_router, prefix="/api/v1")
 app.include_router(admin_stages_router, prefix="/api/v1")
 app.include_router(products_router, prefix="/api/v1")
 app.include_router(admin_products_router, prefix="/api/v1")
+app.include_router(events_router, prefix="/api/v1")
+app.include_router(admin_events_router, prefix="/api/v1")

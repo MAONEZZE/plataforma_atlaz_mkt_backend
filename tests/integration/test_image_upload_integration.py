@@ -7,7 +7,7 @@ detect_image_mime is exercised end-to-end through the HTTP layer.
 import io
 from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -66,7 +66,7 @@ def _make_upload_use_case(photo_url: str = "https://cdn.example.com/photo.jpg") 
     repo.get_by_id.return_value = _DOMAIN_USER
     repo.update.side_effect = lambda u: u
 
-    storage = MagicMock()
+    storage = AsyncMock()
     storage.upload.return_value = photo_url
 
     return UploadPhoto(repo=repo, storage=storage)

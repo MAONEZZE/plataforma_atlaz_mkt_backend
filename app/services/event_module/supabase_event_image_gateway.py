@@ -7,19 +7,19 @@ from supabase import Client
 from app.api.config.settings import settings
 
 
-class SupabaseStorageGateway:
+class SupabaseEventImageGateway:
     def __init__(self, client: Client) -> None:
         self._client = client
         self._bucket = settings.SUPABASE_BUCKET
 
     async def upload(
         self,
-        user_id: UUID,
+        event_id: UUID,
         data: bytes,
         content_type: str,
         extension: str,
     ) -> str:
-        path = f"pictures/profile/{user_id}.{extension}"
+        path = f"pictures/events/{event_id}.{extension}"
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
             None,

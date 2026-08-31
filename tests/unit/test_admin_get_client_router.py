@@ -6,7 +6,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.config.dependencies.auth_deps import get_current_user, require_admin
-from app.api.controllers.user_module.user_routes.admin_router import _get_client, _stage_repo
+from app.api.controllers.user_module.user_routes.admin_router import (
+    _event_repo,
+    _get_client,
+    _stage_repo,
+)
 from app.domain.auth_module.auth_model import User as AuthUser
 from app.domain.user_module.user_exceptions import UserNotFound
 from app.domain.user_module.user_model import User
@@ -50,14 +54,18 @@ def test_get_client_200(client: TestClient) -> None:
     uc.execute.return_value = _domain_user()
     stage_repo = AsyncMock()
     stage_repo.list_for_user.return_value = []
+    event_repo = AsyncMock()
+    event_repo.list_for_client_only.return_value = []
     app.dependency_overrides[require_admin] = _admin
     app.dependency_overrides[_get_client] = lambda: uc
     app.dependency_overrides[_stage_repo] = lambda: stage_repo
+    app.dependency_overrides[_event_repo] = lambda: event_repo
     try:
         r = client.get(f"/api/v1/admin/clients/{uuid4()}")
         assert r.status_code == 200
         assert r.json()["name"] == "Maria"
         assert r.json()["stages"] == []
+        assert r.json()["events"] == []
     finally:
         app.dependency_overrides.clear()
 
@@ -66,9 +74,11 @@ def test_get_client_404(client: TestClient) -> None:
     uc = AsyncMock()
     uc.execute.side_effect = UserNotFound("nope")
     stage_repo = AsyncMock()
+    event_repo = AsyncMock()
     app.dependency_overrides[require_admin] = _admin
     app.dependency_overrides[_get_client] = lambda: uc
     app.dependency_overrides[_stage_repo] = lambda: stage_repo
+    app.dependency_overrides[_event_repo] = lambda: event_repo
     try:
         r = client.get(f"/api/v1/admin/clients/{uuid4()}")
         assert r.status_code == 404

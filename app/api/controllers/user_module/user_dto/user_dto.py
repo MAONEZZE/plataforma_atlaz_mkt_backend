@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
@@ -87,6 +87,7 @@ class AdminClientCreatedResponse(BaseModel):
     email: str
     product_id: UUID | None = None
     product_name: str | None = None
+    photo_url: str | None = None
 
 
 class AdminClientUpdatedResponse(BaseModel):
@@ -97,6 +98,7 @@ class AdminClientUpdatedResponse(BaseModel):
     description: str | None
     product_id: UUID | None = None
     product_name: str | None = None
+    photo_url: str | None = None
 
 
 class ClientStageResponse(BaseModel):
@@ -104,6 +106,14 @@ class ClientStageResponse(BaseModel):
     title: str | None
     text: str
     done: bool
+
+
+class ClientEventResponse(BaseModel):
+    id: UUID
+    title: str
+    date: date
+    description: str | None
+    image_url: str | None
 
 
 class ClientSummaryResponse(BaseModel):
@@ -142,3 +152,4 @@ class AdminClientDetailResponse(BaseModel):
     product_name: str | None = None
     created_at: datetime
     stages: list[ClientStageResponse] = []
+    events: list[ClientEventResponse] = []

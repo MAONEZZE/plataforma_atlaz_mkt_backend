@@ -37,7 +37,9 @@ async def test_list_clients_empty() -> None:
 
     assert items == []
     assert total == 0
-    repo.list_clients.assert_awaited_once_with(1, 50)
+    repo.list_clients.assert_awaited_once_with(
+        page=1, page_size=50, search=None, sort=None, order="asc"
+    )
 
 
 async def test_list_clients_returns_items_and_total() -> None:
@@ -59,4 +61,19 @@ async def test_list_clients_forwards_pagination_args() -> None:
 
     await ListClients(repo=repo).execute(ListClientsInput(page=3, page_size=20))
 
-    repo.list_clients.assert_awaited_once_with(3, 20)
+    repo.list_clients.assert_awaited_once_with(
+        page=3, page_size=20, search=None, sort=None, order="asc"
+    )
+
+
+async def test_list_clients_forwards_search_and_sort_args() -> None:
+    repo = AsyncMock()
+    repo.list_clients.return_value = ([], 0)
+
+    await ListClients(repo=repo).execute(
+        ListClientsInput(page=1, page_size=50, search="maria", sort="name", order="desc")
+    )
+
+    repo.list_clients.assert_awaited_once_with(
+        page=1, page_size=50, search="maria", sort="name", order="desc"
+    )

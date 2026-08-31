@@ -24,5 +24,16 @@ class Settings(BaseSettings):
             raise ValueError("DATABASE_URL must use postgresql+asyncpg:// scheme")
         return v
 
+    @field_validator("FRONTEND_URL")
+    @classmethod
+    def normalize_origins(cls, v: str) -> str:
+        # O header Origin do navegador nunca tem barra final nem path, entao um
+        # valor como "https://app.com/" jamais casaria com uma origem real.
+        return ",".join(o.strip().rstrip("/") for o in v.split(",") if o.strip())
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return self.FRONTEND_URL.split(",")
+
 
 settings = Settings()

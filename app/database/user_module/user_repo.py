@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func, update
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func, or_, update
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +35,9 @@ class UserModel(Base):
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+_SORT_COLUMNS = {"name": UserModel.name, "created_at": UserModel.created_at}
 
 
 class SqlAlchemyUserRepository:
@@ -93,19 +96,39 @@ class SqlAlchemyUserRepository:
         return user
 
     async def list_clients(
-        self, page: int, page_size: int
+        self,
+        page: int,
+        page_size: int,
+        search: str | None = None,
+        sort: str | None = None,
+        order: str = "asc",
     ) -> tuple[list[User], int]:
         offset = (page - 1) * page_size
         base_filter = (UserModel.role == "cliente") & (UserModel.inactive.is_(False))
 
-        rows = await self._session.execute(
+        term = (search or "").strip()
+        if term:
+            escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
+            base_filter = base_filter & or_(
+                UserModel.name.ilike(pattern, escape="\\"),
+                UserModel.email.ilike(pattern, escape="\\"),
+            )
+
+        query = (
             select(UserModel, ProductModel.name)
             .outerjoin(ProductModel, UserModel.product_id == ProductModel.id)
             .where(base_filter)
-            .order_by(UserModel.created_at.desc())
-            .limit(page_size)
-            .offset(offset)
         )
+
+        if sort is not None:
+            sort_column = _SORT_COLUMNS[sort]
+            column_order = sort_column.desc() if order == "desc" else sort_column.asc()
+            query = query.order_by(column_order, UserModel.id)
+        else:
+            query = query.order_by(UserModel.created_at.desc(), UserModel.id)
+
+        rows = await self._session.execute(query.limit(page_size).offset(offset))
         items = [self._to_entity(m, p_name) for m, p_name in rows.all()]
 
         total_res = await self._session.execute(
