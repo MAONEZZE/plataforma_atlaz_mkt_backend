@@ -261,6 +261,7 @@ class SqlAlchemyModuleRepository:
             update(ModuleModel)
             .where(ModuleModel.id == module.id)
             .values(
+                track_id=module.track_id,
                 title=module.title,
                 description=module.description,
                 order=module.order,
@@ -318,6 +319,7 @@ class SqlAlchemyLessonRepository:
             update(LessonModel)
             .where(LessonModel.id == lesson.id)
             .values(
+                module_id=lesson.module_id,
                 title=lesson.title,
                 description=lesson.description,
                 drive_file_id=lesson.drive_file_id,

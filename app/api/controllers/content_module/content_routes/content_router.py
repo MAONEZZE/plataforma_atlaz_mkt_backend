@@ -137,8 +137,8 @@ def get_create_module(session: AsyncSession = Depends(get_session)) -> CreateMod
 
 
 def get_update_module(session: AsyncSession = Depends(get_session)) -> UpdateModule:
-    _, m, _, _, _ = _repos(session)
-    return UpdateModule(m)
+    t, m, _, _, _ = _repos(session)
+    return UpdateModule(m, t)
 
 
 def get_delete_module(session: AsyncSession = Depends(get_session)) -> DeleteModule:
@@ -162,8 +162,8 @@ def get_create_lesson(session: AsyncSession = Depends(get_session)) -> CreateLes
 
 
 def get_update_lesson(session: AsyncSession = Depends(get_session)) -> UpdateLesson:
-    _, _, a, _, _ = _repos(session)
-    return UpdateLesson(a)
+    _, m, a, _, _ = _repos(session)
+    return UpdateLesson(a, m)
 
 
 def get_delete_lesson(session: AsyncSession = Depends(get_session)) -> DeleteLesson:
@@ -524,9 +524,13 @@ async def update_module(
     use_case: UpdateModule = Depends(get_update_module),
 ) -> ModuleAdminOut:
     try:
-        module = await use_case.execute(module_id, body.title, body.description, body.order)
+        module = await use_case.execute(
+            module_id, body.title, body.description, body.order, body.track_id
+        )
     except ModuleNotFound as exc:
         raise AppException("MODULO_NOT_FOUND", str(exc), 404) from exc
+    except TrackNotFound as exc:
+        raise AppException("TRILHA_NOT_FOUND", str(exc), 404) from exc
     return ModuleAdminOut(
         id=module.id,
         track_id=module.track_id,
@@ -608,9 +612,12 @@ async def update_lesson(
             body.duration_minutes,
             body.order,
             body.is_doc,
+            body.module_id,
         )
     except LessonNotFound as exc:
         raise AppException("AULA_NOT_FOUND", str(exc), 404) from exc
+    except ModuleNotFound as exc:
+        raise AppException("MODULO_NOT_FOUND", str(exc), 404) from exc
     except InvalidDriveUrl as exc:
         raise AppException("DRIVE_URL_INVALID", str(exc), 400) from exc
     return LessonAdminOut(

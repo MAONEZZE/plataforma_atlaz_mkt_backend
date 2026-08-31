@@ -190,6 +190,8 @@ class UpdateModuleIn(BaseModel):
     title: str | None = None
     description: str | None = None
     order: int | None = None
+    # Mover o módulo para outra trilha.
+    track_id: UUID | None = None
 
 
 class CreateLessonIn(BaseModel):
@@ -205,6 +207,8 @@ class CreateLessonIn(BaseModel):
 
 class UpdateLessonIn(BaseModel):
     title: str | None = None
+    # Mover a aula para outro módulo (possivelmente de outra trilha).
+    module_id: UUID | None = None
     description: str | None = None
     drive_url: str | None = None
     document_url: str | None = None

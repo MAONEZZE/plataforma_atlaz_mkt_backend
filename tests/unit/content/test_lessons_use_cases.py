@@ -3,8 +3,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.domain.content_module.content_exceptions import InvalidDriveUrl, LessonNotFound
-from app.domain.content_module.content_model import Lesson
+from app.domain.content_module.content_exceptions import (
+    InvalidDriveUrl,
+    LessonNotFound,
+    ModuleNotFound,
+)
+from app.domain.content_module.content_model import Lesson, Module
 from app.services.content_module.lessons.crud_admin import (
     CreateLesson,
     DeleteLesson,
@@ -22,6 +26,9 @@ class FakeLessonRepo:
     async def get_by_id(self, lesson_id: UUID) -> Lesson | None:
         return next((a for a in self._lessons if a.id == lesson_id), None)
 
+    async def list_by_module(self, module_id: UUID) -> list[Lesson]:
+        return [a for a in self._lessons if a.module_id == module_id]
+
     async def create(self, lesson: Lesson) -> Lesson:
         self._lessons.append(lesson)
         return lesson
@@ -32,6 +39,14 @@ class FakeLessonRepo:
 
     async def delete(self, lesson_id: UUID) -> None:
         self._lessons = [a for a in self._lessons if a.id != lesson_id]
+
+
+class FakeModuleRepo:
+    def __init__(self, modules: list[Module] | None = None) -> None:
+        self._modules: list[Module] = modules or []
+
+    async def get_by_id(self, module_id: UUID) -> Module | None:
+        return next((m for m in self._modules if m.id == module_id), None)
 
 
 class FakeStudentLessonRepo:
@@ -48,15 +63,20 @@ class FakeStudentLessonRepo:
         return {lesson_id for uid, lesson_id in self._completeds if uid == user_id}
 
 
-def _make_lesson(drive_file_id: str = "abc123", is_doc: bool = False) -> Lesson:
+def _make_lesson(
+    drive_file_id: str = "abc123",
+    is_doc: bool = False,
+    module_id: UUID | None = None,
+    order: int = 0,
+) -> Lesson:
     return Lesson(
         id=uuid4(),
-        module_id=uuid4(),
+        module_id=module_id or uuid4(),
         title="Lesson",
         description=None,
         drive_file_id=drive_file_id,
         duration_minutes=None,
-        order=0,
+        order=order,
         is_doc=is_doc,
         created_at=datetime.now(tz=UTC),
     )
@@ -84,7 +104,7 @@ async def test_create_lesson_invalid_drive_url_raises() -> None:
 
 async def test_update_lesson_not_found_raises() -> None:
     repo = FakeLessonRepo()
-    use_case = UpdateLesson(repo)
+    use_case = UpdateLesson(repo, FakeModuleRepo())
     with pytest.raises(LessonNotFound):
         await use_case.execute(uuid4(), None, None, None, None, None, None, None)
 
@@ -92,11 +112,50 @@ async def test_update_lesson_not_found_raises() -> None:
 async def test_update_lesson_updates_drive_url() -> None:
     lesson = _make_lesson()
     repo = FakeLessonRepo([lesson])
-    use_case = UpdateLesson(repo)
+    use_case = UpdateLesson(repo, FakeModuleRepo())
     updated = await use_case.execute(
         lesson.id, None, None, "https://drive.google.com/file/d/newid/view", None, None, None, None
     )
     assert updated.drive_file_id == "newid"
+    assert updated.module_id == lesson.module_id
+
+
+async def test_update_lesson_moves_to_other_module_appending_at_end() -> None:
+    target = Module(id=uuid4(), track_id=uuid4(), title="Destino", description=None, order=0)
+    lesson = _make_lesson(order=7)
+    existing = [_make_lesson(module_id=target.id, order=i) for i in range(3)]
+    repo = FakeLessonRepo([lesson, *existing])
+    use_case = UpdateLesson(repo, FakeModuleRepo([target]))
+
+    updated = await use_case.execute(
+        lesson.id, None, None, None, None, None, None, None, target.id
+    )
+
+    assert updated.module_id == target.id
+    assert updated.order == 3
+
+
+async def test_update_lesson_move_respects_explicit_order() -> None:
+    target = Module(id=uuid4(), track_id=uuid4(), title="Destino", description=None, order=0)
+    lesson = _make_lesson(order=7)
+    repo = FakeLessonRepo([lesson, _make_lesson(module_id=target.id, order=0)])
+    use_case = UpdateLesson(repo, FakeModuleRepo([target]))
+
+    updated = await use_case.execute(
+        lesson.id, None, None, None, None, None, 0, None, target.id
+    )
+
+    assert updated.module_id == target.id
+    assert updated.order == 0
+
+
+async def test_update_lesson_unknown_module_raises() -> None:
+    lesson = _make_lesson()
+    use_case = UpdateLesson(FakeLessonRepo([lesson]), FakeModuleRepo())
+    with pytest.raises(ModuleNotFound):
+        await use_case.execute(
+            lesson.id, None, None, None, None, None, None, None, uuid4()
+        )
 
 
 # ── DeleteLesson ────────────────────────────────────────────────────────────────

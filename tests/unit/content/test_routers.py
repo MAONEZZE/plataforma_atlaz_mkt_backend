@@ -33,6 +33,7 @@ from app.api.controllers.content_module.content_routes.content_router import (
     get_reorder_tracks,
     get_track_with_modules,
     get_unmark,
+    get_update_lesson,
     get_update_module,
     get_update_track,
 )
@@ -468,6 +469,79 @@ def test_admin_update_module_404(client: TestClient) -> None:
     try:
         r = client.patch(f"/api/v1/admin/modules/{uuid4()}", json={"title": "X"})
         assert r.status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_admin_update_module_forwards_track_id(client: TestClient) -> None:
+    """Mover módulo de trilha: track_id do corpo tem que chegar no use case."""
+    user = _admin_user()
+    target_track = uuid4()
+    module_id = uuid4()
+    uc = _mock_uc(execute_return=_base_module(module_id, target_track))
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[require_admin] = lambda: user
+    app.dependency_overrides[get_update_module] = lambda: uc
+    try:
+        r = client.patch(
+            f"/api/v1/admin/modules/{module_id}", json={"track_id": str(target_track)}
+        )
+        assert r.status_code == 200
+        assert r.json()["track_id"] == str(target_track)
+        assert uc.execute.await_args.args == (module_id, None, None, None, target_track)
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_admin_update_module_unknown_track_404(client: TestClient) -> None:
+    user = _admin_user()
+    uc = _mock_uc(execute_raises=TrackNotFound("nope"))
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[require_admin] = lambda: user
+    app.dependency_overrides[get_update_module] = lambda: uc
+    try:
+        r = client.patch(
+            f"/api/v1/admin/modules/{uuid4()}", json={"track_id": str(uuid4())}
+        )
+        assert r.status_code == 404
+        assert r.json()["error"]["code"] == "TRILHA_NOT_FOUND"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_admin_update_lesson_forwards_module_id(client: TestClient) -> None:
+    """Mover aula de módulo: module_id do corpo tem que chegar no use case."""
+    user = _admin_user()
+    target_module = uuid4()
+    lesson_id = uuid4()
+    uc = _mock_uc(execute_return=_base_lesson(lesson_id, target_module))
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[require_admin] = lambda: user
+    app.dependency_overrides[get_update_lesson] = lambda: uc
+    try:
+        r = client.patch(
+            f"/api/v1/admin/lessons/{lesson_id}", json={"module_id": str(target_module)}
+        )
+        assert r.status_code == 200
+        assert r.json()["module_id"] == str(target_module)
+        assert uc.execute.await_args.args[0] == lesson_id
+        assert uc.execute.await_args.args[-1] == target_module
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_admin_update_lesson_unknown_module_404(client: TestClient) -> None:
+    user = _admin_user()
+    uc = _mock_uc(execute_raises=ModuleNotFound("nope"))
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[require_admin] = lambda: user
+    app.dependency_overrides[get_update_lesson] = lambda: uc
+    try:
+        r = client.patch(
+            f"/api/v1/admin/lessons/{uuid4()}", json={"module_id": str(uuid4())}
+        )
+        assert r.status_code == 404
+        assert r.json()["error"]["code"] == "MODULO_NOT_FOUND"
     finally:
         app.dependency_overrides.clear()
 

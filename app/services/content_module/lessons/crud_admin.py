@@ -1,8 +1,8 @@
 from uuid import UUID, uuid4
 
-from app.domain.content_module.content_exceptions import LessonNotFound
+from app.domain.content_module.content_exceptions import LessonNotFound, ModuleNotFound
 from app.domain.content_module.content_model import Lesson
-from app.domain.content_module.content_repo_interface import LessonRepository
+from app.domain.content_module.content_repo_interface import LessonRepository, ModuleRepository
 from app.domain.content_module.content_validator import parse_drive_file_id
 from app.domain.shared.utils import now_sp
 
@@ -44,8 +44,9 @@ class CreateLesson:
 
 
 class UpdateLesson:
-    def __init__(self, repo: LessonRepository) -> None:
+    def __init__(self, repo: LessonRepository, module_repo: ModuleRepository) -> None:
         self._repo = repo
+        self._module_repo = module_repo
 
     async def execute(
         self,
@@ -57,10 +58,21 @@ class UpdateLesson:
         duration_minutes: int | None,
         order: int | None,
         is_doc: bool | None,
+        module_id: UUID | None = None,
     ) -> Lesson:
         lesson = await self._repo.get_by_id(lesson_id)
         if lesson is None:
             raise LessonNotFound(f"Aula {lesson_id} não encontrada.")
+
+        new_module_id = lesson.module_id
+        new_order = order if order is not None else lesson.order
+        if module_id is not None and module_id != lesson.module_id:
+            if await self._module_repo.get_by_id(module_id) is None:
+                raise ModuleNotFound(f"Módulo {module_id} não encontrado.")
+            new_module_id = module_id
+            # Sem posição explícita, a aula entra no fim do módulo de destino.
+            if order is None:
+                new_order = len(await self._repo.list_by_module(module_id))
 
         new_is_doc = is_doc if is_doc is not None else lesson.is_doc
 
@@ -73,14 +85,14 @@ class UpdateLesson:
 
         updated = Lesson(
             id=lesson.id,
-            module_id=lesson.module_id,
+            module_id=new_module_id,
             title=title if title is not None else lesson.title,
             description=description if description is not None else lesson.description,
             drive_file_id=drive_file_id,
             duration_minutes=(
                 duration_minutes if duration_minutes is not None else lesson.duration_minutes
             ),
-            order=order if order is not None else lesson.order,
+            order=new_order,
             is_doc=new_is_doc,
             created_at=lesson.created_at,
         )
