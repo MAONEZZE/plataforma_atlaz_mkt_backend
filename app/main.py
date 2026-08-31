@@ -85,7 +85,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title="akeel Backend",
     version="0.1.0",
-    docs_url="/docs" if settings.ENVIRONMENT != "prod" else "dev",
+    docs_url=None if settings.ENVIRONMENT == "prod" else "/docs",
+    openapi_url=None if settings.ENVIRONMENT == "prod" else "/openapi.json",
     redoc_url=None,
     lifespan=lifespan,
 )
